@@ -8,7 +8,6 @@ using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.Classes
@@ -137,7 +136,7 @@ namespace DiGi.PostgreSQL.Classes
 
             return await UpdateAsync(npgsqlConnection, serializableObjects);
         }
-        
+
         private static async Task<List<USerializableObject>?> GetAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, bool inheritance = true) where USerializableObject : TSerializableObject
         {
             if (npgsqlConnection is null)
@@ -146,7 +145,7 @@ namespace DiGi.PostgreSQL.Classes
             }
 
             Dictionary<short, Type>? dictionary = null;
-            if(inheritance)
+            if (inheritance)
             {
                 dictionary = await Query.TypeIds(npgsqlConnection, typeof(USerializableObject));
             }
@@ -154,7 +153,7 @@ namespace DiGi.PostgreSQL.Classes
             {
                 Type type = typeof(USerializableObject);
                 short? typeId = await Query.TypeId(npgsqlConnection, type);
-                if(typeId.HasValue)
+                if (typeId.HasValue)
                 {
                     dictionary = new Dictionary<short, Type>()
                     {
@@ -169,7 +168,7 @@ namespace DiGi.PostgreSQL.Classes
             }
 
             List<USerializableObject> result = [];
-            if(dictionary.Count == 0)
+            if (dictionary.Count == 0)
             {
                 return result;
             }
@@ -204,7 +203,7 @@ namespace DiGi.PostgreSQL.Classes
 
             return result;
         }
-        
+
         private static async Task<List<USerializableObject>?> GetAsync<USerializableObject, TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences) where USerializableObject : TSerializableObject where TUniqueReference : IUniqueReference
         {
             if (npgsqlConnection is null || uniqueReferences is null)
@@ -215,12 +214,12 @@ namespace DiGi.PostgreSQL.Classes
             Dictionary<string, List<string>> dictionary = [];
             foreach (TUniqueReference uniqueReference in uniqueReferences)
             {
-                if(uniqueReference?.TypeReference?.FullTypeName is not string fullTypeName || uniqueReference.UniqueId is not string uniqueId)
+                if (uniqueReference?.TypeReference?.FullTypeName is not string fullTypeName || uniqueReference.UniqueId is not string uniqueId)
                 {
                     continue;
                 }
 
-                if(!dictionary.TryGetValue(fullTypeName, out List<string>? uniqueIds) || uniqueIds is null)
+                if (!dictionary.TryGetValue(fullTypeName, out List<string>? uniqueIds) || uniqueIds is null)
                 {
                     uniqueIds = [];
                     dictionary[fullTypeName] = uniqueIds;
@@ -245,7 +244,7 @@ namespace DiGi.PostgreSQL.Classes
             foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
             {
                 Dictionary<short, Type>? dictionary_Types = await Query.TypeIds(npgsqlConnection, keyValuePair.Key);
-                if(dictionary_Types is null || dictionary_Types.Count == 0)
+                if (dictionary_Types is null || dictionary_Types.Count == 0)
                 {
                     continue;
                 }
@@ -295,7 +294,7 @@ namespace DiGi.PostgreSQL.Classes
             List<TUniqueReference> result = [];
             HashSet<short> typeIds = [];
 
-            await using NpgsqlCommand npgsqlCommand = new (commandText_Delete, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand = new(commandText_Delete, npgsqlConnection);
             npgsqlCommand.Parameters.Add("full_name", NpgsqlDbType.Text);
             npgsqlCommand.Parameters.Add("unique_id", NpgsqlDbType.Text);
 
@@ -320,19 +319,19 @@ namespace DiGi.PostgreSQL.Classes
             foreach (short typeId in typeIds)
             {
                 // Check if the partition is now empty
-                await using NpgsqlCommand npgsqlCommand_Check = new ("SELECT NOT EXISTS(SELECT 1 FROM objects WHERE type_id = @type_id);", npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand_Check = new("SELECT NOT EXISTS(SELECT 1 FROM objects WHERE type_id = @type_id);", npgsqlConnection);
                 npgsqlCommand_Check.Parameters.Add("type_id", NpgsqlDbType.Smallint).Value = typeId;
 
                 bool isEmpty = (bool)(await npgsqlCommand_Check.ExecuteScalarAsync() ?? false);
                 if (isEmpty)
                 {
                     // 1. Remove from types first (Metadata)
-                    await using NpgsqlCommand npgsqlCommand_DeleteType = new ("DELETE FROM types WHERE id = @type_id;", npgsqlConnection);
+                    await using NpgsqlCommand npgsqlCommand_DeleteType = new("DELETE FROM types WHERE id = @type_id;", npgsqlConnection);
                     npgsqlCommand_DeleteType.Parameters.Add("type_id", NpgsqlDbType.Smallint).Value = typeId;
                     await npgsqlCommand_DeleteType.ExecuteNonQueryAsync();
 
                     // 2. Drop the physical partition table
-                    await using NpgsqlCommand npgsqlCommand_DropTable = new ($"DROP TABLE IF EXISTS objects_type_{typeId};", npgsqlConnection);
+                    await using NpgsqlCommand npgsqlCommand_DropTable = new($"DROP TABLE IF EXISTS objects_type_{typeId};", npgsqlConnection);
                     await npgsqlCommand_DropTable.ExecuteNonQueryAsync();
                 }
             }
@@ -342,7 +341,7 @@ namespace DiGi.PostgreSQL.Classes
 
         private async Task<List<UniqueReference>?> UpdateAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects) where USerializableObject : TSerializableObject
         {
-            if(npgsqlConnection is null || serializableObjects is null)
+            if (npgsqlConnection is null || serializableObjects is null)
             {
                 return null;
             }
@@ -375,16 +374,16 @@ namespace DiGi.PostgreSQL.Classes
 
             List<UniqueReference> result = [];
 
-            if(dictionary.Count == 0)
+            if (dictionary.Count == 0)
             {
                 return result;
             }
 
-            await using NpgsqlBatch npgsqlBatch = new (npgsqlConnection);
+            await using NpgsqlBatch npgsqlBatch = new(npgsqlConnection);
 
             foreach (var keyValuePair in dictionary)
             {
-                short? typeId = await Modify.UpdateTypeId(npgsqlConnection, keyValuePair.Key);
+                short? typeId = await Modify.UpdateTypeIdAsync(npgsqlConnection, keyValuePair.Key);
                 if (typeId is null)
                 {
                     continue;
@@ -396,7 +395,7 @@ namespace DiGi.PostgreSQL.Classes
                     var serializableObject = tuple.Item2;
 
                     // Define the UPSERT command for this specific item
-                    NpgsqlBatchCommand npgsqlBatchCommand = new (@"
+                    NpgsqlBatchCommand npgsqlBatchCommand = new(@"
                         INSERT INTO objects (type_id, unique_id, data)
                         VALUES (@type_id, @unique_id, @data)
                         ON CONFLICT (type_id, unique_id) 

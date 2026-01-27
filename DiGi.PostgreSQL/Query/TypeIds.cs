@@ -28,7 +28,7 @@ namespace DiGi.PostgreSQL
                     continue;
                 }
 
-                if(!type.IsAssignableFrom(type_Temp))
+                if (!type.IsAssignableFrom(type_Temp))
                 {
                     continue;
                 }
@@ -46,11 +46,11 @@ namespace DiGi.PostgreSQL
                 return null;
             }
 
-            if(Core.Query.Type(fullName, false) is not System.Type type)
+            if (Core.Query.Type(fullName, false) is not System.Type type)
             {
                 return null;
             }
-            
+
             return await TypeIds(npgsqlConnection, type);
         }
     }

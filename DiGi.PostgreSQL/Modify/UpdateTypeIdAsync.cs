@@ -5,17 +5,17 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
-        public async static Task<short?> UpdateTypeId(this NpgsqlConnection? npgsqlConnection, System.Type? type)
+        public async static Task<short?> UpdateTypeIdAsync(this NpgsqlConnection? npgsqlConnection, System.Type? type)
         {
             if (npgsqlConnection is null || type is null || Core.Query.FullTypeName(type) is not string fullName)
             {
                 return null;
             }
 
-            return await UpdateTypeId(npgsqlConnection, fullName);
+            return await UpdateTypeIdAsync(npgsqlConnection, fullName);
         }
 
-        public async static Task<short?> UpdateTypeId(this NpgsqlConnection? npgsqlConnection, string? fullName)
+        public async static Task<short?> UpdateTypeIdAsync(this NpgsqlConnection? npgsqlConnection, string? fullName)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(fullName))
             {
