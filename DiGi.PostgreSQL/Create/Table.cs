@@ -61,7 +61,7 @@ namespace DiGi.PostgreSQL
                 await npgsqlCommand.ExecuteNonQueryAsync();
                 return true; // If we reach here, the SQL command was successful
             }
-            catch 
+            catch
             {
                 // Handle specific DB errors (permissions, connection loss, etc.)
                 return false;

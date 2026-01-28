@@ -44,7 +44,7 @@ namespace DiGi.PostgreSQL.Classes
         public override string ToString()
         {
             List<string> values = [];
-            if(Host != null)
+            if (Host != null)
             {
                 values.Add($"Host={Host}");
             }
@@ -68,7 +68,6 @@ namespace DiGi.PostgreSQL.Classes
             {
                 values.Add($"Database={Database}");
             }
-
 
             return string.Join(";", values);
         }
