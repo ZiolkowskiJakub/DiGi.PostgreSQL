@@ -14,13 +14,17 @@ namespace DiGi.PostgreSQL
 
             if (string.IsNullOrWhiteSpace(connectionData.Host)
                 || string.IsNullOrWhiteSpace(connectionData.Username)
-                || string.IsNullOrWhiteSpace(connectionData.Password)
-                || string.IsNullOrWhiteSpace(connectionData.Database))
+                || string.IsNullOrWhiteSpace(connectionData.Password))
             {
                 return null;
             }
 
             return new NpgsqlConnection(connectionData.ToString());
+        }
+
+        public static NpgsqlConnection? NpgsqlConnection(PostgreSQLConfigurationFile? postgreSQLConfigurationFile)
+        {
+            return NpgsqlConnection(ConnectionData(postgreSQLConfigurationFile));
         }
     }
 }

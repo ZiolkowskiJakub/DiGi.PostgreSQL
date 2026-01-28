@@ -6,14 +6,14 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public async static Task<Dictionary<short, System.Type>?> TypeIds(this NpgsqlConnection? npgsqlConnection, System.Type? type)
+        public static async Task<Dictionary<short, System.Type>?> TypeIds(this NpgsqlConnection? npgsqlConnection, System.Type? type)
         {
             if (npgsqlConnection is null || type is null)
             {
                 return null;
             }
 
-            string commandText = "SELECT id, full_name FROM object_types;";
+            string commandText = "SELECT id, full_name FROM types;";
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
             await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
@@ -39,7 +39,7 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
-        public async static Task<Dictionary<short, System.Type>?> TypeIds(this NpgsqlConnection? npgsqlConnection, string? fullName)
+        public static async Task<Dictionary<short, System.Type>?> TypeIds(this NpgsqlConnection? npgsqlConnection, string? fullName)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(fullName))
             {

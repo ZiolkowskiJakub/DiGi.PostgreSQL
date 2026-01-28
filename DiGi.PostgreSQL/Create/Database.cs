@@ -6,14 +6,14 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Create
     {
-        public static async Task<bool> Database(ConnectionData? connectionData, string databaseName)
+        public static async Task<bool> Database(ConnectionData? connectionData)
         {
-            if (connectionData is null || string.IsNullOrWhiteSpace(databaseName))
+            if (connectionData is null || string.IsNullOrWhiteSpace(connectionData.Database))
             {
                 return false;
             }
 
-            ConnectionData connectionData_Temp = new(connectionData, "postgres");
+            ConnectionData connectionData_Temp = connectionData.GetDefault();
 
             // Connect to the default 'postgres' database to execute admin commands
             await using NpgsqlConnection? npgsqlConnection = NpgsqlConnection(connectionData_Temp);
@@ -25,7 +25,7 @@ namespace DiGi.PostgreSQL
             await npgsqlConnection.OpenAsync();
 
             // Check if the database already exists to avoid errors
-            await using (NpgsqlCommand npgsqlCommand_Select = new($"SELECT 1 FROM pg_database WHERE datname = '{databaseName}'", npgsqlConnection))
+            await using (NpgsqlCommand npgsqlCommand_Select = new($"SELECT 1 FROM pg_database WHERE datname = '{connectionData.Database}'", npgsqlConnection))
             {
                 object? result = await npgsqlCommand_Select.ExecuteScalarAsync();
                 if (result != null)
@@ -35,7 +35,7 @@ namespace DiGi.PostgreSQL
             }
 
             // Create the database
-            await using NpgsqlCommand npgsqlCommand_Create = new NpgsqlCommand($"CREATE DATABASE \"{databaseName}\"", npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Create = new NpgsqlCommand($"CREATE DATABASE \"{connectionData.Database}\"", npgsqlConnection);
             await npgsqlCommand_Create.ExecuteNonQueryAsync();
 
             return true;

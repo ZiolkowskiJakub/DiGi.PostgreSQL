@@ -26,7 +26,7 @@ namespace DiGi.PostgreSQL
 
             // 1. Check if any databases are still using this tablespace
             var commandText = @"
-                SELECT COUNT(*) 
+                SELECT COUNT(*)
                 FROM pg_database db
                 JOIN pg_tablespace ts ON db.dattablespace = ts.oid
                 WHERE ts.spcname = @tablespaceName";

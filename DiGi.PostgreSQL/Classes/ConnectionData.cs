@@ -1,12 +1,13 @@
 ﻿using DiGi.Core.Classes;
 using DiGi.PostgreSQL.Interfaces;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace DiGi.PostgreSQL.Classes
 {
     public class ConnectionData : SerializableObject, IPostgreSQLObject
     {
-        public ConnectionData(string host, string username, string password, string database, int port)
+        public ConnectionData(string? host, string? username, string? password, string? database, int? port)
         {
             Host = host;
             Username = username;
@@ -26,22 +27,55 @@ namespace DiGi.PostgreSQL.Classes
         }
 
         [JsonInclude, JsonPropertyName("Database")]
-        public string Database { get; set; }
+        public string? Database { get; set; }
 
         [JsonInclude, JsonPropertyName("Host")]
-        public string Host { get; set; }
+        public string? Host { get; set; }
 
         [JsonInclude, JsonPropertyName("Password")]
-        public string Password { get; set; }
+        public string? Password { get; set; }
 
         [JsonInclude, JsonPropertyName("Port")]
-        public int Port { get; set; } = 5432;
+        public int? Port { get; set; } = 5432;
 
         [JsonInclude, JsonPropertyName("Username")]
-        public string Username { get; set; }
+        public string? Username { get; set; }
+
         public override string ToString()
         {
-            return string.Format("Host={0};Port={1};Username={2};Password={3};Database={4}", Host, Port, Username, Password, Database);
+            List<string> values = [];
+            if(Host != null)
+            {
+                values.Add($"Host={Host}");
+            }
+
+            if (Port != null)
+            {
+                values.Add($"Port={Port}");
+            }
+
+            if (Username != null)
+            {
+                values.Add($"Username={Username}");
+            }
+
+            if (Password != null)
+            {
+                values.Add($"Password={Password}");
+            }
+
+            if (Database != null)
+            {
+                values.Add($"Database={Database}");
+            }
+
+
+            return string.Join(";", values);
+        }
+
+        public ConnectionData GetDefault()
+        {
+            return new ConnectionData(Host, Username, Password, null, 5432);
         }
     }
 }

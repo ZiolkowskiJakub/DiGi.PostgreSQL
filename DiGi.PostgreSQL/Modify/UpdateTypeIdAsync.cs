@@ -5,7 +5,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
-        public async static Task<short?> UpdateTypeIdAsync(this NpgsqlConnection? npgsqlConnection, System.Type? type)
+        public static async Task<short?> UpdateTypeIdAsync(this NpgsqlConnection? npgsqlConnection, System.Type? type)
         {
             if (npgsqlConnection is null || type is null || Core.Query.FullTypeName(type) is not string fullName)
             {
@@ -15,7 +15,7 @@ namespace DiGi.PostgreSQL
             return await UpdateTypeIdAsync(npgsqlConnection, fullName);
         }
 
-        public async static Task<short?> UpdateTypeIdAsync(this NpgsqlConnection? npgsqlConnection, string? fullName)
+        public static async Task<short?> UpdateTypeIdAsync(this NpgsqlConnection? npgsqlConnection, string? fullName)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(fullName))
             {
@@ -29,8 +29,8 @@ namespace DiGi.PostgreSQL
             }
 
             string commandText = @"
-                INSERT INTO object_types (code, description)
-                VALUES (@code, @desc)
+                INSERT INTO types (full_name)
+                VALUES (@full_name)
                 RETURNING id;
                 ";
 

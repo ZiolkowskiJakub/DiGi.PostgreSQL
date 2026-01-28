@@ -20,7 +20,6 @@ namespace DiGi.PostgreSQL.Classes
             {
                 return handled;
             }
-
         }
 
         public object? Item { get; }

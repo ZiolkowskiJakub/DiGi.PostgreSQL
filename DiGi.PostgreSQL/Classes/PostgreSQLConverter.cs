@@ -174,8 +174,8 @@ namespace DiGi.PostgreSQL.Classes
             }
 
             string commandText = @"
-                SELECT data 
-                FROM objects 
+                SELECT data
+                FROM objects
                 WHERE type_id = ANY(@type_ids);";
 
             await using var npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
@@ -372,6 +372,20 @@ namespace DiGi.PostgreSQL.Classes
                 tuples.Add(new Tuple<UniqueReference, USerializableObject>(uniqueReference, serializableObject));
             }
 
+            bool succeded = false;
+
+            succeded = await Create.Table_Types(npgsqlConnection);
+            if (!succeded)
+            {
+                return null;
+            }
+
+            succeded = await Create.Table_Objects(npgsqlConnection);
+            if (!succeded)
+            {
+                return null;
+            }
+
             List<UniqueReference> result = [];
 
             if (dictionary.Count == 0)
@@ -398,7 +412,7 @@ namespace DiGi.PostgreSQL.Classes
                     NpgsqlBatchCommand npgsqlBatchCommand = new(@"
                         INSERT INTO objects (type_id, unique_id, data)
                         VALUES (@type_id, @unique_id, @data)
-                        ON CONFLICT (type_id, unique_id) 
+                        ON CONFLICT (type_id, unique_id)
                         DO UPDATE SET data = EXCLUDED.data;");
 
                     npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("type_id", NpgsqlDbType.Smallint) { Value = typeId.Value });
@@ -419,13 +433,11 @@ namespace DiGi.PostgreSQL.Classes
         }
     }
 
-
     public class PostgreSQLConverter : PostgreSQLConverter<ISerializableObject>
     {
         public PostgreSQLConverter(ConnectionData connectionData)
             : base(connectionData)
         {
-
         }
     }
 }

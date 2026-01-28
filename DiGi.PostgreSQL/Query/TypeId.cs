@@ -5,7 +5,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public async static Task<short?> TypeId(this NpgsqlConnection? npgsqlConnection, System.Type? type)
+        public static async Task<short?> TypeId(this NpgsqlConnection? npgsqlConnection, System.Type? type)
         {
             if (npgsqlConnection is null || type is null || Core.Query.FullTypeName(type) is not string fullName)
             {
@@ -15,7 +15,7 @@ namespace DiGi.PostgreSQL
             return await TypeId(npgsqlConnection, fullName);
         }
 
-        public async static Task<short?> TypeId(this NpgsqlConnection? npgsqlConnection, string? fullName)
+        public static async Task<short?> TypeId(this NpgsqlConnection? npgsqlConnection, string? fullName)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(fullName))
             {
@@ -24,7 +24,7 @@ namespace DiGi.PostgreSQL
 
             string commandText = @"
                 SELECT id
-                FROM object_types
+                FROM types
                 WHERE full_name = @full_name;
                 ";
 
