@@ -21,6 +21,42 @@ namespace DiGi.PostgreSQL.Classes
 
         public ConnectionData ConnectionData { get; set; }
 
+        public async Task<bool> Contains(Type type)
+        {
+            if (type is null)
+            {
+                return false;
+            }
+
+            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            if (npgsqlConnection is null)
+            {
+                return false;
+            }
+
+            npgsqlConnection.Open();
+
+            return await Query.Contains(npgsqlConnection, type);
+        }
+
+        public async Task<HashSet<TUniqueReference>?> Contains<TUniqueReference>(IEnumerable<TUniqueReference>? uniqueReferences) where TUniqueReference : IUniqueReference
+        {
+            if (uniqueReferences is null)
+            {
+                return null;
+            }
+
+            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            if (npgsqlConnection is null)
+            {
+                return null;
+            }
+
+            npgsqlConnection.Open();
+
+            return await Query.Contains(npgsqlConnection, uniqueReferences);
+        }
+
         public async Task<long> CountAsync(Type type, bool inheritance = true)
         {
             if (type is null)

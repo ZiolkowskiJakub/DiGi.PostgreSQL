@@ -18,7 +18,7 @@ namespace DiGi.PostgreSQL
             IEnumerable<short>? typeIds = null;
             if (!inheritance)
             {
-                short? typeId = await Query.TypeId(npgsqlConnection, type);
+                short? typeId = await TypeId(npgsqlConnection, type);
                 if (typeId is not null)
                 {
                     typeIds = [typeId.Value];
@@ -26,7 +26,7 @@ namespace DiGi.PostgreSQL
             }
             else
             {
-                Dictionary<short, Type>? dictionary = await Query.TypeIds(npgsqlConnection, type);
+                Dictionary<short, Type>? dictionary = await TypeIds(npgsqlConnection, type);
                 if (dictionary is null || dictionary.Count == 0)
                 {
                     return 0;

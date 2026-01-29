@@ -20,12 +20,12 @@ namespace DiGi.PostgreSQL
             Dictionary<short, Type>? dictionary = null;
             if (inheritance)
             {
-                dictionary = await Query.TypeIds(npgsqlConnection, typeof(USerializableObject));
+                dictionary = await TypeIds(npgsqlConnection, typeof(USerializableObject));
             }
             else
             {
                 Type type = typeof(USerializableObject);
-                short? typeId = await Query.TypeId(npgsqlConnection, type);
+                short? typeId = await TypeId(npgsqlConnection, type);
                 if (typeId.HasValue)
                 {
                     dictionary = new Dictionary<short, Type>()
@@ -116,7 +116,7 @@ namespace DiGi.PostgreSQL
             List<USerializableObject> result = [];
             foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
             {
-                Dictionary<short, Type>? dictionary_Types = await Query.TypeIds(npgsqlConnection, keyValuePair.Key);
+                Dictionary<short, Type>? dictionary_Types = await TypeIds(npgsqlConnection, keyValuePair.Key);
                 if (dictionary_Types is null || dictionary_Types.Count == 0)
                 {
                     continue;

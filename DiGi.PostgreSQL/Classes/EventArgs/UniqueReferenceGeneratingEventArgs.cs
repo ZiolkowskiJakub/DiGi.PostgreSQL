@@ -7,7 +7,7 @@ namespace DiGi.PostgreSQL.Classes
     {
         protected bool handled = false;
 
-        private UniqueReference? uniqueReference = null;
+        private string? uniqueId = null;
 
         public UniqueReferenceGeneratingEventArgs(object? item)
         {
@@ -24,17 +24,34 @@ namespace DiGi.PostgreSQL.Classes
 
         public object? Item { get; }
 
-        public UniqueReference? UniqueReference
+        public string? UniqueId
         {
             get
             {
-                return uniqueReference;
+                return uniqueId;
             }
-
             set
             {
-                uniqueReference = value;
+                uniqueId = value;
                 handled = true;
+            }
+        }
+
+        public UniqueIdReference? UniqueIdReference
+        {
+            get
+            {
+                if (uniqueId is null || Item?.GetType() is not Type type)
+                {
+                    return null;
+                }
+
+                if (Core.Create.TypeReference(type) is not TypeReference typeReference)
+                {
+                    return null;
+                }
+
+                return new UniqueIdReference(typeReference, uniqueId);
             }
         }
     }

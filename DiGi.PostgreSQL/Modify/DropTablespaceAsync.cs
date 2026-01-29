@@ -13,10 +13,10 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            ConnectionData connectionData_Temp = new(connectionData, "postgres");
+            ConnectionData connectionData_Default = connectionData.GetDefault();
 
             // Connect to the default 'postgres' database to execute admin commands
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(connectionData_Temp);
+            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(connectionData_Default);
             if (npgsqlConnection is null)
             {
                 return false;

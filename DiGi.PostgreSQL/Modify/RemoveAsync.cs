@@ -17,12 +17,9 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            // Używamy ANY(@type_ids), co w Postgresie działa jak optymalizowane IN (...)
-            const string commandText = "DELETE FROM objects WHERE type_id = ANY(@type_ids);";
-
             try
             {
-                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand = new("DELETE FROM objects WHERE type_id = ANY(@type_ids);", npgsqlConnection);
 
                 // Przekazujemy całą tablicę jako jeden parametr
                 npgsqlCommand.Parameters.AddWithValue("type_ids", typeIds);
@@ -81,7 +78,7 @@ namespace DiGi.PostgreSQL
                 }
             }
 
-            await Modify.CleanTypes(npgsqlConnection, typeIds);
+            await CleanTypes(npgsqlConnection, typeIds);
 
             return result;
         }

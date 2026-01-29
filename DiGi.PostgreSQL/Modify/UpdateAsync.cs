@@ -34,7 +34,7 @@ namespace DiGi.PostgreSQL
                     uniqueReferenceGeneratingEventHandler.Invoke(sender, uniqueReferenceGeneratingEventArgs);
                 }
 
-                UniqueReference? uniqueReference = uniqueReferenceGeneratingEventArgs.Handled ? uniqueReferenceGeneratingEventArgs.UniqueReference : Core.Create.UniqueReference(serializableObject);
+                UniqueReference? uniqueReference = uniqueReferenceGeneratingEventArgs.Handled ? uniqueReferenceGeneratingEventArgs.UniqueIdReference : Core.Create.UniqueReference(serializableObject);
                 if (uniqueReference?.TypeReference?.FullTypeName is not string fullTypeName)
                 {
                     continue;
@@ -74,7 +74,7 @@ namespace DiGi.PostgreSQL
 
             foreach (var keyValuePair in dictionary)
             {
-                short? typeId = await Modify.UpdateTypeIdAsync(npgsqlConnection, keyValuePair.Key);
+                short? typeId = await UpdateTypeIdAsync(npgsqlConnection, keyValuePair.Key);
                 if (typeId is null)
                 {
                     continue;
