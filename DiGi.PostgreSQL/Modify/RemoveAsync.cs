@@ -30,7 +30,7 @@ namespace DiGi.PostgreSQL
                 int count = await npgsqlCommand.ExecuteNonQueryAsync();
                 if (count > 0)
                 {
-                    await Modify.CleanTypes(npgsqlConnection, typeIds);
+                    await CleanTypes(npgsqlConnection, typeIds);
                 }
 
                 return true;

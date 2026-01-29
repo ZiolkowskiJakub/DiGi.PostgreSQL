@@ -13,7 +13,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
-        public static async Task<List<UniqueReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, object? sender = null, UniqueReferenceGeneratingEventHandler? uniqueReferenceGeneratingEventHandler = null) where USerializableObject : ISerializableObject
+        public static async Task<HashSet<UniqueReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, object? sender = null, UniqueReferenceGeneratingEventHandler? uniqueReferenceGeneratingEventHandler = null) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null || serializableObjects is null)
             {
@@ -63,7 +63,7 @@ namespace DiGi.PostgreSQL
                 return null;
             }
 
-            List<UniqueReference> result = [];
+            HashSet<UniqueReference> result = [];
 
             if (dictionary.Count == 0)
             {

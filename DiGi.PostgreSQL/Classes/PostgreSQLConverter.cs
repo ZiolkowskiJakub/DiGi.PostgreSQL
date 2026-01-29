@@ -5,6 +5,7 @@ using DiGi.PostgreSQL.Interfaces;
 using Npgsql;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.Classes
@@ -19,6 +20,36 @@ namespace DiGi.PostgreSQL.Classes
         public event UniqueReferenceGeneratingEventHandler? UniqueReferenceGenerating;
 
         public ConnectionData ConnectionData { get; set; }
+
+        public async Task<long> CountAsync(Type type, bool inheritance = true)
+        {
+            if (type is null)
+            {
+                return -1;
+            }
+
+            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            if (npgsqlConnection is null)
+            {
+                return -1;
+            }
+
+            npgsqlConnection.Open();
+
+            return await Query.CountAsync(npgsqlConnection, type, inheritance);
+        }
+
+        public async Task<long> CountAsync<USerializableObject>(bool inheritance = true) where USerializableObject : TSerializableObject
+        {
+            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            if (npgsqlConnection is null)
+            {
+                return -1;
+            }
+            npgsqlConnection.Open();
+
+            return await Query.CountAsync(npgsqlConnection, typeof(USerializableObject), inheritance);
+        }
 
         public async Task<List<USerializableObject>?> GetSerializableObjects<USerializableObject>(bool inheritance = true) where USerializableObject : TSerializableObject
         {
@@ -138,16 +169,16 @@ namespace DiGi.PostgreSQL.Classes
                 return null;
             }
 
-            List<UniqueReference>? uniqueReferences = await UpdateAsync([serializableObjects]);
+            HashSet<UniqueReference>? uniqueReferences = await UpdateAsync([serializableObjects]);
             if (uniqueReferences is null || uniqueReferences.Count == 0)
             {
                 return null;
             }
 
-            return uniqueReferences[0];
+            return uniqueReferences.First();
         }
 
-        public async Task<List<UniqueReference>?> UpdateAsync<USerializableObject>(IEnumerable<USerializableObject> serializableObjects) where USerializableObject : TSerializableObject
+        public async Task<HashSet<UniqueReference>?> UpdateAsync<USerializableObject>(IEnumerable<USerializableObject> serializableObjects) where USerializableObject : TSerializableObject
         {
             if (serializableObjects is null)
             {
