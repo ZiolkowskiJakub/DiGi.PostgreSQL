@@ -1,6 +1,4 @@
-﻿using DiGi.Core.Interfaces;
-using Npgsql;
-using System;
+﻿using Npgsql;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -8,68 +6,9 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public static async Task<HashSet<TUniqueReference>?> Contains<TUniqueReference>(this NpgsqlConnection npgsqlConnection, IEnumerable<TUniqueReference>? uniqueReferences) where TUniqueReference : IUniqueReference
+        public static async Task<HashSet<string>?> Contains(this NpgsqlConnection npgsqlConnection, short? partitionId, IEnumerable<string>? uniqueIds)
         {
-            if (npgsqlConnection is null || uniqueReferences is null)
-            {
-                return null;
-            }
-
-            Dictionary<string, Dictionary<string, TUniqueReference>> dictionary = [];
-            foreach (TUniqueReference uniqueReference in uniqueReferences)
-            {
-                string? fullTypeName = uniqueReference.TypeReference?.FullTypeName;
-                if (string.IsNullOrWhiteSpace(fullTypeName))
-                {
-                    continue;
-                }
-
-                string? uniqueId = uniqueReference.UniqueId;
-                if (string.IsNullOrWhiteSpace(uniqueId))
-                {
-                    continue;
-                }
-
-                if (dictionary.TryGetValue(fullTypeName, out Dictionary<string, TUniqueReference>? dictionary_UniqueId) || dictionary_UniqueId is null)
-                {
-                    dictionary_UniqueId = [];
-                    dictionary[fullTypeName] = dictionary_UniqueId;
-                }
-
-                dictionary_UniqueId[uniqueId] = uniqueReference;
-            }
-
-            HashSet<TUniqueReference> result = [];
-
-            foreach (KeyValuePair<string, Dictionary<string, TUniqueReference>> keyValuePair in dictionary)
-            {
-                short? typeId = await TypeId(npgsqlConnection, keyValuePair.Key);
-                if (typeId is null)
-                {
-                    continue;
-                }
-
-                HashSet<string>? uniqueIds = await npgsqlConnection.Contains(typeId, keyValuePair.Value.Keys);
-                if (uniqueIds is null || uniqueIds.Count == 0)
-                {
-                    continue;
-                }
-
-                foreach (string uniqueId in uniqueIds)
-                {
-                    if (keyValuePair.Value.TryGetValue(uniqueId, out TUniqueReference? uniqueReference) && uniqueReference is not null)
-                    {
-                        result.Add(uniqueReference);
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        public static async Task<HashSet<string>?> Contains(this NpgsqlConnection npgsqlConnection, short? typeId, IEnumerable<string>? uniqueIds)
-        {
-            if (npgsqlConnection is null || typeId is null || uniqueIds is null)
+            if (npgsqlConnection is null || partitionId is null || uniqueIds is null)
             {
                 return null;
             }
@@ -78,13 +17,13 @@ namespace DiGi.PostgreSQL
             const string commandText = @"
                 SELECT unique_id
                 FROM objects
-                WHERE type_id = @type_id
+                WHERE partition_id = @partition_id
                   AND unique_id = ANY(@unique_ids)";
 
             HashSet<string> result = [];
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
-            npgsqlCommand.Parameters.AddWithValue("type_id", typeId);
+            npgsqlCommand.Parameters.AddWithValue("partition_id", partitionId);
             npgsqlCommand.Parameters.AddWithValue("unique_ids", uniqueIds);
 
             await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
@@ -96,43 +35,33 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
-        public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, short? typeId)
+        public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, short? partitionId)
         {
-            if (npgsqlConnection is null || typeId is null)
+            if (npgsqlConnection is null || partitionId is null)
             {
                 return false;
             }
 
-            await using NpgsqlCommand npgsqlCommand = new("SELECT EXISTS(SELECT 1 FROM objects WHERE type_id = @type_id LIMIT 1)", npgsqlConnection);
-            npgsqlCommand.Parameters.AddWithValue("type_id", typeId);
+            await using NpgsqlCommand npgsqlCommand = new("SELECT EXISTS(SELECT 1 FROM objects WHERE partition_id = @partition_id LIMIT 1)", npgsqlConnection);
+            npgsqlCommand.Parameters.AddWithValue("partition_id", partitionId);
 
             var result = await npgsqlCommand.ExecuteScalarAsync();
 
             return result is bool exists && exists;
         }
 
-        public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, Type? type)
+        public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, string? name)
         {
-            if (npgsqlConnection is null || type is null)
+            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
             {
                 return false;
             }
-
-            return await Contains(npgsqlConnection, Core.Query.FullTypeName(type));
-        }
-
-        public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, string? fullTypeName)
-        {
-            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(fullTypeName))
+            short? partitionId = await PartitionId(npgsqlConnection, name);
+            if (partitionId is null)
             {
                 return false;
             }
-            short? typeId = await TypeId(npgsqlConnection, fullTypeName);
-            if (typeId is null)
-            {
-                return false;
-            }
-            return await npgsqlConnection.Contains(typeId);
+            return await npgsqlConnection.Contains(partitionId);
         }
     }
 }

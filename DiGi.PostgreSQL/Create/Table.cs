@@ -5,7 +5,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Create
     {
-        public static async Task<bool> Table_Types(this NpgsqlConnection? npgsqlConnection)
+        public static async Task<bool> Table_Partitions(this NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)
             {
@@ -13,9 +13,9 @@ namespace DiGi.PostgreSQL
             }
 
             const string commandText = @"
-                CREATE TABLE IF NOT EXISTS types (
+                CREATE TABLE IF NOT EXISTS partitions (
                     id          smallint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                    full_name        text NOT NULL UNIQUE,
+                    name        text NOT NULL UNIQUE,
                     created_at  timestamptz DEFAULT now()
                 );";
 
@@ -42,15 +42,15 @@ namespace DiGi.PostgreSQL
             const string commandText = @"
                 CREATE TABLE IF NOT EXISTS objects (
                     id         bigint GENERATED ALWAYS AS IDENTITY,
-                    type_id    smallint NOT NULL REFERENCES types(id),
+                    partition_id    smallint NOT NULL REFERENCES partitions(id),
                     unique_id  text,
                     data       jsonb NOT NULL,
                     created_at timestamptz DEFAULT now(),
-                    PRIMARY KEY (id, type_id)
-                ) PARTITION BY LIST (type_id);
+                    PRIMARY KEY (id, partition_id)
+                ) PARTITION BY LIST (partition_id);
 
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_objects_unique_pair
-                    ON objects (type_id, unique_id);
+                    ON objects (partition_id, unique_id);
 
                 CREATE INDEX IF NOT EXISTS idx_objects_data_gin
                     ON objects USING GIN (data);";
@@ -68,7 +68,7 @@ namespace DiGi.PostgreSQL
             }
         }
 
-        public static async Task<bool> Table_Objects_Partition(this NpgsqlConnection? npgsqlConnection, short typeId)
+        public static async Task<bool> Table_Objects_Partition(this NpgsqlConnection? npgsqlConnection, short partitionId)
         {
             if (npgsqlConnection is null)
             {
@@ -76,8 +76,8 @@ namespace DiGi.PostgreSQL
             }
 
             string commandText = $@"
-                CREATE TABLE IF NOT EXISTS objects_type_{typeId} PARTITION OF objects
-                    FOR VALUES IN ({typeId});
+                CREATE TABLE IF NOT EXISTS objects_{partitionId} PARTITION OF objects
+                    FOR VALUES IN ({partitionId});
                 ";
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);

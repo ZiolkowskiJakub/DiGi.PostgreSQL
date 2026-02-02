@@ -39,7 +39,7 @@ namespace DiGi.PostgreSQL
             if (count == 0)
             {
                 // 2. Only drop if it's truly empty
-                await using NpgsqlCommand npgsqlCommand_Drop = new NpgsqlCommand($"DROP TABLESPACE IF EXISTS {tablespaceName}", npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand_Drop = new($"DROP TABLESPACE IF EXISTS {tablespaceName}", npgsqlConnection);
                 await npgsqlCommand_Drop.ExecuteNonQueryAsync();
 
                 return true;

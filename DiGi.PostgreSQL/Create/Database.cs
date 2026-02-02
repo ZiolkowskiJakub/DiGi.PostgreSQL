@@ -35,7 +35,7 @@ namespace DiGi.PostgreSQL
             }
 
             // Create the database
-            await using NpgsqlCommand npgsqlCommand_Create = new NpgsqlCommand($"CREATE DATABASE \"{connectionData.Database}\"", npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Create = new($"CREATE DATABASE \"{connectionData.Database}\"", npgsqlConnection);
             await npgsqlCommand_Create.ExecuteNonQueryAsync();
 
             return true;

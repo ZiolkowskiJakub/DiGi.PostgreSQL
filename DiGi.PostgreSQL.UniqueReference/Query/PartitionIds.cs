@@ -2,18 +2,18 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace DiGi.PostgreSQL
+namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Query
     {
-        public static async Task<Dictionary<short, System.Type>?> TypeIds(this NpgsqlConnection? npgsqlConnection)
+        public static async Task<Dictionary<short, System.Type>?> PartitionIds(this NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)
             {
                 return null;
             }
 
-            string commandText = "SELECT id, full_name FROM types;";
+            string commandText = "SELECT id, name FROM partitions;";
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
             await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
@@ -22,8 +22,8 @@ namespace DiGi.PostgreSQL
 
             while (await npgsqlDataReader.ReadAsync())
             {
-                string fullName_Temp = npgsqlDataReader.GetString(1);
-                if (Core.Query.Type(fullName_Temp, false) is not System.Type type_Temp)
+                string name = npgsqlDataReader.GetString(1);
+                if (Core.Query.Type(name, false) is not System.Type type_Temp)
                 {
                     continue;
                 }
@@ -34,14 +34,14 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
-        public static async Task<Dictionary<short, System.Type>?> TypeIds(this NpgsqlConnection? npgsqlConnection, System.Type? type)
+        public static async Task<Dictionary<short, System.Type>?> PartitionIds(this NpgsqlConnection? npgsqlConnection, System.Type? type)
         {
             if (npgsqlConnection is null || type is null)
             {
                 return null;
             }
 
-            string commandText = "SELECT id, full_name FROM types;";
+            string commandText = "SELECT id, name FROM partitions;";
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
             await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
@@ -50,8 +50,8 @@ namespace DiGi.PostgreSQL
 
             while (await npgsqlDataReader.ReadAsync())
             {
-                string fullName_Temp = npgsqlDataReader.GetString(1);
-                if (Core.Query.Type(fullName_Temp, false) is not System.Type type_Temp)
+                string name = npgsqlDataReader.GetString(1);
+                if (Core.Query.Type(name, false) is not System.Type type_Temp)
                 {
                     continue;
                 }
@@ -67,19 +67,19 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
-        public static async Task<Dictionary<short, System.Type>?> TypeIds(this NpgsqlConnection? npgsqlConnection, string? fullName)
+        public static async Task<Dictionary<short, System.Type>?> PartitionIds(this NpgsqlConnection? npgsqlConnection, string? name)
         {
-            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(fullName))
+            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
             {
                 return null;
             }
 
-            if (Core.Query.Type(fullName, false) is not System.Type type)
+            if (Core.Query.Type(name, false) is not System.Type type)
             {
                 return null;
             }
 
-            return await TypeIds(npgsqlConnection, type);
+            return await PartitionIds(npgsqlConnection, type);
         }
     }
 }

@@ -1,26 +1,25 @@
 ﻿using DiGi.Core;
-using DiGi.Core.Classes;
 using DiGi.Core.Interfaces;
-using DiGi.PostgreSQL.Classes;
-using DiGi.PostgreSQL.Delegates;
+using DiGi.PostgreSQL.UniqueReference.Classes;
+using DiGi.PostgreSQL.UniqueReference.Delegates;
 using Npgsql;
 using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace DiGi.PostgreSQL
+namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Modify
     {
-        public static async Task<HashSet<UniqueReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, object? sender = null, UniqueReferenceGeneratingEventHandler? uniqueReferenceGeneratingEventHandler = null) where USerializableObject : ISerializableObject
+        public static async Task<HashSet<Core.Classes.UniqueReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, object? sender = null, UniqueIdReferenceGeneratingEventHandler? uniqueIdReferenceGeneratingEventHandler = null) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null || serializableObjects is null)
             {
                 return null;
             }
 
-            Dictionary<string, List<Tuple<UniqueReference, USerializableObject>>> dictionary = [];
+            Dictionary<string, List<Tuple<Core.Classes.UniqueReference, USerializableObject>>> dictionary = [];
             foreach (USerializableObject serializableObject in serializableObjects)
             {
                 if (serializableObject is null)
@@ -28,30 +27,30 @@ namespace DiGi.PostgreSQL
                     continue;
                 }
 
-                UniqueReferenceGeneratingEventArgs uniqueReferenceGeneratingEventArgs = new(serializableObject);
-                if (uniqueReferenceGeneratingEventHandler is not null && sender is not null)
+                UniqueIdReferenceGeneratingEventArgs uniqueIdReferenceGeneratingEventArgs = new(serializableObject);
+                if (uniqueIdReferenceGeneratingEventHandler is not null && sender is not null)
                 {
-                    uniqueReferenceGeneratingEventHandler.Invoke(sender, uniqueReferenceGeneratingEventArgs);
+                    uniqueIdReferenceGeneratingEventHandler.Invoke(sender, uniqueIdReferenceGeneratingEventArgs);
                 }
 
-                UniqueReference? uniqueReference = uniqueReferenceGeneratingEventArgs.Handled ? uniqueReferenceGeneratingEventArgs.UniqueIdReference : Core.Create.UniqueReference(serializableObject);
+                Core.Classes.UniqueReference? uniqueReference = uniqueIdReferenceGeneratingEventArgs.Handled ? uniqueIdReferenceGeneratingEventArgs.UniqueIdReference : Core.Create.UniqueReference(serializableObject);
                 if (uniqueReference?.TypeReference?.FullTypeName is not string fullTypeName)
                 {
                     continue;
                 }
 
-                if (!dictionary.TryGetValue(fullTypeName, out List<Tuple<UniqueReference, USerializableObject>>? tuples) || tuples is null)
+                if (!dictionary.TryGetValue(fullTypeName, out List<Tuple<Core.Classes.UniqueReference, USerializableObject>>? tuples) || tuples is null)
                 {
                     tuples = [];
                     dictionary[fullTypeName] = tuples;
                 }
 
-                tuples.Add(new Tuple<UniqueReference, USerializableObject>(uniqueReference, serializableObject));
+                tuples.Add(new Tuple<Core.Classes.UniqueReference, USerializableObject>(uniqueReference, serializableObject));
             }
 
             bool succeded;
 
-            succeded = await Create.Table_Types(npgsqlConnection);
+            succeded = await Create.Table_Partitions(npgsqlConnection);
             if (!succeded)
             {
                 return null;
@@ -63,7 +62,7 @@ namespace DiGi.PostgreSQL
                 return null;
             }
 
-            HashSet<UniqueReference> result = [];
+            HashSet<Core.Classes.UniqueReference> result = [];
 
             if (dictionary.Count == 0)
             {
@@ -74,8 +73,8 @@ namespace DiGi.PostgreSQL
 
             foreach (var keyValuePair in dictionary)
             {
-                short? typeId = await UpdateTypeIdAsync(npgsqlConnection, keyValuePair.Key);
-                if (typeId is null)
+                short? partitionId = await PostgreSQL.Modify.UpdateTypeIdAsync(npgsqlConnection, keyValuePair.Key);
+                if (partitionId is null)
                 {
                     continue;
                 }
@@ -87,12 +86,12 @@ namespace DiGi.PostgreSQL
 
                     // Define the UPSERT command for this specific item
                     NpgsqlBatchCommand npgsqlBatchCommand = new(@"
-                        INSERT INTO objects (type_id, unique_id, data)
-                        VALUES (@type_id, @unique_id, @data)
-                        ON CONFLICT (type_id, unique_id)
+                        INSERT INTO objects (partition_id, unique_id, data)
+                        VALUES (@partition_id, @unique_id, @data)
+                        ON CONFLICT (partition_id, unique_id)
                         DO UPDATE SET data = EXCLUDED.data;");
 
-                    npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("type_id", NpgsqlDbType.Smallint) { Value = typeId.Value });
+                    npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("partition_id", NpgsqlDbType.Smallint) { Value = partitionId.Value });
                     npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("unique_id", NpgsqlDbType.Text) { Value = uniqueReference.UniqueId });
                     npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("data", NpgsqlDbType.Jsonb) { Value = serializableObject.ToSystem_String() });
 

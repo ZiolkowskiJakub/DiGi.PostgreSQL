@@ -1,9 +1,10 @@
 ﻿using DiGi.Core.Interfaces;
 using DiGi.PostgreSQL.Classes;
+using DiGi.PostgreSQL.UniqueReference.Classes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace DiGi.PostgreSQL
+namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Convert
     {

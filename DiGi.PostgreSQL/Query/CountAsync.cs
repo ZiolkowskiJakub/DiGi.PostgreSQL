@@ -1,5 +1,4 @@
 ﻿using Npgsql;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,57 +7,23 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public static async Task<long> CountAsync(this NpgsqlConnection npgsqlConnection, Type? type, bool inheritance = true)
+        public static async Task<long> CountAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<short> partitionIds)
         {
-            if (npgsqlConnection is null || type is null)
+            if (npgsqlConnection is null || partitionIds is null)
             {
                 return -1;
             }
 
-            IEnumerable<short>? typeIds = null;
-            if (!inheritance)
-            {
-                short? typeId = await TypeId(npgsqlConnection, type);
-                if (typeId is not null)
-                {
-                    typeIds = [typeId.Value];
-                }
-            }
-            else
-            {
-                Dictionary<short, Type>? dictionary = await TypeIds(npgsqlConnection, type);
-                if (dictionary is null || dictionary.Count == 0)
-                {
-                    return 0;
-                }
-                typeIds = [.. dictionary.Keys];
-            }
-
-            if (typeIds is null || !typeIds.Any())
-            {
-                return 0;
-            }
-
-            return await npgsqlConnection.CountAsync(typeIds);
-        }
-
-        public static async Task<long> CountAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<short> typeIds)
-        {
-            if (npgsqlConnection is null || typeIds is null)
-            {
-                return -1;
-            }
-
-            if (!typeIds.Any())
+            if (!partitionIds.Any())
             {
                 return 0;
             }
 
             // Summing up everything that matches any ID in the provided array
-            const string commandText = "SELECT COUNT(*) FROM objects WHERE type_id = ANY(@type_ids)";
+            const string commandText = "SELECT COUNT(*) FROM objects WHERE partition_id = ANY(@partition_ids)";
 
-            await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
-            npgsqlCommand.Parameters.AddWithValue("type_ids", typeIds);
+            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+            npgsqlCommand.Parameters.AddWithValue("partition_ids", partitionIds);
 
             var result = await npgsqlCommand.ExecuteScalarAsync();
 

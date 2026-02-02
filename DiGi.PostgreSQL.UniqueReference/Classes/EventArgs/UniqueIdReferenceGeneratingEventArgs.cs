@@ -1,28 +1,16 @@
 ﻿using DiGi.Core.Classes;
 using System;
 
-namespace DiGi.PostgreSQL.Classes
+namespace DiGi.PostgreSQL.UniqueReference.Classes
 {
-    public class UniqueReferenceGeneratingEventArgs : EventArgs
+    public class UniqueIdReferenceGeneratingEventArgs : PostgreSQL.Classes.ReferenceGeneratingEventArgs
     {
-        protected bool handled = false;
-
         private string? uniqueId = null;
 
-        public UniqueReferenceGeneratingEventArgs(object? item)
+        public UniqueIdReferenceGeneratingEventArgs(object? item)
+            : base(item)
         {
-            Item = item;
         }
-
-        public bool Handled
-        {
-            get
-            {
-                return handled;
-            }
-        }
-
-        public object? Item { get; }
 
         public string? UniqueId
         {

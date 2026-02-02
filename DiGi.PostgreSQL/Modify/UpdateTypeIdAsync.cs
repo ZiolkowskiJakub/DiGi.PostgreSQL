@@ -5,45 +5,35 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
-        public static async Task<short?> UpdateTypeIdAsync(this NpgsqlConnection? npgsqlConnection, System.Type? type)
+        public static async Task<short?> UpdateTypeIdAsync(this NpgsqlConnection? npgsqlConnection, string? name)
         {
-            if (npgsqlConnection is null || type is null || Core.Query.FullTypeName(type) is not string fullName)
+            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
             {
                 return null;
             }
 
-            return await UpdateTypeIdAsync(npgsqlConnection, fullName);
-        }
-
-        public static async Task<short?> UpdateTypeIdAsync(this NpgsqlConnection? npgsqlConnection, string? fullName)
-        {
-            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(fullName))
+            short? partitionId = await Query.PartitionId(npgsqlConnection, name);
+            if (partitionId is not null)
             {
-                return null;
-            }
-
-            short? typeId = await Query.TypeId(npgsqlConnection, fullName);
-            if (typeId is not null)
-            {
-                return typeId;
+                return partitionId;
             }
 
             string commandText = @"
-                INSERT INTO types (full_name)
-                VALUES (@full_name)
+                INSERT INTO partitions (name)
+                VALUES (@name)
                 RETURNING id;
                 ";
 
-            await using var cmd = new NpgsqlCommand(commandText, npgsqlConnection);
-            cmd.Parameters.AddWithValue("full_name", fullName);
+            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+            npgsqlCommand.Parameters.AddWithValue("name", name);
 
-            typeId = (short?)await cmd.ExecuteScalarAsync();
-            if (typeId is not null)
+            partitionId = (short?)await npgsqlCommand.ExecuteScalarAsync();
+            if (partitionId is not null)
             {
-                await Create.Table_Objects_Partition(npgsqlConnection, typeId.Value);
+                await Create.Table_Objects_Partition(npgsqlConnection, partitionId.Value);
             }
 
-            return typeId;
+            return partitionId;
         }
     }
 }
