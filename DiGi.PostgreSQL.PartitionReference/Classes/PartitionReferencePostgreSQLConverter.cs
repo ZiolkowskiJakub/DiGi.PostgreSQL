@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.PartitionReference.Classes
 {
-    public class PostgreSQLConverter<TSerializableObject> : PostgreSQL.Classes.PostgreSQLConverter<TSerializableObject> where TSerializableObject : ISerializableObject
+    public class PartitionReferencePostgreSQLConverter<TSerializableObject> : PostgreSQLConverter<TSerializableObject> where TSerializableObject : ISerializableObject
     {
-        public PostgreSQLConverter(ConnectionData connectionData)
+        public PartitionReferencePostgreSQLConverter(ConnectionData connectionData)
             : base(connectionData)
         {
         }
@@ -225,9 +225,9 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
         }
     }
 
-    public class PostgreSQLConverter : PostgreSQLConverter<ISerializableObject>
+    public class PartitionReferencePostgreSQLConverter : PartitionReferencePostgreSQLConverter<ISerializableObject>
     {
-        public PostgreSQLConverter(ConnectionData connectionData)
+        public PartitionReferencePostgreSQLConverter(ConnectionData connectionData)
             : base(connectionData)
         {
         }

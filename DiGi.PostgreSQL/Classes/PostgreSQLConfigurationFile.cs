@@ -36,6 +36,20 @@ namespace DiGi.PostgreSQL.Classes
         }
 
         [JsonIgnore]
+        public string? Directory
+        {
+            get
+            {
+                return GetValue<string>(Constans.Names.PostgreSQLConfigurationFile.Directory);
+            }
+
+            set
+            {
+                Add(Constans.Names.PostgreSQLConfigurationFile.Directory, value);
+            }
+        }
+
+        [JsonIgnore]
         public string? Host
         {
             get
@@ -74,6 +88,20 @@ namespace DiGi.PostgreSQL.Classes
             set
             {
                 Add(Constans.Names.PostgreSQLConfigurationFile.Port, value);
+            }
+        }
+
+        [JsonIgnore]
+        public string? Tablespace
+        {
+            get
+            {
+                return GetValue<string>(Constans.Names.PostgreSQLConfigurationFile.Tablespace);
+            }
+
+            set
+            {
+                Add(Constans.Names.PostgreSQLConfigurationFile.Tablespace, value);
             }
         }
 

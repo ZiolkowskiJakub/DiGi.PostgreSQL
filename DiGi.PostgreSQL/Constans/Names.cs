@@ -28,6 +28,16 @@
             /// PostgresSQL database name.
             /// </summary>
             public const string Database = "DATABASE";
+
+            /// <summary>
+            /// PostgresSQL database tablespace.
+            /// </summary>
+            public const string Tablespace = "TABLESPACE";
+
+            /// <summary>
+            /// PostgresSQL database directory.
+            /// </summary>
+            public const string Directory = "DIRECTORY";
         }
     }
 }

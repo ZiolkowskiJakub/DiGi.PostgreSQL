@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.UniqueReference.Classes
 {
-    public class PostgreSQLConverter<TSerializableObject> : PostgreSQL.Classes.PostgreSQLConverter<TSerializableObject> where TSerializableObject : ISerializableObject
+    public class UniqueReferencePostgreSQLConverter<TSerializableObject> : PostgreSQLConverter<TSerializableObject> where TSerializableObject : ISerializableObject
     {
-        public PostgreSQLConverter(ConnectionData connectionData)
+        public UniqueReferencePostgreSQLConverter(ConnectionData connectionData)
             : base(connectionData)
         {
         }
@@ -230,9 +230,9 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
         }
     }
 
-    public class PostgreSQLConverter : PostgreSQLConverter<ISerializableObject>
+    public class UniqueReferencePostgreSQLConverter : UniqueReferencePostgreSQLConverter<ISerializableObject>
     {
-        public PostgreSQLConverter(ConnectionData connectionData)
+        public UniqueReferencePostgreSQLConverter(ConnectionData connectionData)
             : base(connectionData)
         {
         }

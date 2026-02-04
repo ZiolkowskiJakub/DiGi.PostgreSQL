@@ -26,7 +26,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return null;
             }
 
-            return await new PostgreSQLConverter(connectionData).UpdateAsync(serializableObjects);
+            return await new UniqueReferencePostgreSQLConverter(connectionData).UpdateAsync(serializableObjects);
         }
     }
 }

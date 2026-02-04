@@ -41,9 +41,34 @@ namespace DiGi.PostgreSQL
             return true;
         }
 
-        public static async Task<bool> Database(this ConnectionData? connectionData, string databaseName, string tablespaceName, string directory)
+        public static async Task<bool> Database(this PostgreSQLConfigurationFile? postgreSQLConfigurationFile)
         {
-            if (connectionData is null || string.IsNullOrWhiteSpace(databaseName))
+            if (postgreSQLConfigurationFile is null)
+            {
+                return false;
+            }
+
+            if (postgreSQLConfigurationFile.Tablespace is not string tablespace || string.IsNullOrWhiteSpace(tablespace) || postgreSQLConfigurationFile.Directory is not string directory || string.IsNullOrWhiteSpace(directory))
+            {
+                return false;
+            }
+
+            if (!System.IO.Directory.Exists(directory))
+            {
+                return false;
+            }
+
+            return await Database(ConnectionData(postgreSQLConfigurationFile), tablespace, directory);
+        }
+
+        public static async Task<bool> Database(this ConnectionData? connectionData, string tablespaceName, string directory)
+        {
+            if (connectionData is null)
+            {
+                return false;
+            }
+
+            if (connectionData.Database is not string databaseName)
             {
                 return false;
             }
