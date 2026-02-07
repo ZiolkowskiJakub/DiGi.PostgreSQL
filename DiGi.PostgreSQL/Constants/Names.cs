@@ -1,4 +1,4 @@
-﻿namespace DiGi.PostgreSQL.Constans
+﻿namespace DiGi.PostgreSQL.Constants
 {
     public static class Names
     {

@@ -10,7 +10,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
 {
     public class PartitionReferencePostgreSQLConverter<TSerializableObject> : PostgreSQLConverter<TSerializableObject> where TSerializableObject : ISerializableObject
     {
-        public PartitionReferencePostgreSQLConverter(ConnectionData connectionData)
+        public PartitionReferencePostgreSQLConverter(ConnectionData? connectionData)
             : base(connectionData)
         {
         }
@@ -59,7 +59,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return await PostgreSQL.Query.CountAsync(npgsqlConnection, [partitionId.Value]);
         }
 
-        public async Task<USerializableObject?> GetSerializableObjects<USerializableObject>(PartitionReference partitionReference) where USerializableObject : TSerializableObject
+        public async Task<USerializableObject?> GetSerializableObject<USerializableObject>(PartitionReference? partitionReference) where USerializableObject : TSerializableObject
         {
             if (partitionReference is null)
             {
@@ -75,7 +75,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return serializableObjects[0];
         }
 
-        public async Task<List<USerializableObject>?> GetSerializableObjects<USerializableObject>(IEnumerable<PartitionReference> partitionReferences) where USerializableObject : TSerializableObject
+        public async Task<List<USerializableObject>?> GetSerializableObjects<USerializableObject>(IEnumerable<PartitionReference>? partitionReferences) where USerializableObject : TSerializableObject
         {
             if (partitionReferences is null)
             {
@@ -93,7 +93,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return await Query.SerializableObjects<USerializableObject>(npgsqlConnection, partitionReferences);
         }
 
-        public async Task<List<USerializableObject>?> GetSerializableObjects<USerializableObject>(string name) where USerializableObject : TSerializableObject
+        public async Task<List<USerializableObject>?> GetSerializableObjects<USerializableObject>(string? name) where USerializableObject : TSerializableObject
         {
             if (name is null)
             {
@@ -111,7 +111,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return await Query.SerializableObjects<USerializableObject>(npgsqlConnection, name);
         }
 
-        public async Task<PartitionReference?> RemoveAsync(PartitionReference partitionReference)
+        public async Task<PartitionReference?> RemoveAsync(PartitionReference? partitionReference)
         {
             if (partitionReference is null)
             {
@@ -126,7 +126,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return partitionReferences[0];
         }
 
-        public async Task<List<PartitionReference>?> RemoveAsync(IEnumerable<PartitionReference> partitionReferences)
+        public async Task<List<PartitionReference>?> RemoveAsync(IEnumerable<PartitionReference>? partitionReferences)
         {
             if (partitionReferences is null)
             {
@@ -144,7 +144,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return await Modify.RemoveAsync(npgsqlConnection, partitionReferences);
         }
 
-        public async Task<bool> RemoveAsync(string name)
+        public async Task<bool> RemoveAsync(string? name)
         {
             if (name is null)
             {
@@ -156,7 +156,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return names != null && names.Contains(name);
         }
 
-        public async Task<HashSet<string>?> RemoveAsync(IEnumerable<string> names)
+        public async Task<HashSet<string>?> RemoveAsync(IEnumerable<string>? names)
         {
             if (names is null)
             {
@@ -190,7 +190,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return result;
         }
 
-        public async Task<PartitionReference?> UpdateAsync(TSerializableObject serializableObject)
+        public async Task<PartitionReference?> UpdateAsync(TSerializableObject? serializableObject)
         {
             if (serializableObject is null)
             {
@@ -206,7 +206,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return partitionReferences.First();
         }
 
-        public async Task<HashSet<PartitionReference>?> UpdateAsync<USerializableObject>(IEnumerable<USerializableObject> serializableObjects) where USerializableObject : TSerializableObject
+        public async Task<HashSet<PartitionReference>?> UpdateAsync<USerializableObject>(IEnumerable<USerializableObject>? serializableObjects) where USerializableObject : TSerializableObject
         {
             if (serializableObjects is null)
             {
@@ -227,7 +227,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
 
     public class PartitionReferencePostgreSQLConverter : PartitionReferencePostgreSQLConverter<ISerializableObject>
     {
-        public PartitionReferencePostgreSQLConverter(ConnectionData connectionData)
+        public PartitionReferencePostgreSQLConverter(ConnectionData? connectionData)
             : base(connectionData)
         {
         }

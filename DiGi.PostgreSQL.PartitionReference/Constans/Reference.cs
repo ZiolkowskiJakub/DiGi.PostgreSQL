@@ -1,4 +1,4 @@
-﻿namespace DiGi.PostgreSQL.PartitionReference.Constans
+﻿namespace DiGi.PostgreSQL.PartitionReference.Constants
 {
     public static class Reference
     {

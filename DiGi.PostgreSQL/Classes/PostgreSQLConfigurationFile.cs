@@ -26,12 +26,12 @@ namespace DiGi.PostgreSQL.Classes
         {
             get
             {
-                return GetValue<string>(Constans.Names.PostgreSQLConfigurationFile.Database);
+                return GetValue<string>(Constants.Names.PostgreSQLConfigurationFile.Database);
             }
 
             set
             {
-                Add(Constans.Names.PostgreSQLConfigurationFile.Database, value);
+                Add(Constants.Names.PostgreSQLConfigurationFile.Database, value);
             }
         }
 
@@ -40,12 +40,12 @@ namespace DiGi.PostgreSQL.Classes
         {
             get
             {
-                return GetValue<string>(Constans.Names.PostgreSQLConfigurationFile.Directory);
+                return GetValue<string>(Constants.Names.PostgreSQLConfigurationFile.Directory);
             }
 
             set
             {
-                Add(Constans.Names.PostgreSQLConfigurationFile.Directory, value);
+                Add(Constants.Names.PostgreSQLConfigurationFile.Directory, value);
             }
         }
 
@@ -54,12 +54,12 @@ namespace DiGi.PostgreSQL.Classes
         {
             get
             {
-                return GetValue<string>(Constans.Names.PostgreSQLConfigurationFile.Host);
+                return GetValue<string>(Constants.Names.PostgreSQLConfigurationFile.Host);
             }
 
             set
             {
-                Add(Constans.Names.PostgreSQLConfigurationFile.Host, value);
+                Add(Constants.Names.PostgreSQLConfigurationFile.Host, value);
             }
         }
 
@@ -68,12 +68,12 @@ namespace DiGi.PostgreSQL.Classes
         {
             get
             {
-                return GetValue<string>(Constans.Names.PostgreSQLConfigurationFile.Password);
+                return GetValue<string>(Constants.Names.PostgreSQLConfigurationFile.Password);
             }
 
             set
             {
-                Add(Constans.Names.PostgreSQLConfigurationFile.Password, value);
+                Add(Constants.Names.PostgreSQLConfigurationFile.Password, value);
             }
         }
 
@@ -82,12 +82,12 @@ namespace DiGi.PostgreSQL.Classes
         {
             get
             {
-                return GetValue<int?>(Constans.Names.PostgreSQLConfigurationFile.Port);
+                return GetValue<int?>(Constants.Names.PostgreSQLConfigurationFile.Port);
             }
 
             set
             {
-                Add(Constans.Names.PostgreSQLConfigurationFile.Port, value);
+                Add(Constants.Names.PostgreSQLConfigurationFile.Port, value);
             }
         }
 
@@ -96,12 +96,12 @@ namespace DiGi.PostgreSQL.Classes
         {
             get
             {
-                return GetValue<string>(Constans.Names.PostgreSQLConfigurationFile.Tablespace);
+                return GetValue<string>(Constants.Names.PostgreSQLConfigurationFile.Tablespace);
             }
 
             set
             {
-                Add(Constans.Names.PostgreSQLConfigurationFile.Tablespace, value);
+                Add(Constants.Names.PostgreSQLConfigurationFile.Tablespace, value);
             }
         }
 
@@ -110,12 +110,12 @@ namespace DiGi.PostgreSQL.Classes
         {
             get
             {
-                return GetValue<string>(Constans.Names.PostgreSQLConfigurationFile.Username);
+                return GetValue<string>(Constants.Names.PostgreSQLConfigurationFile.Username);
             }
 
             set
             {
-                Add(Constans.Names.PostgreSQLConfigurationFile.Username, value);
+                Add(Constants.Names.PostgreSQLConfigurationFile.Username, value);
             }
         }
     }

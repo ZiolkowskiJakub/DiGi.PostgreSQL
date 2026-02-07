@@ -11,14 +11,14 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
 {
     public class UniqueReferencePostgreSQLConverter<TSerializableObject> : PostgreSQLConverter<TSerializableObject> where TSerializableObject : ISerializableObject
     {
-        public UniqueReferencePostgreSQLConverter(ConnectionData connectionData)
+        public UniqueReferencePostgreSQLConverter(ConnectionData? connectionData)
             : base(connectionData)
         {
         }
 
         public event UniqueIdReferenceGeneratingEventHandler? UniqueIdReferenceGenerating;
 
-        public async Task<bool> Contains(Type type)
+        public async Task<bool> Contains(Type? type)
         {
             if (type is null)
             {
@@ -54,7 +54,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             return await Query.Contains(npgsqlConnection, uniqueReferences);
         }
 
-        public async Task<long> CountAsync(Type type, bool inheritance = true)
+        public async Task<long> CountAsync(Type? type, bool inheritance = true)
         {
             if (type is null)
             {
@@ -97,7 +97,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             return await Query.SerializableObjects<USerializableObject>(npgsqlConnection, inheritance);
         }
 
-        public async Task<USerializableObject?> GetSerializableObjects<USerializableObject>(IUniqueReference uniqueReference) where USerializableObject : TSerializableObject
+        public async Task<USerializableObject?> GetSerializableObjects<USerializableObject>(IUniqueReference? uniqueReference) where USerializableObject : TSerializableObject
         {
             if (uniqueReference is null)
             {
@@ -113,7 +113,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             return serializableObjects[0];
         }
 
-        public async Task<List<USerializableObject>?> GetSerializableObjects<USerializableObject, TUniqueReference>(IEnumerable<TUniqueReference> uniqueReferences) where USerializableObject : TSerializableObject where TUniqueReference : IUniqueReference
+        public async Task<List<USerializableObject>?> GetSerializableObjects<USerializableObject, TUniqueReference>(IEnumerable<TUniqueReference>? uniqueReferences) where USerializableObject : TSerializableObject where TUniqueReference : IUniqueReference
         {
             if (uniqueReferences is null)
             {
@@ -131,7 +131,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             return await Query.SerializableObjects<USerializableObject, TUniqueReference>(npgsqlConnection, uniqueReferences);
         }
 
-        public async Task<TUniqueReference?> RemoveAsync<TUniqueReference>(TUniqueReference uniqueReference) where TUniqueReference : IUniqueReference
+        public async Task<TUniqueReference?> RemoveAsync<TUniqueReference>(TUniqueReference? uniqueReference) where TUniqueReference : IUniqueReference
         {
             if (uniqueReference is null)
             {
@@ -146,7 +146,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             return uniqueReferences[0];
         }
 
-        public async Task<List<TUniqueReference>?> RemoveAsync<TUniqueReference>(IEnumerable<TUniqueReference> uniqueReferences) where TUniqueReference : IUniqueReference
+        public async Task<List<TUniqueReference>?> RemoveAsync<TUniqueReference>(IEnumerable<TUniqueReference>? uniqueReferences) where TUniqueReference : IUniqueReference
         {
             if (uniqueReferences is null)
             {
@@ -164,7 +164,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             return await Modify.RemoveAsync(npgsqlConnection, uniqueReferences);
         }
 
-        public async Task<bool> RemoveAsync(Type type, bool inheritance = true)
+        public async Task<bool> RemoveAsync(Type? type, bool inheritance = true)
         {
             if (type is null)
             {
@@ -195,7 +195,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             return await Modify.RemoveAsync(npgsqlConnection, typeof(USerializableObject), inheritance);
         }
 
-        public async Task<Core.Classes.UniqueReference?> UpdateAsync(TSerializableObject serializableObject)
+        public async Task<Core.Classes.UniqueReference?> UpdateAsync(TSerializableObject? serializableObject)
         {
             if (serializableObject is null)
             {
@@ -211,7 +211,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             return uniqueReferences.First();
         }
 
-        public async Task<HashSet<Core.Classes.UniqueReference>?> UpdateAsync<USerializableObject>(IEnumerable<USerializableObject> serializableObjects) where USerializableObject : TSerializableObject
+        public async Task<HashSet<Core.Classes.UniqueReference>?> UpdateAsync<USerializableObject>(IEnumerable<USerializableObject>? serializableObjects) where USerializableObject : TSerializableObject
         {
             if (serializableObjects is null)
             {
@@ -232,7 +232,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
 
     public class UniqueReferencePostgreSQLConverter : UniqueReferencePostgreSQLConverter<ISerializableObject>
     {
-        public UniqueReferencePostgreSQLConverter(ConnectionData connectionData)
+        public UniqueReferencePostgreSQLConverter(ConnectionData? connectionData)
             : base(connectionData)
         {
         }

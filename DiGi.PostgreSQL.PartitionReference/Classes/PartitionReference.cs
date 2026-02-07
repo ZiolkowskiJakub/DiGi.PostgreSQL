@@ -33,7 +33,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             }
         }
 
-        public PartitionReference(string name, string uniqueId)
+        public PartitionReference(string? name, string? uniqueId)
             : base()
         {
             this.name = name;
@@ -83,7 +83,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
                 return null;
             }
 
-            return $"{name}{Constans.Reference.Separator}{uniqueId}";
+            return $"{name}{Constants.Reference.Separator}{uniqueId}";
         }
     }
 }

@@ -1,4 +1,6 @@
 ﻿using Npgsql;
+using NpgsqlTypes;
+using System;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
@@ -12,22 +14,27 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
+            // Using smallint to store the underlying value of the C# enum
             const string commandText = @"
                 CREATE TABLE IF NOT EXISTS partitions (
-                    id          smallint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                    name        text NOT NULL UNIQUE,
-                    created_at  timestamptz DEFAULT now()
+                    id           smallint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    name         text NOT NULL UNIQUE,
+                    created_at   timestamptz DEFAULT now()
                 );";
+
+            //data_type    smallint NOT NULL, 
 
             try
             {
-                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection);
+
                 await npgsqlCommand.ExecuteNonQueryAsync();
-                return true; // If we reach here, the SQL command was successful
+                return true;
             }
-            catch
+            catch (NpgsqlException ex)
             {
-                // Handle specific DB errors (permissions, connection loss, etc.)
+                // For production plugins, consider logging to a specific file or BIM platform console
+                Console.WriteLine($"Postgres Error: {ex.Message}");
                 return false;
             }
         }
@@ -53,7 +60,8 @@ namespace DiGi.PostgreSQL
                     ON objects (partition_id, unique_id);
 
                 CREATE INDEX IF NOT EXISTS idx_objects_data_gin
-                    ON objects USING GIN (data);";
+                    ON objects USING GIN (data)
+                    WHERE data_json IS NOT NULL;";
 
             try
             {
