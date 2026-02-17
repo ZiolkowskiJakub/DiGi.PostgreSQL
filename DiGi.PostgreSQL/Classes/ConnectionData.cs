@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace DiGi.PostgreSQL.Classes
 {
-    public class ConnectionData : SerializableObject, IPostgreSQLObject
+    public class ConnectionData : SerializableObject, IPostgreSQLSerializableObject
     {
         public ConnectionData(string? host, string? username, string? password, string? database, int? port)
         {

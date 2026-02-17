@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using DiGi.PostgreSQL.Classes;
+using Npgsql;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,19 +17,45 @@ namespace DiGi.PostgreSQL
 
             if (!partitionIds.Any())
             {
-                return 0;
+                return -1;
             }
 
-            // Summing up everything that matches any ID in the provided array
-            const string commandText = "SELECT COUNT(*) FROM objects WHERE partition_id = ANY(@partition_ids)";
+            List<Partition>? partitions = await Partitions(npgsqlConnection, partitionIds);
+            if (partitions is null || partitions.Count == 0)
+            {
+                return -1;
+            }
 
-            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
-            npgsqlCommand.Parameters.AddWithValue("partition_ids", partitionIds);
+            Dictionary<Enums.DataType, List<Partition>> dictionary = [];
+            foreach (Partition partition in partitions)
+            {
+                if (!dictionary.TryGetValue(partition.DataType, out List<Partition>? partitions_Id) || partitions_Id is null)
+                {
+                    partitions_Id = [];
+                    dictionary[partition.DataType] = partitions_Id;
+                }
 
-            var result = await npgsqlCommand.ExecuteScalarAsync();
+                partitions_Id.Add(partition);
+            }
 
-            // If no rows match, PostgreSQL returns 0; ExecuteScalar returns long for COUNT
-            return result is long count ? count : 0;
+            long result = 0;
+            foreach (KeyValuePair<Enums.DataType, List<Partition>> keyValuePair in dictionary)
+            {
+                // Summing up everything that matches any ID in the provided array
+                string commandText = $"SELECT COUNT(*) FROM objects_{(int)keyValuePair.Key} WHERE partition_id = ANY(@partition_ids)";
+
+                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                npgsqlCommand.Parameters.AddWithValue("partition_ids", partitionIds);
+
+                // If no rows match, PostgreSQL returns 0; ExecuteScalar returns long for COUNT
+                var @var = await npgsqlCommand.ExecuteScalarAsync();
+                if (@var is long count)
+                {
+                    result += count;
+                }
+            }
+
+            return result;
         }
     }
 }

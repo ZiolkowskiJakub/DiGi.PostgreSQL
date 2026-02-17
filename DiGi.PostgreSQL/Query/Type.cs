@@ -8,12 +8,12 @@ namespace DiGi.PostgreSQL
     {
         public static Type? Type(this PostgreSQLDataType postgreSQLDataType)
         {
-            if(postgreSQLDataType == PostgreSQLDataType.Undefined)
+            if (postgreSQLDataType == PostgreSQLDataType.Undefined)
             {
                 return null;
             }
 
-            switch(postgreSQLDataType)
+            switch (postgreSQLDataType)
             {
                 case PostgreSQLDataType.Integer:
                     return typeof(int);

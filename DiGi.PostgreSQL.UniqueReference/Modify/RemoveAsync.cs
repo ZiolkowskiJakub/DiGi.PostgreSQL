@@ -1,4 +1,5 @@
 ﻿using DiGi.Core.Interfaces;
+using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using NpgsqlTypes;
 using System;
@@ -17,36 +18,56 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return null;
             }
 
-            // Use RETURNING o.type_id so we know exactly which partition was affected
-            string commandText_Delete = @"
-                DELETE FROM objects o
+            Dictionary<string, List<TUniqueReference>>? dictionary = Core.Convert.ToSystem_Dictionary(uniqueReferences, x => x?.TypeReference?.FullTypeName);
+            if(dictionary is null || dictionary.Count == 0)
+            {
+                return null;
+            }
+
+            List<Partition>? partitions = await PostgreSQL.Query.Partitions(npgsqlConnection, dictionary.Keys);
+            if(partitions is null || partitions.Count == 0)
+            {
+                return null;
+            }
+
+            List<TUniqueReference> result = [];
+            HashSet<short> partitionIds = [];
+
+            foreach (KeyValuePair<string, List<TUniqueReference>> keyValuePair in dictionary) 
+            {
+                Partition? partition = partitions.Find(x => x.Name == keyValuePair.Key);
+                if(partition is null)
+                {
+                    continue;
+                }
+
+                string commandText = $@"
+                DELETE FROM objects_{(int)partition.DataType} o
                 USING partitions t
                 WHERE o.partition_id = t.id
                   AND t.name = @name
                   AND o.unique_id = @unique_id
                 RETURNING o.partition_id;";
 
-            List<TUniqueReference> result = [];
-            HashSet<short> partitionIds = [];
+                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                npgsqlCommand.Parameters.Add("name", NpgsqlDbType.Text);
+                npgsqlCommand.Parameters.Add("unique_id", NpgsqlDbType.Text);
 
-            await using NpgsqlCommand npgsqlCommand = new(commandText_Delete, npgsqlConnection);
-            npgsqlCommand.Parameters.Add("name", NpgsqlDbType.Text);
-            npgsqlCommand.Parameters.Add("unique_id", NpgsqlDbType.Text);
-
-            foreach (TUniqueReference uniqueReference in uniqueReferences)
-            {
-                if (uniqueReference?.TypeReference?.FullTypeName is not string fullTypeName || string.IsNullOrWhiteSpace(uniqueReference.UniqueId))
+                foreach (TUniqueReference uniqueReference in uniqueReferences)
                 {
-                    continue;
-                }
+                    if (uniqueReference?.TypeReference?.FullTypeName is not string fullTypeName || string.IsNullOrWhiteSpace(uniqueReference.UniqueId))
+                    {
+                        continue;
+                    }
 
-                npgsqlCommand.Parameters["name"].Value = fullTypeName;
-                npgsqlCommand.Parameters["unique_id"].Value = uniqueReference.UniqueId;
+                    npgsqlCommand.Parameters["name"].Value = fullTypeName;
+                    npgsqlCommand.Parameters["unique_id"].Value = uniqueReference.UniqueId;
 
-                if (await npgsqlCommand.ExecuteScalarAsync() is short partitionId)
-                {
-                    result.Add(uniqueReference);
-                    partitionIds.Add(partitionId); // Track this type for cleanup
+                    if (await npgsqlCommand.ExecuteScalarAsync() is short partitionId)
+                    {
+                        result.Add(uniqueReference);
+                        partitionIds.Add(partitionId);
+                    }
                 }
             }
 
@@ -73,12 +94,12 @@ namespace DiGi.PostgreSQL.UniqueReference
             }
             else
             {
-                Dictionary<short, Type>? dictionary = await Query.PartitionIds(npgsqlConnection, type);
-                if (dictionary is null || dictionary.Count == 0)
+                List<Partition>? partitions = await Query.Partitions(npgsqlConnection, type);
+                if (partitions is null || partitions.Count == 0)
                 {
                     return false;
                 }
-                partitionIds = [.. dictionary.Keys];
+                partitionIds = partitions.ConvertAll(x => x.Id);
             }
 
             if (partitionIds is null || !partitionIds.Any())

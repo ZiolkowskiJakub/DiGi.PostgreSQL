@@ -13,12 +13,17 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            using NpgsqlCommand npgsqlCommand = new("SELECT to_regclass(@tableName);", npgsqlConnection);
+            // Explicitly cast to text so Npgsql can handle the return value
+            using NpgsqlCommand npgsqlCommand = new("SELECT to_regclass(@tableName)::text;", npgsqlConnection);
 
-            // Include schema if not public!
+            // It's safer to use the parameter name without @ in AddWithValue, 
+            // though Npgsql handles both.
             npgsqlCommand.Parameters.AddWithValue("tableName", $"public.{tableName}");
 
-            return npgsqlCommand.ExecuteScalar() != DBNull.Value;
+            object? result = npgsqlCommand.ExecuteScalar();
+
+            // If the table doesn't exist, to_regclass returns NULL (DBNull.Value in C#)
+            return result != null && result != DBNull.Value;
         }
 
         public static bool TableExists(this ConnectionData? connectionData, string tableName)

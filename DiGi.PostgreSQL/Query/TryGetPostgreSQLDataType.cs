@@ -8,14 +8,14 @@ namespace DiGi.PostgreSQL
         {
             postgreSQLDataType = PostgreSQLDataType.Undefined;
 
-            if(string.IsNullOrWhiteSpace(value))
+            if (string.IsNullOrWhiteSpace(value))
             {
                 return false;
             }
 
             string value_Temp = value.ToLower();
 
-            switch(value_Temp)
+            switch (value_Temp)
             {
                 case "integer":
                     postgreSQLDataType = PostgreSQLDataType.Integer;
@@ -34,7 +34,6 @@ namespace DiGi.PostgreSQL
             }
 
             return true;
-
         }
     }
 }

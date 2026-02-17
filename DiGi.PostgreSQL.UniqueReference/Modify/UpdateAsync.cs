@@ -1,5 +1,6 @@
-﻿using DiGi.Core;
-using DiGi.Core.Interfaces;
+﻿using DiGi.Core.Interfaces;
+using DiGi.PostgreSQL.Classes;
+using DiGi.PostgreSQL.Enums;
 using DiGi.PostgreSQL.UniqueReference.Classes;
 using DiGi.PostgreSQL.UniqueReference.Delegates;
 using Npgsql;
@@ -12,7 +13,7 @@ namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Modify
     {
-        public static async Task<HashSet<Core.Classes.UniqueReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, object? sender = null, UniqueIdReferenceGeneratingEventHandler? uniqueIdReferenceGeneratingEventHandler = null) where USerializableObject : ISerializableObject
+        public static async Task<HashSet<Core.Classes.UniqueReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, Func<Type?, DataType> dataTypeFunc, object? sender = null, UniqueIdReferenceGeneratingEventHandler? uniqueIdReferenceGeneratingEventHandler = null) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null || serializableObjects is null)
             {
@@ -56,12 +57,6 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return null;
             }
 
-            succeded = await Create.Table_Objects(npgsqlConnection);
-            if (!succeded)
-            {
-                return null;
-            }
-
             HashSet<Core.Classes.UniqueReference> result = [];
 
             if (dictionary.Count == 0)
@@ -73,27 +68,52 @@ namespace DiGi.PostgreSQL.UniqueReference
 
             foreach (var keyValuePair in dictionary)
             {
-                short? partitionId = await PostgreSQL.Modify.UpdateTypeIdAsync(npgsqlConnection, keyValuePair.Key);
-                if (partitionId is null)
+                DataType dataType = dataTypeFunc.Invoke(Core.Query.Type(keyValuePair.Key));
+
+                succeded = await Create.Table_Objects(npgsqlConnection, dataType);
+                if (!succeded)
+                {
+                    return null;
+                }
+
+                Partition? partition = await PostgreSQL.Modify.UpdatePartitionIdAsync(npgsqlConnection, keyValuePair.Key, dataType);
+                if (partition is null)
                 {
                     continue;
                 }
 
-                foreach (var tuple in keyValuePair.Value)
+                DataType dataType_Temp = partition.DataType;
+                if (dataType_Temp == DataType.Undefined)
+                {
+                    dataType_Temp = dataType;
+                }
+
+                if (dataType_Temp == DataType.Undefined)
+                {
+                    continue;
+                }
+
+                foreach (Tuple<Core.Classes.UniqueReference, USerializableObject> tuple in keyValuePair.Value)
                 {
                     var uniqueReference = tuple.Item1;
                     var serializableObject = tuple.Item2;
 
+                    object? value = PostgreSQL.Convert.ToPostgreSQL(serializableObject, dataType_Temp, out NpgsqlDbType npgsqlDbType);
+                    if (npgsqlDbType == NpgsqlDbType.Unknown)
+                    {
+                        continue;
+                    }
+
                     // Define the UPSERT command for this specific item
-                    NpgsqlBatchCommand npgsqlBatchCommand = new(@"
-                        INSERT INTO objects (partition_id, unique_id, data)
+                    NpgsqlBatchCommand npgsqlBatchCommand = new($@"
+                        INSERT INTO objects_{(int)dataType_Temp} (partition_id, unique_id, data)
                         VALUES (@partition_id, @unique_id, @data)
                         ON CONFLICT (partition_id, unique_id)
                         DO UPDATE SET data = EXCLUDED.data;");
 
-                    npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("partition_id", NpgsqlDbType.Smallint) { Value = partitionId.Value });
+                    npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("partition_id", NpgsqlDbType.Smallint) { Value = partition.Id });
                     npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("unique_id", NpgsqlDbType.Text) { Value = uniqueReference.UniqueId });
-                    npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("data", NpgsqlDbType.Jsonb) { Value = serializableObject.ToSystem_String() });
+                    npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("data", npgsqlDbType) { Value = value });
 
                     npgsqlBatch.BatchCommands.Add(npgsqlBatchCommand);
                     result.Add(uniqueReference);

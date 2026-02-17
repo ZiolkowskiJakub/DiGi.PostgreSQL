@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using DiGi.PostgreSQL.Classes;
+using Npgsql;
 using NpgsqlTypes;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -14,36 +15,50 @@ namespace DiGi.PostgreSQL.PartitionReference
                 return null;
             }
 
-            // Use RETURNING o.type_id so we know exactly which partition was affected
-            string commandText_Delete = @"
-                DELETE FROM objects o
+            Dictionary<string, List<Classes.PartitionReference>>? dictionary = Core.Convert.ToSystem_Dictionary(partitionReferences, x => x?.Name);
+            if(dictionary is null)
+            {
+                return null;
+            }
+
+            List<Classes.PartitionReference> result = [];
+            HashSet<short> partitionIds = [];
+
+            foreach (KeyValuePair<string, List<Classes.PartitionReference>> keyValuePair in dictionary)
+            {
+                Partition? partition = await PostgreSQL.Query.Partition(npgsqlConnection, keyValuePair.Key);
+                if(partition is null)
+                {
+                    continue;
+                }
+
+                string commandText_Delete = $@"
+                DELETE FROM objects_{(int)partition.DataType} o
                 USING partitions t
                 WHERE o.partition_id = t.id
                   AND t.name = @name
                   AND o.unique_id = @unique_id
                 RETURNING o.partition_id;";
 
-            List<Classes.PartitionReference> result = [];
-            HashSet<short> partitionIds = [];
+                await using NpgsqlCommand npgsqlCommand = new(commandText_Delete, npgsqlConnection);
+                npgsqlCommand.Parameters.Add("name", NpgsqlDbType.Text);
+                npgsqlCommand.Parameters.Add("unique_id", NpgsqlDbType.Text);
 
-            await using NpgsqlCommand npgsqlCommand = new(commandText_Delete, npgsqlConnection);
-            npgsqlCommand.Parameters.Add("name", NpgsqlDbType.Text);
-            npgsqlCommand.Parameters.Add("unique_id", NpgsqlDbType.Text);
-
-            foreach (Classes.PartitionReference partitionReference in partitionReferences)
-            {
-                if (partitionReference?.Name is not string name || string.IsNullOrWhiteSpace(partitionReference.UniqueId))
+                foreach (Classes.PartitionReference partitionReference in partitionReferences)
                 {
-                    continue;
-                }
+                    if (partitionReference?.Name is not string name || string.IsNullOrWhiteSpace(partitionReference.UniqueId))
+                    {
+                        continue;
+                    }
 
-                npgsqlCommand.Parameters["name"].Value = name;
-                npgsqlCommand.Parameters["unique_id"].Value = partitionReference.UniqueId;
+                    npgsqlCommand.Parameters["name"].Value = name;
+                    npgsqlCommand.Parameters["unique_id"].Value = partitionReference.UniqueId;
 
-                if (await npgsqlCommand.ExecuteScalarAsync() is short partitionId)
-                {
-                    result.Add(partitionReference);
-                    partitionIds.Add(partitionId); // Track this type for cleanup
+                    if (await npgsqlCommand.ExecuteScalarAsync() is short partitionId)
+                    {
+                        result.Add(partitionReference);
+                        partitionIds.Add(partitionId); // Track this type for cleanup
+                    }
                 }
             }
 

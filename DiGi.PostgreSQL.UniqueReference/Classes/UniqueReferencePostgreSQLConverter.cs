@@ -1,5 +1,6 @@
 ﻿using DiGi.Core.Interfaces;
 using DiGi.PostgreSQL.Classes;
+using DiGi.PostgreSQL.Enums;
 using DiGi.PostgreSQL.UniqueReference.Delegates;
 using Npgsql;
 using System;
@@ -82,6 +83,26 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             npgsqlConnection.Open();
 
             return await Query.CountAsync(npgsqlConnection, typeof(USerializableObject), inheritance);
+        }
+
+        public virtual DataType GetDataType(Type? type)
+        {
+            if (type is null)
+            {
+                return DataType.Undefined;
+            }
+
+            if (!typeof(TSerializableObject).IsAssignableFrom(type))
+            {
+                return DataType.Undefined;
+            }
+
+            return DataType.Json;
+        }
+
+        public DataType GetDataType<USerializableObject>() where USerializableObject : TSerializableObject
+        {
+            return GetDataType(typeof(USerializableObject));
         }
 
         public async Task<List<USerializableObject>?> GetSerializableObjects<USerializableObject>(bool inheritance = true) where USerializableObject : TSerializableObject
@@ -226,7 +247,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
 
             npgsqlConnection.Open();
 
-            return await Modify.UpdateAsync(npgsqlConnection, serializableObjects, this, UniqueIdReferenceGenerating);
+            return await Modify.UpdateAsync(npgsqlConnection, serializableObjects, GetDataType, this, UniqueIdReferenceGenerating);
         }
     }
 

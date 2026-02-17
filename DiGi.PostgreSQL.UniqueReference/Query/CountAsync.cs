@@ -1,4 +1,5 @@
-﻿using Npgsql;
+﻿using DiGi.PostgreSQL.Classes;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,31 +16,32 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return -1;
             }
 
-            IEnumerable<short>? typeIds = null;
+            IEnumerable<short>? partitionIds = null;
             if (!inheritance)
             {
-                short? typeId = await PartitionId(npgsqlConnection, type);
-                if (typeId is not null)
+                short? partitionId = await PartitionId(npgsqlConnection, type);
+                if (partitionId is not null)
                 {
-                    typeIds = [typeId.Value];
+                    partitionIds = [partitionId.Value];
                 }
             }
             else
             {
-                Dictionary<short, Type>? dictionary = await PartitionIds(npgsqlConnection, type);
-                if (dictionary is null || dictionary.Count == 0)
+                List<Partition>? partitions = await Partitions(npgsqlConnection, type);
+                if (partitions is null || partitions.Count == 0)
                 {
                     return 0;
                 }
-                typeIds = [.. dictionary.Keys];
+
+                partitionIds = partitions.ConvertAll(x => x.Id);
             }
 
-            if (typeIds is null || !typeIds.Any())
+            if (partitionIds is null || !partitionIds.Any())
             {
                 return 0;
             }
 
-            return await npgsqlConnection.CountAsync(typeIds);
+            return await npgsqlConnection.CountAsync(partitionIds);
         }
     }
 }

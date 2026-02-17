@@ -1,9 +1,8 @@
 ﻿using DiGi.Core.Interfaces;
+using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using NpgsqlTypes;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.UniqueReference
@@ -17,61 +16,66 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return null;
             }
 
-            Dictionary<short, Type>? dictionary = null;
+            List<Partition>? partitions = null;
             if (inheritance)
             {
-                dictionary = await PartitionIds(npgsqlConnection, typeof(USerializableObject));
+                partitions = await Partitions(npgsqlConnection, typeof(USerializableObject));
             }
             else
             {
-                Type type = typeof(USerializableObject);
-                short? typeId = await PartitionId(npgsqlConnection, type);
-                if (typeId.HasValue)
+                Partition? partition = await PostgreSQL.Query.Partition(npgsqlConnection, Core.Query.FullTypeName(typeof(USerializableObject)));
+                if (partition is not null)
                 {
-                    dictionary = new Dictionary<short, Type>()
-                    {
-                        { typeId.Value, type }
-                    };
+                    partitions = [partition];
                 }
             }
 
-            if (dictionary is null)
+            if (partitions is null)
             {
                 return null;
             }
 
             List<USerializableObject> result = [];
-            if (dictionary.Count == 0)
+            if (partitions.Count == 0)
             {
                 return result;
             }
 
-            string commandText = @"
+            Dictionary<Enums.DataType, List<Partition>>? dictionary = Core.Convert.ToSystem_Dictionary(partitions, x => x.DataType);
+            if(dictionary is null || dictionary.Count == 0)
+            {
+                return result; 
+            }
+
+            foreach(KeyValuePair<Enums.DataType, List<Partition>> keyValuePair in dictionary)
+            {
+                string commandText = $@"
                 SELECT data
-                FROM objects
+                FROM objects_{(int)keyValuePair.Key}
                 WHERE partition_id = ANY(@partition_ids);";
 
-            await using var npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+                await using var npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
 
-            npgsqlCommand.Parameters.AddWithValue("partition_ids", dictionary.Keys.ToArray());
+                npgsqlCommand.Parameters.AddWithValue("partition_ids", keyValuePair.Value.ConvertAll(x => x.Id).ToArray());
 
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+                await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
 
-            while (await npgsqlDataReader.ReadAsync())
-            {
-                string data = npgsqlDataReader.GetString(0);
-
-                if (Core.Convert.ToDiGi<USerializableObject>(data) is not List<USerializableObject> serializableObjects || serializableObjects.Count == 0)
+                while (await npgsqlDataReader.ReadAsync())
                 {
-                    continue;
-                }
+                    string data = npgsqlDataReader.GetString(0);
 
-                if (serializableObjects[0] is not USerializableObject serializableObject)
-                {
-                    continue;
-                }
+                    if (Core.Convert.ToDiGi<USerializableObject>(data) is not List<USerializableObject> serializableObjects || serializableObjects.Count == 0)
+                    {
+                        continue;
+                    }
 
-                result.Add(serializableObject);
+                    if (serializableObjects[0] is not USerializableObject serializableObject)
+                    {
+                        continue;
+                    }
+
+                    result.Add(serializableObject);
+                }
             }
 
             return result;
@@ -101,47 +105,55 @@ namespace DiGi.PostgreSQL.UniqueReference
                 uniqueIds.Add(uniqueId);
             }
 
-            string commandText = @"
-                SELECT o.data
-                FROM objects o
-                JOIN (
-                    SELECT UNNEST(@partition_ids) as t_id, UNNEST(@unique_ids) as u_id
-                ) as search_set ON o.partition_id = search_set.t_id AND o.unique_id = search_set.u_id;";
-
-            await using var npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
-
-            npgsqlCommand.Parameters.Add("partition_ids", NpgsqlDbType.Array | NpgsqlDbType.Smallint);
-            npgsqlCommand.Parameters.Add("unique_ids", NpgsqlDbType.Array | NpgsqlDbType.Text);
-
             List<USerializableObject> result = [];
             foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
             {
-                Dictionary<short, Type>? dictionary_Types = await PartitionIds(npgsqlConnection, keyValuePair.Key);
-                if (dictionary_Types is null || dictionary_Types.Count == 0)
+                List<Partition>? partitions = await Partitions(npgsqlConnection, keyValuePair.Key);
+                if (partitions is null || partitions.Count == 0)
                 {
                     continue;
                 }
 
-                npgsqlCommand.Parameters["partition_ids"].Value = dictionary_Types.Keys.ToArray();
-                npgsqlCommand.Parameters["unique_ids"].Value = keyValuePair.Value.ToArray();
-
-                await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
-
-                while (await npgsqlDataReader.ReadAsync())
+                Dictionary<Enums.DataType, List<Partition>>? dictionary_DataType = Core.Convert.ToSystem_Dictionary(partitions, x => x.DataType);
+                if(dictionary_DataType is null || dictionary_DataType.Count == 0)
                 {
-                    string data = npgsqlDataReader.GetString(0);
+                    continue;
+                }
 
-                    if (Core.Convert.ToDiGi<USerializableObject>(data) is not List<USerializableObject> serializableObjects || serializableObjects.Count == 0)
+                foreach(KeyValuePair<Enums.DataType, List<Partition>> keyValuePair_DataType in dictionary_DataType)
+                {
+                    string commandText = $@"
+                        SELECT o.data
+                        FROM objects_{(int)keyValuePair_DataType.Key} o
+                        JOIN (
+                            SELECT UNNEST(@partition_ids) as t_id, UNNEST(@unique_ids) as u_id
+                        ) as search_set ON o.partition_id = search_set.t_id AND o.unique_id = search_set.u_id;";
+
+                    await using var npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+
+                    npgsqlCommand.Parameters.Add("partition_ids", NpgsqlDbType.Array | NpgsqlDbType.Smallint);
+                    npgsqlCommand.Parameters.Add("unique_ids", NpgsqlDbType.Array | NpgsqlDbType.Text);
+                    npgsqlCommand.Parameters["partition_ids"].Value = keyValuePair_DataType.Value.ConvertAll(x => x.Id).ToArray();
+                    npgsqlCommand.Parameters["unique_ids"].Value = keyValuePair.Value.ToArray();
+
+                    await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+
+                    while (await npgsqlDataReader.ReadAsync())
                     {
-                        continue;
-                    }
+                        string data = npgsqlDataReader.GetString(0);
 
-                    if (serializableObjects[0] is not USerializableObject serializableObject)
-                    {
-                        continue;
-                    }
+                        if (Core.Convert.ToDiGi<USerializableObject>(data) is not List<USerializableObject> serializableObjects || serializableObjects.Count == 0)
+                        {
+                            continue;
+                        }
 
-                    result.Add(serializableObject);
+                        if (serializableObjects[0] is not USerializableObject serializableObject)
+                        {
+                            continue;
+                        }
+
+                        result.Add(serializableObject);
+                    }
                 }
             }
 

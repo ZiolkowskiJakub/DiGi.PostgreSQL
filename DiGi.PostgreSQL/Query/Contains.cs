@@ -1,5 +1,6 @@
 ﻿using Npgsql;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
@@ -13,17 +14,38 @@ namespace DiGi.PostgreSQL
                 return null;
             }
 
+            if (!uniqueIds.Any())
+            {
+                return [];
+            }
+
+            Classes.Partition? partition = await Partition(npgsqlConnection, partitionId.Value);
+            if (partition is null)
+            {
+                return null;
+            }
+
+            return await Contains(npgsqlConnection, partition, uniqueIds);
+        }
+
+        public static async Task<HashSet<string>?> Contains(this NpgsqlConnection npgsqlConnection, Classes.Partition? partition, IEnumerable<string>? uniqueIds)
+        {
+            if (npgsqlConnection is null || partition is null || uniqueIds is null)
+            {
+                return null;
+            }
+
             // Query returns the subset of unique_ids that actually exist in the table
-            const string commandText = @"
+            string commandText = $@"
                 SELECT unique_id
-                FROM objects
+                FROM objects_{(int)partition.DataType}
                 WHERE partition_id = @partition_id
                   AND unique_id = ANY(@unique_ids)";
 
             HashSet<string> result = [];
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
-            npgsqlCommand.Parameters.AddWithValue("partition_id", partitionId);
+            npgsqlCommand.Parameters.AddWithValue("partition_id", partition.Id);
             npgsqlCommand.Parameters.AddWithValue("unique_ids", uniqueIds);
 
             await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
@@ -42,12 +64,13 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            await using NpgsqlCommand npgsqlCommand = new("SELECT EXISTS(SELECT 1 FROM objects WHERE partition_id = @partition_id LIMIT 1)", npgsqlConnection);
-            npgsqlCommand.Parameters.AddWithValue("partition_id", partitionId);
+            Classes.Partition? partition = await Partition(npgsqlConnection, partitionId.Value);
+            if (partition is null)
+            {
+                return false;
+            }
 
-            var result = await npgsqlCommand.ExecuteScalarAsync();
-
-            return result is bool exists && exists;
+            return await npgsqlConnection.Contains(partition);
         }
 
         public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, string? name)
@@ -56,12 +79,29 @@ namespace DiGi.PostgreSQL
             {
                 return false;
             }
-            short? partitionId = await PartitionId(npgsqlConnection, name);
-            if (partitionId is null)
+
+            Classes.Partition? partition = await Partition(npgsqlConnection, name);
+            if (partition is null)
             {
                 return false;
             }
-            return await npgsqlConnection.Contains(partitionId);
+
+            return await npgsqlConnection.Contains(partition);
+        }
+
+        public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, Classes.Partition partition)
+        {
+            if (npgsqlConnection is null || partition is null)
+            {
+                return false;
+            }
+
+            await using NpgsqlCommand npgsqlCommand = new($"SELECT EXISTS(SELECT 1 FROM objects_{(int)partition.DataType} WHERE partition_id = @partition_id LIMIT 1)", npgsqlConnection);
+            npgsqlCommand.Parameters.AddWithValue("partition_id", partition.Id);
+
+            var result = await npgsqlCommand.ExecuteScalarAsync();
+
+            return result is bool exists && exists;
         }
     }
 }

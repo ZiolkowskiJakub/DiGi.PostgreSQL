@@ -1,5 +1,6 @@
 ﻿using DiGi.Core.Interfaces;
 using DiGi.PostgreSQL.Classes;
+using DiGi.PostgreSQL.Enums;
 using DiGi.PostgreSQL.PartitionReference.Delegates;
 using Npgsql;
 using System.Collections.Generic;
@@ -57,6 +58,16 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             }
 
             return await PostgreSQL.Query.CountAsync(npgsqlConnection, [partitionId.Value]);
+        }
+
+        public virtual DataType GetDataType(string? name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return DataType.Undefined;
+            }
+
+            return DataType.Json;
         }
 
         public async Task<USerializableObject?> GetSerializableObject<USerializableObject>(PartitionReference? partitionReference) where USerializableObject : TSerializableObject
@@ -221,7 +232,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
 
             npgsqlConnection.Open();
 
-            return await Modify.UpdateAsync(npgsqlConnection, serializableObjects, this, PartitionReferenceGenerating);
+            return await Modify.UpdateAsync(npgsqlConnection, serializableObjects, GetDataType, this, PartitionReferenceGenerating);
         }
     }
 

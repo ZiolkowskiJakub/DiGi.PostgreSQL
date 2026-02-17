@@ -1,4 +1,5 @@
 ﻿using DiGi.Core.Interfaces;
+using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using NpgsqlTypes;
 using System.Collections.Generic;
@@ -78,42 +79,36 @@ namespace DiGi.PostgreSQL.PartitionReference
                 uniqueIds.Add(uniqueId);
             }
 
-            string commandText = @"
-                SELECT o.data
-                FROM objects o
-                JOIN (
-                    SELECT UNNEST(@partition_ids) as t_id, UNNEST(@unique_ids) as u_id
-                ) as search_set ON o.partition_id = search_set.t_id AND o.unique_id = search_set.u_id;";
-
-            await using var npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
-
-            npgsqlCommand.Parameters.Add("partition_ids", NpgsqlDbType.Array | NpgsqlDbType.Smallint);
-            npgsqlCommand.Parameters.Add("unique_ids", NpgsqlDbType.Array | NpgsqlDbType.Text);
-
             List<USerializableObject> result = [];
             foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
             {
-                short? partitionId = await PostgreSQL.Query.PartitionId(npgsqlConnection, keyValuePair.Key);
-                if (partitionId is null)
+                Partition? partition = await PostgreSQL.Query.Partition(npgsqlConnection, keyValuePair.Key);
+                if(partition is null)
                 {
                     continue;
                 }
 
-                npgsqlCommand.Parameters["partition_ids"].Value = new short[] { partitionId.Value };
+                string commandText = $@"
+                SELECT o.data
+                FROM objects_{(int)partition.DataType} o
+                JOIN (
+                    SELECT UNNEST(@partition_ids) as t_id, UNNEST(@unique_ids) as u_id
+                ) as search_set ON o.partition_id = search_set.t_id AND o.unique_id = search_set.u_id;";
+
+                await using var npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+
+                npgsqlCommand.Parameters.Add("partition_ids", NpgsqlDbType.Array | NpgsqlDbType.Smallint);
+                npgsqlCommand.Parameters.Add("unique_ids", NpgsqlDbType.Array | NpgsqlDbType.Text);
+
+                npgsqlCommand.Parameters["partition_ids"].Value = new short[] { partition.Id };
                 npgsqlCommand.Parameters["unique_ids"].Value = keyValuePair.Value.ToArray();
 
                 await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
 
                 while (await npgsqlDataReader.ReadAsync())
                 {
-                    string data = npgsqlDataReader.GetString(0);
-
-                    if (Core.Convert.ToDiGi<USerializableObject>(data) is not List<USerializableObject> serializableObjects || serializableObjects.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    if (serializableObjects[0] is not USerializableObject serializableObject)
+                    USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObject<USerializableObject>(npgsqlDataReader, partition.DataType, 0);
+                    if(serializableObject is null)
                     {
                         continue;
                     }

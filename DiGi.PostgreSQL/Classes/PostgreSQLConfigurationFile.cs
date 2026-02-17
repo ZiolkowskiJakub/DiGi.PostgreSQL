@@ -1,10 +1,11 @@
 ﻿using DiGi.Core.Classes;
+using DiGi.PostgreSQL.Interfaces;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace DiGi.PostgreSQL.Classes
 {
-    public class PostgreSQLConfigurationFile : ConfigurationFile
+    public class PostgreSQLConfigurationFile : ConfigurationFile, IPostgreSQLSerializableObject
     {
         public PostgreSQLConfigurationFile()
             : base()
