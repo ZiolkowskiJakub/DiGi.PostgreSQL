@@ -118,7 +118,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             return await Query.SerializableObjects<USerializableObject>(npgsqlConnection, inheritance);
         }
 
-        public async Task<USerializableObject?> GetSerializableObjects<USerializableObject>(IUniqueReference? uniqueReference) where USerializableObject : TSerializableObject
+        public async Task<USerializableObject?> GetSerializableObject<USerializableObject>(IUniqueReference? uniqueReference) where USerializableObject : TSerializableObject
         {
             if (uniqueReference is null)
             {

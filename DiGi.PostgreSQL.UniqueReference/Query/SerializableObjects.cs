@@ -62,14 +62,8 @@ namespace DiGi.PostgreSQL.UniqueReference
 
                 while (await npgsqlDataReader.ReadAsync())
                 {
-                    string data = npgsqlDataReader.GetString(0);
-
-                    if (Core.Convert.ToDiGi<USerializableObject>(data) is not List<USerializableObject> serializableObjects || serializableObjects.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    if (serializableObjects[0] is not USerializableObject serializableObject)
+                    USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObject<USerializableObject>(npgsqlDataReader, keyValuePair.Key, 0);
+                    if (serializableObject is null)
                     {
                         continue;
                     }
@@ -140,14 +134,8 @@ namespace DiGi.PostgreSQL.UniqueReference
 
                     while (await npgsqlDataReader.ReadAsync())
                     {
-                        string data = npgsqlDataReader.GetString(0);
-
-                        if (Core.Convert.ToDiGi<USerializableObject>(data) is not List<USerializableObject> serializableObjects || serializableObjects.Count == 0)
-                        {
-                            continue;
-                        }
-
-                        if (serializableObjects[0] is not USerializableObject serializableObject)
+                        USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObject<USerializableObject>(npgsqlDataReader, keyValuePair_DataType.Key, 0);
+                        if (serializableObject is null)
                         {
                             continue;
                         }
