@@ -7,19 +7,19 @@ namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Query
     {
-        public static async Task<List<Partition>?> Partitions(this NpgsqlConnection? npgsqlConnection, System.Type? type)
+        public static async Task<List<Type>?> TypesAsync(this NpgsqlConnection? npgsqlConnection, System.Type? type)
         {
             if (npgsqlConnection is null || type is null)
             {
                 return null;
             }
 
-            string commandText = "SELECT id, name, data_type FROM partitions;";
+            string commandText = "SELECT id, name FROM types;";
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
             await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
 
-            List<Partition> result = [];
+            List<Type> result = [];
 
             while (await npgsqlDataReader.ReadAsync())
             {
@@ -35,15 +35,14 @@ namespace DiGi.PostgreSQL.UniqueReference
                 }
 
                 short id = npgsqlDataReader.GetInt16(0);
-                short dataType = npgsqlDataReader.GetInt16(2);
 
-                result.Add(new Partition(id, name, (Enums.DataType)dataType));
+                result.Add(new Type(id, name));
             }
 
             return result;
         }
 
-        public static async Task<List<Partition>?> Partitions(this NpgsqlConnection? npgsqlConnection, string? name)
+        public static async Task<List<Type>?> TypesAsync(this NpgsqlConnection? npgsqlConnection, string? name)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
             {
@@ -55,7 +54,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return null;
             }
 
-            return await Partitions(npgsqlConnection, type);
+            return await TypesAsync(npgsqlConnection, type);
         }
     }
 }

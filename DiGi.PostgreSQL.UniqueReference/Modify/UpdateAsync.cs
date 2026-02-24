@@ -51,7 +51,7 @@ namespace DiGi.PostgreSQL.UniqueReference
 
             bool succeded;
 
-            succeded = await Create.Table_Partitions(npgsqlConnection);
+            succeded = await Create.TableAsync_Partitions(npgsqlConnection);
             if (!succeded)
             {
                 return null;
@@ -70,7 +70,7 @@ namespace DiGi.PostgreSQL.UniqueReference
             {
                 DataType dataType = dataTypeFunc.Invoke(Core.Query.Type(keyValuePair.Key));
 
-                succeded = await Create.Table_Objects(npgsqlConnection, dataType);
+                succeded = await Create.TableAsync_Objects(npgsqlConnection, dataType);
                 if (!succeded)
                 {
                     return null;

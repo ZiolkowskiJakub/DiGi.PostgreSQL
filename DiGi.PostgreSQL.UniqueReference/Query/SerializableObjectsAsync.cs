@@ -9,7 +9,7 @@ namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Query
     {
-        public static async Task<List<USerializableObject>?> SerializableObjects<USerializableObject>(NpgsqlConnection? npgsqlConnection, bool inheritance = true) where USerializableObject : ISerializableObject
+        public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, bool inheritance = true) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null)
             {
@@ -19,11 +19,11 @@ namespace DiGi.PostgreSQL.UniqueReference
             List<Partition>? partitions = null;
             if (inheritance)
             {
-                partitions = await Partitions(npgsqlConnection, typeof(USerializableObject));
+                partitions = await PartitionsAsync(npgsqlConnection, typeof(USerializableObject));
             }
             else
             {
-                Partition? partition = await PostgreSQL.Query.Partition(npgsqlConnection, Core.Query.FullTypeName(typeof(USerializableObject)));
+                Partition? partition = await PostgreSQL.Query.PartitionAsync(npgsqlConnection, Core.Query.FullTypeName(typeof(USerializableObject)));
                 if (partition is not null)
                 {
                     partitions = [partition];
@@ -42,12 +42,12 @@ namespace DiGi.PostgreSQL.UniqueReference
             }
 
             Dictionary<Enums.DataType, List<Partition>>? dictionary = Core.Convert.ToSystem_Dictionary(partitions, x => x.DataType);
-            if(dictionary is null || dictionary.Count == 0)
+            if (dictionary is null || dictionary.Count == 0)
             {
-                return result; 
+                return result;
             }
 
-            foreach(KeyValuePair<Enums.DataType, List<Partition>> keyValuePair in dictionary)
+            foreach (KeyValuePair<Enums.DataType, List<Partition>> keyValuePair in dictionary)
             {
                 string commandText = $@"
                 SELECT data
@@ -62,7 +62,7 @@ namespace DiGi.PostgreSQL.UniqueReference
 
                 while (await npgsqlDataReader.ReadAsync())
                 {
-                    USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObject<USerializableObject>(npgsqlDataReader, keyValuePair.Key, 0);
+                    USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObjectAsync<USerializableObject>(npgsqlDataReader, keyValuePair.Key, 0);
                     if (serializableObject is null)
                     {
                         continue;
@@ -75,7 +75,7 @@ namespace DiGi.PostgreSQL.UniqueReference
             return result;
         }
 
-        public static async Task<List<USerializableObject>?> SerializableObjects<USerializableObject, TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences) where USerializableObject : ISerializableObject where TUniqueReference : IUniqueReference
+        public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject, TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences) where USerializableObject : ISerializableObject where TUniqueReference : IUniqueReference
         {
             if (npgsqlConnection is null || uniqueReferences is null)
             {
@@ -102,19 +102,19 @@ namespace DiGi.PostgreSQL.UniqueReference
             List<USerializableObject> result = [];
             foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
             {
-                List<Partition>? partitions = await Partitions(npgsqlConnection, keyValuePair.Key);
+                List<Partition>? partitions = await PartitionsAsync(npgsqlConnection, keyValuePair.Key);
                 if (partitions is null || partitions.Count == 0)
                 {
                     continue;
                 }
 
                 Dictionary<Enums.DataType, List<Partition>>? dictionary_DataType = Core.Convert.ToSystem_Dictionary(partitions, x => x.DataType);
-                if(dictionary_DataType is null || dictionary_DataType.Count == 0)
+                if (dictionary_DataType is null || dictionary_DataType.Count == 0)
                 {
                     continue;
                 }
 
-                foreach(KeyValuePair<Enums.DataType, List<Partition>> keyValuePair_DataType in dictionary_DataType)
+                foreach (KeyValuePair<Enums.DataType, List<Partition>> keyValuePair_DataType in dictionary_DataType)
                 {
                     string commandText = $@"
                         SELECT o.data
@@ -134,7 +134,7 @@ namespace DiGi.PostgreSQL.UniqueReference
 
                     while (await npgsqlDataReader.ReadAsync())
                     {
-                        USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObject<USerializableObject>(npgsqlDataReader, keyValuePair_DataType.Key, 0);
+                        USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObjectAsync<USerializableObject>(npgsqlDataReader, keyValuePair_DataType.Key, 0);
                         if (serializableObject is null)
                         {
                             continue;

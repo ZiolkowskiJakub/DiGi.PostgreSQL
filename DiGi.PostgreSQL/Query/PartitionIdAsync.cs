@@ -5,7 +5,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public static async Task<short?> PartitionId(this NpgsqlConnection? npgsqlConnection, string? name)
+        public static async Task<short?> PartitionIdAsync(this NpgsqlConnection? npgsqlConnection, string? name)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
             {

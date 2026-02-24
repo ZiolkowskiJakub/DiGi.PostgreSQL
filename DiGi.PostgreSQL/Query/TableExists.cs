@@ -16,7 +16,7 @@ namespace DiGi.PostgreSQL
             // Explicitly cast to text so Npgsql can handle the return value
             using NpgsqlCommand npgsqlCommand = new("SELECT to_regclass(@tableName)::text;", npgsqlConnection);
 
-            // It's safer to use the parameter name without @ in AddWithValue, 
+            // It's safer to use the parameter name without @ in AddWithValue,
             // though Npgsql handles both.
             npgsqlCommand.Parameters.AddWithValue("tableName", $"public.{tableName}");
 

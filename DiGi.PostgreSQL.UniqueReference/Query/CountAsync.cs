@@ -19,7 +19,7 @@ namespace DiGi.PostgreSQL.UniqueReference
             IEnumerable<short>? partitionIds = null;
             if (!inheritance)
             {
-                short? partitionId = await PartitionId(npgsqlConnection, type);
+                short? partitionId = await PartitionIdAsync(npgsqlConnection, type);
                 if (partitionId is not null)
                 {
                     partitionIds = [partitionId.Value];
@@ -27,7 +27,7 @@ namespace DiGi.PostgreSQL.UniqueReference
             }
             else
             {
-                List<Partition>? partitions = await Partitions(npgsqlConnection, type);
+                List<Partition>? partitions = await PartitionsAsync(npgsqlConnection, type);
                 if (partitions is null || partitions.Count == 0)
                 {
                     return 0;

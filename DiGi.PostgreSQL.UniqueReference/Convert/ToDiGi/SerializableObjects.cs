@@ -15,7 +15,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return null;
             }
 
-            return await new UniqueReferencePostgreSQLConverter(connectionData).GetSerializableObjects<TSerializableObject>(inheritance);
+            return await new UniqueReferencePostgreSQLConverter(connectionData).GetSerializableObjectsAsync<TSerializableObject>(inheritance);
         }
 
         public static async Task<List<TSerializableObject>?> ToDiGi<TSerializableObject, TUniqueReference>(this ConnectionData connectionData, IEnumerable<TUniqueReference> uniqueReferences) where TSerializableObject : ISerializableObject where TUniqueReference : IUniqueReference
@@ -25,7 +25,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return null;
             }
 
-            return await new UniqueReferencePostgreSQLConverter(connectionData).GetSerializableObjects<TSerializableObject>();
+            return await new UniqueReferencePostgreSQLConverter(connectionData).GetSerializableObjectsAsync<TSerializableObject>();
         }
     }
 }

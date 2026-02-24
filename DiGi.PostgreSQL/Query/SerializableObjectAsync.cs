@@ -9,7 +9,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public static async Task<USerializableObject?> SerializableObject<USerializableObject>(NpgsqlDataReader npgsqlDataReader, Enums.DataType dataType, int index = 0) where USerializableObject : ISerializableObject
+        public static async Task<USerializableObject?> SerializableObjectAsync<USerializableObject>(NpgsqlDataReader npgsqlDataReader, Enums.DataType dataType, int index = 0) where USerializableObject : ISerializableObject
         {
             if (npgsqlDataReader is null || index == -1 || dataType == Enums.DataType.Undefined)
             {
@@ -58,7 +58,7 @@ namespace DiGi.PostgreSQL
                 }
 
                 Archive<USerializableObject>? archieve = Core.IO.Create.Archive<USerializableObject>(bytes);
-                if(archieve is null)
+                if (archieve is null)
                 {
                     return default;
                 }

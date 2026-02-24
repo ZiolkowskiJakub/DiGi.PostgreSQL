@@ -19,13 +19,13 @@ namespace DiGi.PostgreSQL.UniqueReference
             }
 
             Dictionary<string, List<TUniqueReference>>? dictionary = Core.Convert.ToSystem_Dictionary(uniqueReferences, x => x?.TypeReference?.FullTypeName);
-            if(dictionary is null || dictionary.Count == 0)
+            if (dictionary is null || dictionary.Count == 0)
             {
                 return null;
             }
 
-            List<Partition>? partitions = await PostgreSQL.Query.Partitions(npgsqlConnection, dictionary.Keys);
-            if(partitions is null || partitions.Count == 0)
+            List<Partition>? partitions = await PostgreSQL.Query.PartitionsAsync(npgsqlConnection, dictionary.Keys);
+            if (partitions is null || partitions.Count == 0)
             {
                 return null;
             }
@@ -33,10 +33,10 @@ namespace DiGi.PostgreSQL.UniqueReference
             List<TUniqueReference> result = [];
             HashSet<short> partitionIds = [];
 
-            foreach (KeyValuePair<string, List<TUniqueReference>> keyValuePair in dictionary) 
+            foreach (KeyValuePair<string, List<TUniqueReference>> keyValuePair in dictionary)
             {
                 Partition? partition = partitions.Find(x => x.Name == keyValuePair.Key);
-                if(partition is null)
+                if (partition is null)
                 {
                     continue;
                 }
@@ -71,7 +71,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                 }
             }
 
-            await PostgreSQL.Modify.CleanPartitions(npgsqlConnection, partitionIds);
+            await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection, partitionIds);
 
             return result;
         }
@@ -86,7 +86,7 @@ namespace DiGi.PostgreSQL.UniqueReference
             IEnumerable<short>? partitionIds = null;
             if (!inheritance)
             {
-                short? partitionId = await Query.PartitionId(npgsqlConnection, type);
+                short? partitionId = await Query.PartitionIdAsync(npgsqlConnection, type);
                 if (partitionId is not null)
                 {
                     partitionIds = [partitionId.Value];
@@ -94,7 +94,7 @@ namespace DiGi.PostgreSQL.UniqueReference
             }
             else
             {
-                List<Partition>? partitions = await Query.Partitions(npgsqlConnection, type);
+                List<Partition>? partitions = await Query.PartitionsAsync(npgsqlConnection, type);
                 if (partitions is null || partitions.Count == 0)
                 {
                     return false;

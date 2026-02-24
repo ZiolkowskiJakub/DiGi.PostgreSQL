@@ -1,7 +1,6 @@
 ﻿using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using NpgsqlTypes;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,14 +9,14 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
-        public static async Task<List<Partition>?> CleanPartitions(NpgsqlConnection? npgsqlConnection, IEnumerable<short>? partitionIds = null)
+        public static async Task<List<Partition>?> CleanPartitionsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<short>? partitionIds = null)
         {
             if (npgsqlConnection is null)
             {
                 return null;
             }
 
-            List<Partition>? partitions = await Query.Partitions(npgsqlConnection);
+            List<Partition>? partitions = await Query.PartitionsAsync(npgsqlConnection);
             if (partitions is null)
             {
                 return null;
@@ -69,7 +68,7 @@ namespace DiGi.PostgreSQL
                     }
                 }
 
-                if(!Query.HasRows(npgsqlConnection, tableName))
+                if (!Query.HasRows(npgsqlConnection, tableName))
                 {
                     // 2. Drop the physical partition table
                     await using NpgsqlCommand npgsqlCommand_DropTable = new($"DROP TABLE IF EXISTS {tableName};", npgsqlConnection);

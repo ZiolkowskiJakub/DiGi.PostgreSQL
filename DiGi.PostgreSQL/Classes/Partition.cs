@@ -31,7 +31,7 @@ namespace DiGi.PostgreSQL.Classes
             DataType = dataType;
         }
 
-        [JsonInclude, JsonPropertyName("DatType")]
+        [JsonInclude, JsonPropertyName("DataType")]
         public DataType DataType { get; }
 
         [JsonInclude, JsonPropertyName("Id")]

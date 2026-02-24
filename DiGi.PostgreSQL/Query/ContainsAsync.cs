@@ -7,7 +7,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public static async Task<HashSet<string>?> Contains(this NpgsqlConnection npgsqlConnection, short? partitionId, IEnumerable<string>? uniqueIds)
+        public static async Task<HashSet<string>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, short? partitionId, IEnumerable<string>? uniqueIds)
         {
             if (npgsqlConnection is null || partitionId is null || uniqueIds is null)
             {
@@ -19,16 +19,16 @@ namespace DiGi.PostgreSQL
                 return [];
             }
 
-            Classes.Partition? partition = await Partition(npgsqlConnection, partitionId.Value);
+            Classes.Partition? partition = await PartitionAsync(npgsqlConnection, partitionId.Value);
             if (partition is null)
             {
                 return null;
             }
 
-            return await Contains(npgsqlConnection, partition, uniqueIds);
+            return await ContainsAsync(npgsqlConnection, partition, uniqueIds);
         }
 
-        public static async Task<HashSet<string>?> Contains(this NpgsqlConnection npgsqlConnection, Classes.Partition? partition, IEnumerable<string>? uniqueIds)
+        public static async Task<HashSet<string>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Partition? partition, IEnumerable<string>? uniqueIds)
         {
             if (npgsqlConnection is null || partition is null || uniqueIds is null)
             {
@@ -57,39 +57,39 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
-        public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, short? partitionId)
+        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, short? partitionId)
         {
             if (npgsqlConnection is null || partitionId is null)
             {
                 return false;
             }
 
-            Classes.Partition? partition = await Partition(npgsqlConnection, partitionId.Value);
+            Classes.Partition? partition = await PartitionAsync(npgsqlConnection, partitionId.Value);
             if (partition is null)
             {
                 return false;
             }
 
-            return await npgsqlConnection.Contains(partition);
+            return await npgsqlConnection.ContainsAsync(partition);
         }
 
-        public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, string? name)
+        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, string? name)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
             {
                 return false;
             }
 
-            Classes.Partition? partition = await Partition(npgsqlConnection, name);
+            Classes.Partition? partition = await PartitionAsync(npgsqlConnection, name);
             if (partition is null)
             {
                 return false;
             }
 
-            return await npgsqlConnection.Contains(partition);
+            return await npgsqlConnection.ContainsAsync(partition);
         }
 
-        public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, Classes.Partition partition)
+        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Partition partition)
         {
             if (npgsqlConnection is null || partition is null)
             {

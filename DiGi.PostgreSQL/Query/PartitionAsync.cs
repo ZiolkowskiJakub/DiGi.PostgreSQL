@@ -6,7 +6,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public static async Task<Partition?> Partition(this NpgsqlConnection? npgsqlConnection, string? name)
+        public static async Task<Partition?> PartitionAsync(this NpgsqlConnection? npgsqlConnection, string? name)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
             {
@@ -35,7 +35,7 @@ namespace DiGi.PostgreSQL
             return null;
         }
 
-        public static async Task<Partition?> Partition(this NpgsqlConnection? npgsqlConnection, short partitionId)
+        public static async Task<Partition?> PartitionAsync(this NpgsqlConnection? npgsqlConnection, short partitionId)
         {
             if (npgsqlConnection is null)
             {

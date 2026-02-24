@@ -16,21 +16,21 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            List<Partition>? partitions = await Query.Partitions(npgsqlConnection);
-            if(partitions is null || partitions.Count == 0)
+            List<Partition>? partitions = await Query.PartitionsAsync(npgsqlConnection);
+            if (partitions is null || partitions.Count == 0)
             {
                 return false;
             }
 
             Dictionary<DataType, HashSet<short>> dictionary = [];
-            foreach(Partition partition in partitions)
+            foreach (Partition partition in partitions)
             {
                 if (partition is null || !partitionIds.Contains(partition.Id))
                 {
                     continue;
                 }
 
-                if(!dictionary.TryGetValue(partition.DataType, out HashSet<short>? partitionIds_Temp) || partitionIds_Temp == null)
+                if (!dictionary.TryGetValue(partition.DataType, out HashSet<short>? partitionIds_Temp) || partitionIds_Temp == null)
                 {
                     partitionIds_Temp = [];
                     dictionary[partition.DataType] = partitionIds_Temp;
@@ -39,16 +39,16 @@ namespace DiGi.PostgreSQL
                 partitionIds_Temp.Add(partition.Id);
             }
 
-            if(dictionary.Count == 0)
+            if (dictionary.Count == 0)
             {
                 return false;
             }
 
-            foreach(KeyValuePair<DataType, HashSet<short>> keyValuePair in dictionary)
+            foreach (KeyValuePair<DataType, HashSet<short>> keyValuePair in dictionary)
             {
                 string tableName = $"objects_{(int)keyValuePair.Key}";
 
-                if(!Query.TableExists(npgsqlConnection, tableName))
+                if (!Query.TableExists(npgsqlConnection, tableName))
                 {
                     continue;
                 }
@@ -61,7 +61,7 @@ namespace DiGi.PostgreSQL
                 int count = await npgsqlCommand.ExecuteNonQueryAsync();
                 if (count > 0)
                 {
-                    await CleanPartitions(npgsqlConnection, partitionIds);
+                    await CleanPartitionsAsync(npgsqlConnection, partitionIds);
                 }
 
                 return true;

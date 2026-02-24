@@ -8,7 +8,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public static async Task<List<Partition>?> Partitions(this NpgsqlConnection? npgsqlConnection)
+        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)
             {
@@ -34,7 +34,7 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
-        public static async Task<List<Partition>?> Partitions(this NpgsqlConnection? npgsqlConnection, IEnumerable<short>? partitionIds)
+        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, IEnumerable<short>? partitionIds)
         {
             if (npgsqlConnection is null || partitionIds is null)
             {
@@ -68,7 +68,7 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
-        public static async Task<List<Partition>?> Partitions(this NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names)
+        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names)
         {
             if (npgsqlConnection is null || names is null)
             {

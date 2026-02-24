@@ -13,7 +13,7 @@ namespace DiGi.PostgreSQL
             }
 
             // Using 'SELECT 1' with 'LIMIT 1' is the most performant way to check for existence
-            // We use string interpolation ONLY for the table name because it cannot be parameterized 
+            // We use string interpolation ONLY for the table name because it cannot be parameterized
             // in standard SQL, but we should ensure the tableName is sanitized or trusted.
             string sql = $"SELECT EXISTS (SELECT 1 FROM public.{tableName} LIMIT 1);";
 
@@ -32,7 +32,7 @@ namespace DiGi.PostgreSQL
             }
             catch (PostgresException ex) when (ex.SqlState == "42P01") // undefined_table
             {
-                // Even if we check TableExists() beforehand, a race condition could occur 
+                // Even if we check TableExists() beforehand, a race condition could occur
                 // in multi-user environments (e.g., another Revit user drops the table).
                 return false;
             }

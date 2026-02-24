@@ -9,7 +9,7 @@ namespace DiGi.PostgreSQL.PartitionReference
 {
     public static partial class Query
     {
-        public static async Task<List<USerializableObject>?> SerializableObjects<USerializableObject>(NpgsqlConnection? npgsqlConnection, string name) where USerializableObject : ISerializableObject
+        public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, string name) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null)
             {
@@ -18,7 +18,7 @@ namespace DiGi.PostgreSQL.PartitionReference
 
             List<USerializableObject> result = [];
 
-            short? partitionId = await PostgreSQL.Query.PartitionId(npgsqlConnection, name);
+            short? partitionId = await PostgreSQL.Query.PartitionIdAsync(npgsqlConnection, name);
             if (partitionId is null)
             {
                 return result;
@@ -55,7 +55,7 @@ namespace DiGi.PostgreSQL.PartitionReference
             return result;
         }
 
-        public static async Task<List<USerializableObject>?> SerializableObjects<USerializableObject>(NpgsqlConnection? npgsqlConnection, IEnumerable<Classes.PartitionReference> partitionReferences) where USerializableObject : ISerializableObject
+        public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, IEnumerable<Classes.PartitionReference> partitionReferences) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null || partitionReferences is null)
             {
@@ -82,8 +82,8 @@ namespace DiGi.PostgreSQL.PartitionReference
             List<USerializableObject> result = [];
             foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
             {
-                Partition? partition = await PostgreSQL.Query.Partition(npgsqlConnection, keyValuePair.Key);
-                if(partition is null)
+                Partition? partition = await PostgreSQL.Query.PartitionAsync(npgsqlConnection, keyValuePair.Key);
+                if (partition is null)
                 {
                     continue;
                 }
@@ -107,8 +107,8 @@ namespace DiGi.PostgreSQL.PartitionReference
 
                 while (await npgsqlDataReader.ReadAsync())
                 {
-                    USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObject<USerializableObject>(npgsqlDataReader, partition.DataType, 0);
-                    if(serializableObject is null)
+                    USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObjectAsync<USerializableObject>(npgsqlDataReader, partition.DataType, 0);
+                    if (serializableObject is null)
                     {
                         continue;
                     }

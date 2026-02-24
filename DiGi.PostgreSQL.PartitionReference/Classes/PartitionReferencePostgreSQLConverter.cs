@@ -18,7 +18,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
 
         public event PartitionReferenceGeneratingEventHandler? PartitionReferenceGenerating;
 
-        public async Task<HashSet<PartitionReference>?> Contains<TUniqueReference>(IEnumerable<PartitionReference>? partitionReferences)
+        public async Task<HashSet<PartitionReference>?> ContainsAsync<TUniqueReference>(IEnumerable<PartitionReference>? partitionReferences)
         {
             if (partitionReferences is null)
             {
@@ -33,7 +33,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
 
             npgsqlConnection.Open();
 
-            return await Query.Contains(npgsqlConnection, partitionReferences);
+            return await Query.ContainsAsync(npgsqlConnection, partitionReferences);
         }
 
         public async Task<long> CountAsync(string name)
@@ -51,7 +51,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
 
             npgsqlConnection.Open();
 
-            short? partitionId = await PostgreSQL.Query.PartitionId(npgsqlConnection, name);
+            short? partitionId = await PostgreSQL.Query.PartitionIdAsync(npgsqlConnection, name);
             if (partitionId is null)
             {
                 return -1;
@@ -70,14 +70,14 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return DataType.Json;
         }
 
-        public async Task<USerializableObject?> GetSerializableObject<USerializableObject>(PartitionReference? partitionReference) where USerializableObject : TSerializableObject
+        public async Task<USerializableObject?> GetSerializableObjectAsync<USerializableObject>(PartitionReference? partitionReference) where USerializableObject : TSerializableObject
         {
             if (partitionReference is null)
             {
                 return default;
             }
 
-            List<USerializableObject>? serializableObjects = await GetSerializableObjects<USerializableObject>([partitionReference]);
+            List<USerializableObject>? serializableObjects = await GetSerializableObjectsAsync<USerializableObject>([partitionReference]);
             if (serializableObjects is null || serializableObjects.Count == 0)
             {
                 return default;
@@ -86,7 +86,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             return serializableObjects[0];
         }
 
-        public async Task<List<USerializableObject>?> GetSerializableObjects<USerializableObject>(IEnumerable<PartitionReference>? partitionReferences) where USerializableObject : TSerializableObject
+        public async Task<List<USerializableObject>?> GetSerializableObjectsAsync<USerializableObject>(IEnumerable<PartitionReference>? partitionReferences) where USerializableObject : TSerializableObject
         {
             if (partitionReferences is null)
             {
@@ -101,10 +101,10 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
 
             npgsqlConnection.Open();
 
-            return await Query.SerializableObjects<USerializableObject>(npgsqlConnection, partitionReferences);
+            return await Query.SerializableObjectsAsync<USerializableObject>(npgsqlConnection, partitionReferences);
         }
 
-        public async Task<List<USerializableObject>?> GetSerializableObjects<USerializableObject>(string? name) where USerializableObject : TSerializableObject
+        public async Task<List<USerializableObject>?> GetSerializableObjectsAsync<USerializableObject>(string? name) where USerializableObject : TSerializableObject
         {
             if (name is null)
             {
@@ -119,7 +119,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
 
             npgsqlConnection.Open();
 
-            return await Query.SerializableObjects<USerializableObject>(npgsqlConnection, name);
+            return await Query.SerializableObjectsAsync<USerializableObject>(npgsqlConnection, name);
         }
 
         public async Task<PartitionReference?> RemoveAsync(PartitionReference? partitionReference)
@@ -185,7 +185,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             HashSet<string> result = [];
             foreach (string name in names)
             {
-                short? partitionId = await PostgreSQL.Query.PartitionId(npgsqlConnection, name);
+                short? partitionId = await PostgreSQL.Query.PartitionIdAsync(npgsqlConnection, name);
                 if (partitionId is null)
                 {
                     continue;

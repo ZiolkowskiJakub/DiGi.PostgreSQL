@@ -8,7 +8,7 @@ namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Query
     {
-        public static async Task<HashSet<TUniqueReference>?> Contains<TUniqueReference>(this NpgsqlConnection npgsqlConnection, IEnumerable<TUniqueReference>? uniqueReferences) where TUniqueReference : IUniqueReference
+        public static async Task<HashSet<TUniqueReference>?> ContainsAsync<TUniqueReference>(this NpgsqlConnection npgsqlConnection, IEnumerable<TUniqueReference>? uniqueReferences) where TUniqueReference : IUniqueReference
         {
             if (npgsqlConnection is null || uniqueReferences is null)
             {
@@ -43,13 +43,13 @@ namespace DiGi.PostgreSQL.UniqueReference
 
             foreach (KeyValuePair<string, Dictionary<string, TUniqueReference>> keyValuePair in dictionary)
             {
-                short? typeId = await PostgreSQL.Query.PartitionId(npgsqlConnection, keyValuePair.Key);
+                short? typeId = await PostgreSQL.Query.PartitionIdAsync(npgsqlConnection, keyValuePair.Key);
                 if (typeId is null)
                 {
                     continue;
                 }
 
-                HashSet<string>? uniqueIds = await npgsqlConnection.Contains(typeId, keyValuePair.Value.Keys);
+                HashSet<string>? uniqueIds = await npgsqlConnection.ContainsAsync(typeId, keyValuePair.Value.Keys);
                 if (uniqueIds is null || uniqueIds.Count == 0)
                 {
                     continue;
@@ -67,14 +67,14 @@ namespace DiGi.PostgreSQL.UniqueReference
             return result;
         }
 
-        public static async Task<bool> Contains(this NpgsqlConnection npgsqlConnection, Type? type)
+        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Type? type)
         {
             if (npgsqlConnection is null || type is null)
             {
                 return false;
             }
 
-            return await PostgreSQL.Query.Contains(npgsqlConnection, Core.Query.FullTypeName(type));
+            return await PostgreSQL.Query.ContainsAsync(npgsqlConnection, Core.Query.FullTypeName(type));
         }
     }
 }

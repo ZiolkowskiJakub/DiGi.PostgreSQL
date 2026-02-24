@@ -12,7 +12,7 @@ namespace DiGi.PostgreSQL
                 return null;
             }
 
-            Classes.Partition? partition = await Query.Partition(npgsqlConnection, name);
+            Classes.Partition? partition = await Query.PartitionAsync(npgsqlConnection, name);
             if (partition is null)
             {
                 string commandText = @"
@@ -30,15 +30,15 @@ namespace DiGi.PostgreSQL
                     return null;
                 }
 
-                partition = await Query.Partition(npgsqlConnection, name);
+                partition = await Query.PartitionAsync(npgsqlConnection, name);
             }
 
-            if(partition is null)
+            if (partition is null)
             {
-                return null; 
+                return null;
             }
 
-            bool created = await Create.Table_Objects_Partition(npgsqlConnection, dataType, partition.Id);
+            bool created = await Create.TableAsync_Objects_Partition(npgsqlConnection, dataType, partition.Id);
             if (created)
             {
                 return partition;

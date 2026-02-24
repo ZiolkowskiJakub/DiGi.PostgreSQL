@@ -6,7 +6,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Create
     {
-        public static async Task<bool> Database(ConnectionData? connectionData)
+        public static async Task<bool> DatabaseAsync(ConnectionData? connectionData)
         {
             if (connectionData is null || string.IsNullOrWhiteSpace(connectionData.Database))
             {
@@ -41,7 +41,7 @@ namespace DiGi.PostgreSQL
             return true;
         }
 
-        public static async Task<bool> Database(this PostgreSQLConfigurationFile? postgreSQLConfigurationFile)
+        public static async Task<bool> DatabaseAsync(this PostgreSQLConfigurationFile? postgreSQLConfigurationFile)
         {
             if (postgreSQLConfigurationFile is null)
             {
@@ -58,10 +58,10 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            return await Database(ConnectionData(postgreSQLConfigurationFile), tablespace, directory);
+            return await DatabaseAsync(ConnectionData(postgreSQLConfigurationFile), tablespace, directory);
         }
 
-        public static async Task<bool> Database(this ConnectionData? connectionData, string tablespaceName, string directory)
+        public static async Task<bool> DatabaseAsync(this ConnectionData? connectionData, string tablespaceName, string directory)
         {
             if (connectionData is null)
             {

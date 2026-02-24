@@ -61,7 +61,7 @@ namespace DiGi.PostgreSQL.PartitionReference
 
             bool succeded;
 
-            succeded = await Create.Table_Partitions(npgsqlConnection);
+            succeded = await Create.TableAsync_Partitions(npgsqlConnection);
             if (!succeded)
             {
                 return null;
@@ -80,7 +80,7 @@ namespace DiGi.PostgreSQL.PartitionReference
             {
                 DataType dataType = dataTypeFunc.Invoke(keyValuePair.Key);
 
-                succeded = await Create.Table_Objects(npgsqlConnection, dataType);
+                succeded = await Create.TableAsync_Objects(npgsqlConnection, dataType);
                 if (!succeded)
                 {
                     continue;

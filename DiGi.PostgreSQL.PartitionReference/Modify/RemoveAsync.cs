@@ -16,7 +16,7 @@ namespace DiGi.PostgreSQL.PartitionReference
             }
 
             Dictionary<string, List<Classes.PartitionReference>>? dictionary = Core.Convert.ToSystem_Dictionary(partitionReferences, x => x?.Name);
-            if(dictionary is null)
+            if (dictionary is null)
             {
                 return null;
             }
@@ -26,8 +26,8 @@ namespace DiGi.PostgreSQL.PartitionReference
 
             foreach (KeyValuePair<string, List<Classes.PartitionReference>> keyValuePair in dictionary)
             {
-                Partition? partition = await PostgreSQL.Query.Partition(npgsqlConnection, keyValuePair.Key);
-                if(partition is null)
+                Partition? partition = await PostgreSQL.Query.PartitionAsync(npgsqlConnection, keyValuePair.Key);
+                if (partition is null)
                 {
                     continue;
                 }
@@ -62,7 +62,7 @@ namespace DiGi.PostgreSQL.PartitionReference
                 }
             }
 
-            await PostgreSQL.Modify.CleanPartitions(npgsqlConnection, partitionIds);
+            await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection, partitionIds);
 
             return result;
         }

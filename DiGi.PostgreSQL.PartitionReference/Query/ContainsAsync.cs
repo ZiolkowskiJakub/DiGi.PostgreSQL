@@ -6,7 +6,7 @@ namespace DiGi.PostgreSQL.PartitionReference
 {
     public static partial class Query
     {
-        public static async Task<HashSet<Classes.PartitionReference>?> Contains(this NpgsqlConnection npgsqlConnection, IEnumerable<Classes.PartitionReference>? partitionReferences)
+        public static async Task<HashSet<Classes.PartitionReference>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<Classes.PartitionReference>? partitionReferences)
         {
             if (npgsqlConnection is null || partitionReferences is null)
             {
@@ -41,13 +41,13 @@ namespace DiGi.PostgreSQL.PartitionReference
 
             foreach (KeyValuePair<string, Dictionary<string, Classes.PartitionReference>> keyValuePair in dictionary)
             {
-                short? typeId = await PostgreSQL.Query.PartitionId(npgsqlConnection, keyValuePair.Key);
+                short? typeId = await PostgreSQL.Query.PartitionIdAsync(npgsqlConnection, keyValuePair.Key);
                 if (typeId is null)
                 {
                     continue;
                 }
 
-                HashSet<string>? uniqueIds = await npgsqlConnection.Contains(typeId, keyValuePair.Value.Keys);
+                HashSet<string>? uniqueIds = await npgsqlConnection.ContainsAsync(typeId, keyValuePair.Value.Keys);
                 if (uniqueIds is null || uniqueIds.Count == 0)
                 {
                     continue;
