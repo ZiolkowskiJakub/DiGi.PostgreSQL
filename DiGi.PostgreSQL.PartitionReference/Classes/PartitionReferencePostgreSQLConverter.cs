@@ -128,16 +128,17 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
             {
                 return default;
             }
-            List<PartitionReference>? partitionReferences = await RemoveAsync([partitionReference]);
+
+            HashSet<PartitionReference>? partitionReferences = await RemoveAsync([partitionReference]);
             if (partitionReferences is null || partitionReferences.Count == 0)
             {
                 return default;
             }
 
-            return partitionReferences[0];
+            return partitionReferences.First();
         }
 
-        public async Task<List<PartitionReference>?> RemoveAsync(IEnumerable<PartitionReference>? partitionReferences)
+        public async Task<HashSet<PartitionReference>?> RemoveAsync(IEnumerable<PartitionReference>? partitionReferences)
         {
             if (partitionReferences is null)
             {

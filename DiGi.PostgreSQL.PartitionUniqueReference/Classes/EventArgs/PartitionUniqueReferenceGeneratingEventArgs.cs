@@ -1,5 +1,4 @@
 ﻿using DiGi.Core.Classes;
-using System;
 
 namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
 {
@@ -29,7 +28,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
         {
             get
             {
-                if (partitionReference is null || Item?.GetType() is not Type type)
+                if (partitionReference is null || Item?.GetType() is not System.Type type)
                 {
                     return null;
                 }

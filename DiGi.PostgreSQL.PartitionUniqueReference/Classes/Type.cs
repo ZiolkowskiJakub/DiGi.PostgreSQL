@@ -3,7 +3,7 @@ using DiGi.PostgreSQL.Interfaces;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
-namespace DiGi.PostgreSQL.Classes
+namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
 {
     public class Type : SerializableObject, IPostgreSQLSerializableObject
     {

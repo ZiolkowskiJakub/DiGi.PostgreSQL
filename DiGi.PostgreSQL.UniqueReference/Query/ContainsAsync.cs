@@ -43,13 +43,13 @@ namespace DiGi.PostgreSQL.UniqueReference
 
             foreach (KeyValuePair<string, Dictionary<string, TUniqueReference>> keyValuePair in dictionary)
             {
-                short? typeId = await PostgreSQL.Query.PartitionIdAsync(npgsqlConnection, keyValuePair.Key);
-                if (typeId is null)
+                short? partitionId = await PostgreSQL.Query.PartitionIdAsync(npgsqlConnection, keyValuePair.Key);
+                if (partitionId is null)
                 {
                     continue;
                 }
 
-                HashSet<string>? uniqueIds = await npgsqlConnection.ContainsAsync(typeId, keyValuePair.Value.Keys);
+                HashSet<string>? uniqueIds = await npgsqlConnection.ContainsAsync(partitionId, keyValuePair.Value.Keys);
                 if (uniqueIds is null || uniqueIds.Count == 0)
                 {
                     continue;

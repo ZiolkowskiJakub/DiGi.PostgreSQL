@@ -8,5 +8,6 @@ namespace DiGi.PostgreSQL.Enums
         [Description("Undefined")] Undefined,
         [Description("UniqueReference")] UniqueReference,
         [Description("PartitionReference")] PartitionReference,
+        [Description("PartitionUniqueReference")] PartitionUniqueReference,
     }
 }

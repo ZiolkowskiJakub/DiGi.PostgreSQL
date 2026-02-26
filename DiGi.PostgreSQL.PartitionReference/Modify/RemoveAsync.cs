@@ -8,7 +8,7 @@ namespace DiGi.PostgreSQL.PartitionReference
 {
     public static partial class Modify
     {
-        public static async Task<List<Classes.PartitionReference>?> RemoveAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<Classes.PartitionReference> partitionReferences)
+        public static async Task<HashSet<Classes.PartitionReference>?> RemoveAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<Classes.PartitionReference> partitionReferences)
         {
             if (npgsqlConnection is null)
             {
@@ -21,7 +21,7 @@ namespace DiGi.PostgreSQL.PartitionReference
                 return null;
             }
 
-            List<Classes.PartitionReference> result = [];
+            HashSet<Classes.PartitionReference> result = [];
             HashSet<short> partitionIds = [];
 
             foreach (KeyValuePair<string, List<Classes.PartitionReference>> keyValuePair in dictionary)

@@ -83,7 +83,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
                 return null;
             }
 
-            return $"{name}{Constants.Reference.Separator}{uniqueReference.ToString()}";
+            return $"{name}{Constants.Reference.Separator}{uniqueReference}";
         }
     }
 }

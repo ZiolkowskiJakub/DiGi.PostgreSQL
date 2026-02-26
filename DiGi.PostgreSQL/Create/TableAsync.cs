@@ -20,18 +20,22 @@ namespace DiGi.PostgreSQL
                 typeName = "bytea";
             }
 
-            // Define conditional SQL fragments for the optional type_id column
+            // Optional column referencing the 'types' lookup table
             string typeColumnSql = includeType
-                ? "type_id smallint NOT NULL REFERENCES object_types(id),"
+                ? "type_id smallint NOT NULL REFERENCES types(id),"
                 : string.Empty;
+
+            // We adjust the unique index based on whether we include types or not.
+            // If includeType is true, uniqueness is defined by partition + type + unique_id.
+            string uniqueIndexColumns = includeType
+                ? "partition_id, type_id, unique_id"
+                : "partition_id, unique_id";
 
             string typeIndexSql = includeType
                 ? $@"CREATE INDEX IF NOT EXISTS idx_objects_{(int)dataType}_type
-                     ON objects_{(int)dataType} (type_id);"
+             ON objects_{(int)dataType} (type_id);"
                 : string.Empty;
 
-            // Building the full command
-            // Note: We place typeColumnSql before unique_id to keep a logical order
             string commandText = $@"
                 CREATE TABLE IF NOT EXISTS objects_{(int)dataType} (
                     id             bigint GENERATED ALWAYS AS IDENTITY,
@@ -40,16 +44,17 @@ namespace DiGi.PostgreSQL
                     unique_id      text NOT NULL,
                     data           {typeName} NOT NULL,
                     created_at     timestamptz DEFAULT now(),
+                    -- Primary Key must contain partition key (partition_id)
                     PRIMARY KEY (id, partition_id)
                 ) PARTITION BY LIST (partition_id);
 
+                -- Adjusted Unique Index to account for the 'type_id' if requested
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_objects_{(int)dataType}_unique_pair
-                    ON objects_{(int)dataType} (partition_id, unique_id);
+                    ON objects_{(int)dataType} ({uniqueIndexColumns});
 
                 {typeIndexSql}";
 
-            // Add GIN index if requested and data type is JSON
-            if (useGIN && dataType == DataType.Json) // Adjusted logic for JSON type
+            if (useGIN && dataType == DataType.Json)
             {
                 commandText += $@"
                     CREATE INDEX IF NOT EXISTS idx_objects_{(int)dataType}_data_gin
@@ -59,7 +64,7 @@ namespace DiGi.PostgreSQL
 
             try
             {
-                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
                 await npgsqlCommand.ExecuteNonQueryAsync();
                 return true;
             }
@@ -142,7 +147,7 @@ namespace DiGi.PostgreSQL
             try
             {
                 // Explicitly using NpgsqlCommand type instead of implicit typing
-                await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
 
                 await npgsqlCommand.ExecuteNonQueryAsync();
                 return true;

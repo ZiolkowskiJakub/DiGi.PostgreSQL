@@ -11,7 +11,7 @@ namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Modify
     {
-        public static async Task<List<TUniqueReference>?> RemoveAsync<TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences) where TUniqueReference : IUniqueReference
+        public static async Task<List<TUniqueReference>?> RemoveAsync<TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences, bool clean = true) where TUniqueReference : IUniqueReference
         {
             if (npgsqlConnection is null)
             {
@@ -71,7 +71,10 @@ namespace DiGi.PostgreSQL.UniqueReference
                 }
             }
 
-            await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection, partitionIds);
+            if (clean)
+            {
+                await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection, partitionIds);
+            }
 
             return result;
         }

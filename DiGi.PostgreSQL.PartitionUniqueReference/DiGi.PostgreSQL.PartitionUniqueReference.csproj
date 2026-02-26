@@ -34,10 +34,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Modify\" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <ProjectReference Include="..\DiGi.PostgreSQL.PartitionReference\DiGi.PostgreSQL.PartitionReference.csproj" />
 	  <ProjectReference Include="..\DiGi.PostgreSQL\DiGi.PostgreSQL.csproj" />
 	</ItemGroup>
