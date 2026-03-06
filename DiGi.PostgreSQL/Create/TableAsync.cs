@@ -64,7 +64,7 @@ namespace DiGi.PostgreSQL
 
             try
             {
-                await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
                 await npgsqlCommand.ExecuteNonQueryAsync();
                 return true;
             }

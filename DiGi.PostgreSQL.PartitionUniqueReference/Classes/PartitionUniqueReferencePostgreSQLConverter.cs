@@ -29,14 +29,14 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
             npgsqlConnection.Open();
 
             List<Partition>? partitions_Result = null;
-            
-            if(partitions)
+
+            if (partitions)
             {
                 partitions_Result = await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection);
             }
 
             List<Type>? types_Result = null;
-            if(types)
+            if (types)
             {
                 types_Result = await Modify.CleanTypesAsync(npgsqlConnection);
             }
@@ -107,7 +107,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
 
             return DataType.Json;
         }
-        
+
         public async Task<USerializableObject?> GetSerializableObjectAsync<USerializableObject>(PartitionUniqueReference? partitionUniqueReference) where USerializableObject : TSerializableObject
         {
             if (partitionUniqueReference is null)
@@ -162,15 +162,15 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
 
         public async Task<PartitionUniqueReference?> RemoveAsync(PartitionUniqueReference? partitionUniqueReference, bool clean = true)
         {
-            if(partitionUniqueReference is null)
+            if (partitionUniqueReference is null)
             {
                 return null;
             }
 
             HashSet<PartitionUniqueReference>? partitionUniqueReferences = await RemoveAsync([partitionUniqueReference], clean);
-            if(partitionUniqueReferences is null || partitionUniqueReferences.Count == 0)
+            if (partitionUniqueReferences is null || partitionUniqueReferences.Count == 0)
             {
-                return null; 
+                return null;
             }
 
             return partitionUniqueReferences.First();
@@ -213,7 +213,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
 
     public class PartitionUniqueReferencePostgreSQLConverter : PartitionUniqueReferencePostgreSQLConverter<ISerializableObject>
     {
-        public PartitionUniqueReferencePostgreSQLConverter(ConnectionData? connectionData) 
+        public PartitionUniqueReferencePostgreSQLConverter(ConnectionData? connectionData)
             : base(connectionData)
         {
         }
