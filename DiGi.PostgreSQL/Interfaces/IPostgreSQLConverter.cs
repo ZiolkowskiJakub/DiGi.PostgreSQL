@@ -2,7 +2,11 @@
 
 namespace DiGi.PostgreSQL.Interfaces
 {
-    public interface IPostgreSQLConverter<TSerializableObject> : IPostgreSQLObject where TSerializableObject : ISerializableObject
+    public interface IPostgreSQLConverter : IPostgreSQLObject
+    {
+    }
+
+    public interface IPostgreSQLConverter<TSerializableObject> : IPostgreSQLConverter where TSerializableObject : ISerializableObject
     {
     }
 }
