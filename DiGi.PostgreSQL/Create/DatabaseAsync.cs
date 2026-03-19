@@ -56,12 +56,10 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
-            {
-                return false;
-            }
-
+            // 1. Check if the database exists anywhere in the cluster first
+            // We connect to the maintenance database to perform discovery
             ConnectionData connectionData_Temp = connectionData.GetDefault();
+            string targetDatabaseName = connectionData.Database;
 
             await using NpgsqlConnection? npgsqlConnection = NpgsqlConnection(connectionData_Temp);
             if(npgsqlConnection is null)
@@ -69,57 +67,79 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
+
             await npgsqlConnection.OpenAsync();
 
-            // 1. Handle Tablespace if provided
+            string checkDbSql = "SELECT 1 FROM pg_database WHERE datname = @dbName";
+            bool databaseExists = false;
+
+            await using (NpgsqlCommand npgsqlCommand_Check = new NpgsqlCommand(checkDbSql, npgsqlConnection))
+            {
+                npgsqlCommand_Check.Parameters.AddWithValue("dbName", targetDatabaseName);
+                object? result = await npgsqlCommand_Check.ExecuteScalarAsync();
+                databaseExists = result != null;
+            }
+
+            // If the database already exists, we exit early. 
+            // We don't want to attempt creating tablespaces or re-creating the DB.
+            if (databaseExists)
+            {
+                return true;
+            }
+
+            // 2. Handle Tablespace logic only if the database does NOT exist
             bool useTablespace = !string.IsNullOrWhiteSpace(tablespaceName) && !string.IsNullOrWhiteSpace(directory);
 
             if (useTablespace)
             {
-                bool tablespaceExists = false;
-                string commandText_SelectTablespace = "SELECT 1 FROM pg_tablespace WHERE spcname = @tablespaceName";
-
-                await using (NpgsqlCommand npgsqlCommand_Select = new NpgsqlCommand(commandText_SelectTablespace, npgsqlConnection))
+                // Ensure the physical directory exists on the server's filesystem
+                if (!Directory.Exists(directory))
                 {
-                    npgsqlCommand_Select.Parameters.AddWithValue("tablespaceName", tablespaceName!);
-                    tablespaceExists = (await npgsqlCommand_Select.ExecuteScalarAsync()) != null;
+                    return false;
+                }
+
+                string checkTsSql = "SELECT 1 FROM pg_tablespace WHERE spcname = @tsName";
+                bool tablespaceExists = false;
+
+                await using (NpgsqlCommand npgsqlCommand_TsCheck = new NpgsqlCommand(checkTsSql, npgsqlConnection))
+                {
+                    npgsqlCommand_TsCheck.Parameters.AddWithValue("tsName", tablespaceName!);
+                    object? tsResult = await npgsqlCommand_TsCheck.ExecuteScalarAsync();
+                    tablespaceExists = tsResult != null;
                 }
 
                 if (!tablespaceExists)
                 {
-                    string commandText_CreateTablespace = $"CREATE TABLESPACE \"{tablespaceName!.Replace("\"", "\"\"")}\" LOCATION '{directory!.Replace("'", "''")}'";
+                    string escapedTsName = tablespaceName!.Replace("\"", "\"\"");
+                    string escapedDir = directory!.Replace("'", "''");
+                    string createTsSql = $"CREATE TABLESPACE \"{escapedTsName}\" LOCATION '{escapedDir}'";
 
-                    await using NpgsqlCommand npgsqlCommand_CreateTablespace = new (commandText_CreateTablespace, npgsqlConnection);
-                    await npgsqlCommand_CreateTablespace.ExecuteNonQueryAsync();
+                    await using NpgsqlCommand npgsqlCommand_CreateTs = new NpgsqlCommand(createTsSql, npgsqlConnection);
+                    await npgsqlCommand_CreateTs.ExecuteNonQueryAsync();
                 }
             }
 
-            // 2. Database existence check
-            string databaseName = connectionData.Database;
-            string commandText_Select = "SELECT 1 FROM pg_database WHERE datname = @databaseName";
-
-            await using (NpgsqlCommand npgsqlCommand = new(commandText_Select, npgsqlConnection))
-            {
-                npgsqlCommand.Parameters.AddWithValue("databaseName", databaseName);
-                if (await npgsqlCommand.ExecuteScalarAsync() != null)
-                {
-                    return true;
-                }
-            }
-
-            // 3. Database creation
-            // Build the command string based on whether we use a tablespace or not
-            string commandText_Create = $"CREATE DATABASE \"{databaseName.Replace("\"", "\"\"")}\"";
+            // 3. Create the Database
+            string escapedDbName = targetDatabaseName.Replace("\"", "\"\"");
+            string createDbSql = $"CREATE DATABASE \"{escapedDbName}\"";
 
             if (useTablespace)
             {
-                commandText_Create += $" TABLESPACE \"{tablespaceName!.Replace("\"", "\"\"")}\"";
+                string escapedTsName = tablespaceName!.Replace("\"", "\"\"");
+                createDbSql += $" TABLESPACE \"{escapedTsName}\"";
             }
 
-            await using NpgsqlCommand npgsqlCommand_Create = new(commandText_Create, npgsqlConnection);
-            await npgsqlCommand_Create.ExecuteNonQueryAsync();
-
-            return true;
+            try
+            {
+                await using NpgsqlCommand npgsqlCommand_Create = new NpgsqlCommand(createDbSql, npgsqlConnection);
+                await npgsqlCommand_Create.ExecuteNonQueryAsync();
+                return true;
+            }
+            catch (NpgsqlException)
+            {
+                // Handle potential race conditions or permission issues
+                return false;
+            }
         }
 
         public static async Task<bool> DatabaseAsync(PostgreSQLConfigurationFile? postgreSQLConfigurationFile)
