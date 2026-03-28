@@ -1,6 +1,5 @@
 ﻿using DiGi.PostgreSQL.Classes;
 using Npgsql;
-using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -19,16 +18,16 @@ namespace DiGi.PostgreSQL
 
             // Establish connection to the 'postgres' maintenance database
             await using NpgsqlConnection? npgsqlConnection = NpgsqlConnection(connectionData_Temp);
-            if(npgsqlConnection is null)
+            if (npgsqlConnection is null)
             {
                 return false;
             }
-            
+
             await npgsqlConnection.OpenAsync();
 
             // Check if database exists using parameters to prevent SQL Injection
             string commandText_Select = "SELECT 1 FROM pg_database WHERE datname = @databaseName";
-            await using (NpgsqlCommand npgsqlCommand_Select = new (commandText_Select, npgsqlConnection))
+            await using (NpgsqlCommand npgsqlCommand_Select = new(commandText_Select, npgsqlConnection))
             {
                 npgsqlCommand_Select.Parameters.AddWithValue("databaseName", connectionData.Database);
                 object? result = await npgsqlCommand_Select.ExecuteScalarAsync();
@@ -38,12 +37,12 @@ namespace DiGi.PostgreSQL
                 }
             }
 
-            // Create database - Note: Identifiers cannot be parameterized. 
+            // Create database - Note: Identifiers cannot be parameterized.
             // We use quoted identifiers for safety.
             string commandText_Create = $"CREATE DATABASE \"{connectionData.Database.Replace("\"", "\"\"")}\"";
-            
+
             await using NpgsqlCommand npgsqlCommand_Create = new(commandText_Create, npgsqlConnection);
-            
+
             await npgsqlCommand_Create.ExecuteNonQueryAsync();
 
             return true;
@@ -62,11 +61,10 @@ namespace DiGi.PostgreSQL
             string targetDatabaseName = connectionData.Database;
 
             await using NpgsqlConnection? npgsqlConnection = NpgsqlConnection(connectionData_Temp);
-            if(npgsqlConnection is null)
+            if (npgsqlConnection is null)
             {
                 return false;
             }
-
 
             await npgsqlConnection.OpenAsync();
 
@@ -80,7 +78,7 @@ namespace DiGi.PostgreSQL
                 databaseExists = result != null;
             }
 
-            // If the database already exists, we exit early. 
+            // If the database already exists, we exit early.
             // We don't want to attempt creating tablespaces or re-creating the DB.
             if (databaseExists)
             {
@@ -144,7 +142,7 @@ namespace DiGi.PostgreSQL
 
         public static async Task<bool> DatabaseAsync(PostgreSQLConfigurationFile? postgreSQLConfigurationFile)
         {
-            if(postgreSQLConfigurationFile is null)
+            if (postgreSQLConfigurationFile is null)
             {
                 return false;
             }

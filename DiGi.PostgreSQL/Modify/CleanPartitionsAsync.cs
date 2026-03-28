@@ -2,14 +2,13 @@
 using Npgsql;
 using NpgsqlTypes;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
-        public static async Task<List<Partition>?> CleanPartitionsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<short>? partitionIds = null)
+        public static async Task<List<Partition>?> CleanPartitionsAsync(NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)
             {
@@ -23,7 +22,7 @@ namespace DiGi.PostgreSQL
             }
 
             List<Partition> result = [];
-            if (!partitions.Any())
+            if (partitions.Count == 0)
             {
                 return result;
             }
@@ -44,7 +43,7 @@ namespace DiGi.PostgreSQL
             {
                 string tableName = $"objects_{(int)keyValuePair.Key}";
 
-                if (!Query.TableExists(npgsqlConnection, tableName))
+                if (!await Query.TableExistsAsync(npgsqlConnection, tableName))
                 {
                     result.AddRange(keyValuePair.Value);
                     continue;

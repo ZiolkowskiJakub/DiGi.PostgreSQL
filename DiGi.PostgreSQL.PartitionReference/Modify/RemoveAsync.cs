@@ -62,7 +62,7 @@ namespace DiGi.PostgreSQL.PartitionReference
                 }
             }
 
-            await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection, partitionIds);
+            await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection);
 
             return result;
         }

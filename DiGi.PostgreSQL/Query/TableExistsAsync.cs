@@ -1,12 +1,13 @@
 ﻿using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using System;
+using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public static bool TableExists(this NpgsqlConnection? npgsqlConnection, string tableName)
+        public static async Task<bool> TableExistsAsync(this NpgsqlConnection? npgsqlConnection, string tableName)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
             {
@@ -20,13 +21,13 @@ namespace DiGi.PostgreSQL
             // though Npgsql handles both.
             npgsqlCommand.Parameters.AddWithValue("tableName", $"public.{tableName}");
 
-            object? result = npgsqlCommand.ExecuteScalar();
+            object? result = await npgsqlCommand.ExecuteScalarAsync();
 
             // If the table doesn't exist, to_regclass returns NULL (DBNull.Value in C#)
             return result != null && result != DBNull.Value;
         }
 
-        public static bool TableExists(this ConnectionData? connectionData, string tableName)
+        public static async Task<bool> TableExistsAsync(this ConnectionData? connectionData, string tableName)
         {
             if (string.IsNullOrWhiteSpace(tableName))
             {
@@ -40,7 +41,7 @@ namespace DiGi.PostgreSQL
 
             npgsqlConnection.Open();
 
-            return TableExists(npgsqlConnection, tableName);
+            return await TableExistsAsync(npgsqlConnection, tableName);
         }
     }
 }

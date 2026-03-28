@@ -45,7 +45,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 
                 string name = $@"objects_{(int)dataType}";
 
-                bool tableExists = PostgreSQL.Query.TableExists(npgsqlConnection, name);
+                bool tableExists = await PostgreSQL.Query.TableExistsAsync(npgsqlConnection, name);
                 if (!tableExists)
                 {
                     continue;

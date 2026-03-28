@@ -48,20 +48,19 @@ namespace DiGi.PostgreSQL
             {
                 string tableName = $"objects_{(int)keyValuePair.Key}";
 
-                if (!Query.TableExists(npgsqlConnection, tableName))
+                if (!await Query.TableExistsAsync(npgsqlConnection, tableName))
                 {
                     continue;
                 }
 
                 await using NpgsqlCommand npgsqlCommand = new($"DELETE FROM {tableName} WHERE partition_id = ANY(@partition_ids);", npgsqlConnection);
 
-                // Przekazujemy całą tablicę jako jeden parametr
                 npgsqlCommand.Parameters.AddWithValue("partition_ids", keyValuePair.Value.ToArray());
 
                 int count = await npgsqlCommand.ExecuteNonQueryAsync();
                 if (count > 0)
                 {
-                    await CleanPartitionsAsync(npgsqlConnection, partitionIds);
+                    await CleanPartitionsAsync(npgsqlConnection);
                 }
 
                 return true;

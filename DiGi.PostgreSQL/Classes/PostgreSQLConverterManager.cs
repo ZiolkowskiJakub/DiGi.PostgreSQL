@@ -11,7 +11,6 @@ namespace DiGi.PostgreSQL.Classes
 
         public PostgreSQLConverterManager()
         {
-            
         }
 
         public bool Add(TPostgreSQLConverter? postgreSQLConverter, PostgreSQLConfigurationFile? postgreSQLConfigurationFile = null)
@@ -46,7 +45,7 @@ namespace DiGi.PostgreSQL.Classes
 
         public UPostgreSQLConverter? GetPostgreSQLConverter<UPostgreSQLConverter>() where UPostgreSQLConverter : TPostgreSQLConverter
         {
-            if(!TryGetPostgreSQLConverter(out UPostgreSQLConverter? result))
+            if (!TryGetPostgreSQLConverter(out UPostgreSQLConverter? result))
             {
                 return default;
             }

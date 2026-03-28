@@ -29,7 +29,6 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
             }
 
             HashSet<Classes.PartitionUniqueReference> result = [];
-            HashSet<short> partitionIds = [];
 
             foreach (KeyValuePair<string, List<Classes.PartitionUniqueReference>> keyValuePair in dictionary)
             {
@@ -90,7 +89,6 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
                         if (await npgsqlCommand.ExecuteScalarAsync() is short partitionId)
                         {
                             result.Add(partitionUniqueReference);
-                            partitionIds.Add(partitionId);
                         }
                     }
                 }
@@ -98,7 +96,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 
             if (clean)
             {
-                await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection, partitionIds);
+                await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection);
                 await CleanTypesAsync(npgsqlConnection);
             }
 
