@@ -53,6 +53,15 @@ namespace DiGi.PostgreSQL.Classes
             return result;
         }
 
+        public bool IsAvailable<UPostgreSQLConverter>() where UPostgreSQLConverter : TPostgreSQLConverter
+        {
+            if (!TryGetPostgreSQLConfigurationFile<UPostgreSQLConverter>(out PostgreSQLConfigurationFile? postgreSQLConfigurationFile) || postgreSQLConfigurationFile is null)
+            {
+                return false;
+            }
+            return Query.IsAvailable(postgreSQLConfigurationFile);
+        }
+
         public async Task<bool> TryCreateDatabase<UPostgreSQLConverter>() where UPostgreSQLConverter : TPostgreSQLConverter
         {
             if (!TryGetPostgreSQLConfigurationFile<UPostgreSQLConverter>(out PostgreSQLConfigurationFile? postgreSQLConfigurationFile) || postgreSQLConfigurationFile is null)
@@ -62,7 +71,7 @@ namespace DiGi.PostgreSQL.Classes
 
             return await Create.DatabaseAsync(postgreSQLConfigurationFile);
         }
-
+        
         public bool TryGetPostgreSQLConfigurationFile<UPostgreSQLConverter>(out PostgreSQLConfigurationFile? postgreSQLConfigurationFile) where UPostgreSQLConverter : TPostgreSQLConverter
         {
             postgreSQLConfigurationFile = default;

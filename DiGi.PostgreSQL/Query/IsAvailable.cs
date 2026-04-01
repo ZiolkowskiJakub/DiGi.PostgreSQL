@@ -28,5 +28,16 @@ namespace DiGi.PostgreSQL
 
             return false;
         }
+
+        public static bool IsAvailable(this PostgreSQLConfigurationFile postgreSQLConfigurationFile)
+        {
+            ConnectionData? connectionData = Create.ConnectionData(postgreSQLConfigurationFile);
+            if(connectionData is null)
+            {
+                return false;
+            }
+
+            return IsAvailable(connectionData);
+        }
     }
 }
