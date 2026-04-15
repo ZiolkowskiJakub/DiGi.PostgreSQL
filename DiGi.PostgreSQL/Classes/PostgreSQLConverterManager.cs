@@ -53,6 +53,21 @@ namespace DiGi.PostgreSQL.Classes
             return result;
         }
 
+        public List<UPostgreSQLConverter> GetPostgreSQLConverters<UPostgreSQLConverter>() where UPostgreSQLConverter : TPostgreSQLConverter
+        {
+            List<UPostgreSQLConverter> result = [];
+
+            foreach (Tuple<TPostgreSQLConverter, PostgreSQLConfigurationFile?> tuple in tuples)
+            {
+                if (tuple.Item1 is UPostgreSQLConverter postgreSQLConverter)
+                {
+                    result.Add(postgreSQLConverter);
+                }
+            }
+
+            return result;
+        }
+
         public bool IsAvailable<UPostgreSQLConverter>() where UPostgreSQLConverter : TPostgreSQLConverter
         {
             if (!TryGetPostgreSQLConfigurationFile<UPostgreSQLConverter>(out PostgreSQLConfigurationFile? postgreSQLConfigurationFile) || postgreSQLConfigurationFile is null)
