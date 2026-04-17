@@ -86,7 +86,7 @@ namespace DiGi.PostgreSQL.Classes
 
             return await Create.DatabaseAsync(postgreSQLConfigurationFile);
         }
-        
+
         public bool TryGetPostgreSQLConfigurationFile<UPostgreSQLConverter>(out PostgreSQLConfigurationFile? postgreSQLConfigurationFile) where UPostgreSQLConverter : TPostgreSQLConverter
         {
             postgreSQLConfigurationFile = default;

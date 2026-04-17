@@ -32,7 +32,7 @@ namespace DiGi.PostgreSQL
         public static bool IsAvailable(this PostgreSQLConfigurationFile postgreSQLConfigurationFile)
         {
             ConnectionData? connectionData = Create.ConnectionData(postgreSQLConfigurationFile);
-            if(connectionData is null)
+            if (connectionData is null)
             {
                 return false;
             }

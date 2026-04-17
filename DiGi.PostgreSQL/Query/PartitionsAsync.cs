@@ -2,13 +2,14 @@
 using Npgsql;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
-        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection)
+        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null)
             {
@@ -18,11 +19,11 @@ namespace DiGi.PostgreSQL
             string commandText = "SELECT id, name, data_type FROM partitions;";
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
 
             List<Partition> result = [];
 
-            while (await npgsqlDataReader.ReadAsync())
+            while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
                 short id = npgsqlDataReader.GetInt16(0);
                 string name = npgsqlDataReader.GetString(1);
@@ -34,7 +35,7 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
-        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, IEnumerable<short>? partitionIds)
+        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, IEnumerable<short>? partitionIds, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || partitionIds is null)
             {
@@ -49,10 +50,10 @@ namespace DiGi.PostgreSQL
             // Using ANY(@parameter) is more efficient and cleaner than building an IN clause
             string commandText = "SELECT id, name, data_type FROM partitions WHERE id = ANY(@ids);";
 
-            await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
             npgsqlCommand.Parameters.AddWithValue("ids", partitionIds.ToArray());
 
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
 
             List<Partition> result = [];
 
@@ -68,7 +69,7 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
-        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names)
+        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || names is null)
             {
@@ -83,10 +84,10 @@ namespace DiGi.PostgreSQL
             // Using ANY(@parameter) is more efficient and cleaner than building an IN clause
             string commandText = "SELECT id, name, data_type FROM partitions WHERE name = ANY(@names);";
 
-            await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
             npgsqlCommand.Parameters.AddWithValue("names", names.ToArray());
 
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
 
             List<Partition> result = [];
 
