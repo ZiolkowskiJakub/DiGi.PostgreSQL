@@ -13,17 +13,22 @@ namespace DiGi.PostgreSQL
                 return -1;
             }
 
+            if(!await TableExistsAsync(npgsqlConnection, tableName))
+            {
+                return -1;
+            }
+
             if(analyze)
             {
                 // Explicitly run ANALYZE to refresh statistics
-                string commandText_Analyze = $"ANALYZE {tableName}";
+                string commandText_Analyze = $"VACUUM ANALYZE {tableName}";
                 using NpgsqlCommand npgsqlCommand_Analyze = new(commandText_Analyze, npgsqlConnection);
 
                 await npgsqlCommand_Analyze.ExecuteNonQueryAsync();
             }
 
             // Querying the system catalogs for an estimate
-            const string commandText_Select = "SELECT reltuples AS estimate FROM pg_class WHERE relname = @tableName";
+            const string commandText_Select = "SELECT reltuples AS estimate FROM pg_class WHERE oid = @tableName::regclass"; ;
 
             using NpgsqlCommand npgsqlCommand = new(commandText_Select, npgsqlConnection);
 

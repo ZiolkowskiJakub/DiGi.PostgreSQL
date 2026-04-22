@@ -16,6 +16,11 @@ namespace DiGi.PostgreSQL
                 return -1;
             }
 
+            if (!await TableExistsAsync(npgsqlConnection, tableName))
+            {
+                return -1;
+            }
+
             string commandText = $"SELECT COUNT(*) FROM {tableName}";
 
             using NpgsqlCommand command = new(commandText, npgsqlConnection);
