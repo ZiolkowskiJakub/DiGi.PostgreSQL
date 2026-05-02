@@ -5,6 +5,7 @@
   </Folder>
   <Project Path="DiGi.PostgreSQL.PartitionReference/DiGi.PostgreSQL.PartitionReference.csproj" Id="c663fb08-f24c-4646-81de-18803c569401" />
   <Project Path="DiGi.PostgreSQL.PartitionUniqueReference/DiGi.PostgreSQL.PartitionUniqueReference.csproj" Id="6b6cb83a-cd96-4545-bc83-726e8dc656f9" />
+  <Project Path="DiGi.PostgreSQL.Table/DiGi.PostgreSQL.Table.csproj" Id="9f0ca6ec-7c9e-4d46-afd2-b89d93cde93e" />
   <Project Path="DiGi.PostgreSQL.UniqueReference/DiGi.PostgreSQL.UniqueReference.csproj" Id="2093828d-c5f7-4911-84ae-7589e5a5e2a9" />
   <Project Path="DiGi.PostgreSQL/DiGi.PostgreSQL.csproj" />
 </Solution>

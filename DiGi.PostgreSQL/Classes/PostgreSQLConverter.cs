@@ -3,7 +3,7 @@ using DiGi.PostgreSQL.Interfaces;
 
 namespace DiGi.PostgreSQL.Classes
 {
-    public abstract class PostgreSQLConverter<TSerializableObject> : IPostgreSQLConverter<TSerializableObject> where TSerializableObject : ISerializableObject
+    public abstract class PostgreSQLConverter<TObject> : IPostgreSQLConverter<TObject> where TObject : IObject
     {
         public ConnectionData? ConnectionData { get; set; }
 
