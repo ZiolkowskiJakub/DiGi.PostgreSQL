@@ -1,8 +1,6 @@
-﻿using DiGi.Core.IO.Table.Interfaces;
-using DiGi.PostgreSQL.Enums;
+﻿using DiGi.PostgreSQL.Enums;
 using Npgsql;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
@@ -161,6 +159,5 @@ namespace DiGi.PostgreSQL
                 return false;
             }
         }
-
     }
 }

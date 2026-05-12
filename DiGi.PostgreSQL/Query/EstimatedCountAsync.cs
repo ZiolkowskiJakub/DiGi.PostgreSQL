@@ -13,12 +13,12 @@ namespace DiGi.PostgreSQL
                 return -1;
             }
 
-            if(!await TableExistsAsync(npgsqlConnection, tableName))
+            if (!await TableExistsAsync(npgsqlConnection, tableName))
             {
                 return -1;
             }
 
-            if(analyze)
+            if (analyze)
             {
                 // Explicitly run ANALYZE to refresh statistics
                 string commandText_Analyze = $"VACUUM ANALYZE {tableName}";

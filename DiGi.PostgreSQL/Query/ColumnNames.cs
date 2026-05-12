@@ -9,7 +9,7 @@ namespace DiGi.PostgreSQL
     {
         public static async Task<List<string>?> ColumnNamesAsync(this NpgsqlConnection? npgsqlConnection, string? tableName, CancellationToken cancellationToken = default)
         {
-            if(npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
+            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
             {
                 return null;
             }
@@ -17,11 +17,11 @@ namespace DiGi.PostgreSQL
             List<string> result = [];
 
             const string commandText = @"
-                SELECT column_name 
-                FROM information_schema.columns 
+                SELECT column_name
+                FROM information_schema.columns
                 WHERE table_name = @tableName;";
 
-            using (NpgsqlCommand command = new (commandText, npgsqlConnection))
+            using (NpgsqlCommand command = new(commandText, npgsqlConnection))
             {
                 command.Parameters.AddWithValue("tableName", tableName);
 
