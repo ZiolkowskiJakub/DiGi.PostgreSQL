@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
@@ -14,19 +13,16 @@ namespace DiGi.PostgreSQL.Table.Classes
         public RangePartitioningRule()
             : base()
         {
-
         }
 
         public RangePartitioningRule(RangePartitioningRule rangePartitioningRule)
             : base(rangePartitioningRule)
         {
-
         }
 
         public RangePartitioningRule(JsonObject jsonObject)
             : base(jsonObject)
         {
-
         }
     }
 
@@ -35,19 +31,16 @@ namespace DiGi.PostgreSQL.Table.Classes
         public RangePartitioningRule()
             : base()
         {
-
         }
 
         public RangePartitioningRule(RangePartitioningRule<TNumber> rangePartitioningRule)
             : base(rangePartitioningRule)
         {
-
         }
 
         public RangePartitioningRule(JsonObject jsonObject)
             : base(jsonObject)
         {
-
         }
 
         [JsonInclude, JsonPropertyName(nameof(Ranges))]
@@ -72,7 +65,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                     bool isNegative = TNumber.IsNegative(value);
                     int dotIndex = formattedSpan.IndexOf('.');
 
-                    // Calculate the final length: 
+                    // Calculate the final length:
                     // If negative, we replace '-' with 'm', so length stays the same.
                     int finalLength = charsWritten;
 

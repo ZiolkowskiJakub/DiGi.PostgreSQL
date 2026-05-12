@@ -8,20 +8,16 @@ namespace DiGi.PostgreSQL.Table.Classes
         public PartitioningRule()
             : base()
         {
-
         }
 
         public PartitioningRule(PartitioningRule partitioningRule)
             : base(partitioningRule)
         {
-
         }
 
         public PartitioningRule(JsonObject jsonObject)
             : base(jsonObject)
         {
-
         }
-
     }
 }

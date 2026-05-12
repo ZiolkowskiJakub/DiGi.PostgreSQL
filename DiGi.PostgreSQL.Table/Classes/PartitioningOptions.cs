@@ -9,6 +9,5 @@ namespace DiGi.PostgreSQL.Table.Classes
         public string? DefaultSuffix { get; set; }
 
         public PartitioningRule? PartitioningRule { get; set; }
-
     }
 }

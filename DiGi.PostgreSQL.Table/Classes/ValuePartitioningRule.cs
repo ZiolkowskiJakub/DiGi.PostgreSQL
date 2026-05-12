@@ -7,20 +7,16 @@ namespace DiGi.PostgreSQL.Table.Classes
         public ValuePartitioningRule()
             : base()
         {
-
         }
 
         public ValuePartitioningRule(ValuePartitioningRule valuePartitioningRule)
             : base(valuePartitioningRule)
         {
-
         }
 
         public ValuePartitioningRule(JsonObject jsonObject)
             : base(jsonObject)
         {
-
         }
-
     }
 }

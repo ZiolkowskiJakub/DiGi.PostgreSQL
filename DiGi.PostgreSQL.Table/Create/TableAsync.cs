@@ -1,10 +1,8 @@
 ﻿using DiGi.Core.IO.Table.Interfaces;
-using DiGi.PostgreSQL.Classes;
 using DiGi.PostgreSQL.Table.Classes;
 using Npgsql;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.Table
@@ -13,7 +11,7 @@ namespace DiGi.PostgreSQL.Table
     {
         public static async Task<bool> TableAsync<UColumn>(this NpgsqlConnection? npgsqlConnection, string tableName, TableConversionOptions<UColumn>? tableConversionOptions, IEnumerable<UColumn> columns) where UColumn : IColumn
         {
-            if(string.IsNullOrWhiteSpace(tableName) || npgsqlConnection is null)
+            if (string.IsNullOrWhiteSpace(tableName) || npgsqlConnection is null)
             {
                 return false;
             }
@@ -72,16 +70,16 @@ namespace DiGi.PostgreSQL.Table
                     }
                 }
 
-                if(!update)
+                if (!update)
                 {
                     return true;
                 }
             }
 
             columns_PrimaryKey.Sort((x, y) => x.Index.CompareTo(y.Index));
-            foreach(UColumn column in columns_PrimaryKey)
+            foreach (UColumn column in columns_PrimaryKey)
             {
-                if(columnNames is not null && columnNames.Contains(column.Name!))
+                if (columnNames is not null && columnNames.Contains(column.Name!))
                 {
                     continue;
                 }
@@ -96,11 +94,76 @@ namespace DiGi.PostgreSQL.Table
                 }
             }
 
-            throw new System.NotImplementedException();
+            if (!await Query.TableExistsAsync(npgsqlConnection, tableName))
+            {
+                // Create data table
+            }
 
+            if (!await Query.TableExistsAsync(npgsqlConnection, Constants.TableName.Columns))
+            {
+                // Create columns table
+            }
+
+            await Modify.UpdateAsync(npgsqlConnection, tableName, columns_All);
+
+            throw new System.NotImplementedException();
         }
 
+        /// <summary>
+        /// Initializes the metadata repository for dynamic column management.
+        /// This table tracks all custom engineering parameters added to the partitioned main tables.
+        /// </summary>
+        public static async Task<bool> TableAsync_Columns(this NpgsqlConnection? npgsqlConnection)
+        {
+            if (npgsqlConnection is null)
+            {
+                return false;
+            }
 
+            // 'unique_id' is the actual physical column name in the PostgreSQL data table.
+            // Using a composite UNIQUE constraint ensures that each physical column is documented only once per table.
+            const string commandText = $@"
+                CREATE TABLE IF NOT EXISTS {Constants.TableName.Columns} (
+                    id          integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    table_name  text NOT NULL,
+                    unique_id   text NOT NULL, -- Corresponds to the physical column name
+                    name        text,          -- Friendly name (e.g. Revit Parameter Name)
+                    description text,          -- Contextual info for LLM reasoning
+                    category    text,          -- Grouping (e.g. Structural, Thermal, Identity)
+                    unit        text,          -- Unit of measurement (e.g. meters, kilograms)
+                    data        jsonb NOT NULL, -- Technical metadata (StorageType, UnitType, GUID)
+                    created_at  timestamptz DEFAULT now(),
+
+                    CONSTRAINT uq_table_column_identity UNIQUE(table_name, unique_id)
+                );
+
+                -- Index for fast lookup when checking if a column already exists before ALTER TABLE
+                CREATE INDEX IF NOT EXISTS idx_columns_lookup_composite
+                    ON {Constants.TableName.Columns} (table_name, unique_id);
+
+                -- GIN index for metadata queries (internal technical filtering)
+                CREATE INDEX IF NOT EXISTS idx_columns_data_jsonb
+                    ON {Constants.TableName.Columns} USING GIN (data);";
+
+            try
+            {
+                // Explicitly defining the command to maintain full control over the execution context
+                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                await npgsqlCommand.ExecuteNonQueryAsync();
+
+                return true;
+            }
+            catch (NpgsqlException npgsqlEx)
+            {
+                // Detailed error reporting essential for debugging long-running BIM export processes
+                Console.WriteLine($"[Postgres Error] Code: {npgsqlEx.SqlState}, Message: {npgsqlEx.Message}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[General Error] Critical failure in SchemaManager: {ex.Message}");
+                return false;
+            }
+        }
     }
-
 }

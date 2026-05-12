@@ -13,7 +13,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
         public abstract string TableName { get; }
 
-        public TablePostgreSQLConverter(ConnectionData? connectionData) 
+        public TablePostgreSQLConverter(ConnectionData? connectionData)
             : base(connectionData)
         {
         }
