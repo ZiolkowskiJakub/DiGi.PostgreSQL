@@ -11,6 +11,6 @@ namespace DiGi.PostgreSQL.Table.Classes
 
         public PartitioningOptions<UColumn>? PartitioningOptions { get; set; }
 
-        public UColumn? IdentityColumn { get; set; } 
+        public UColumn? IdentityColumn { get; set; }
     }
 }

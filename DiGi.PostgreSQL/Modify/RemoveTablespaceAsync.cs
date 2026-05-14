@@ -6,7 +6,7 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
-        public static async Task<bool> DropTablespaceAsync(this ConnectionData? connectionData, string tablespaceName)
+        public static async Task<bool> RemoveTablespaceAsync(this ConnectionData? connectionData, string tablespaceName)
         {
             if (connectionData is null || string.IsNullOrWhiteSpace(tablespaceName))
             {

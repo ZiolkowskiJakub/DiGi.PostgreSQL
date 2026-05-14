@@ -17,12 +17,12 @@ namespace DiGi.PostgreSQL.Table
                 return false;
             }
 
-            StringBuilder stringBuilder = new ();
+            StringBuilder stringBuilder = new();
 
             List<UColumn>? columns_New = null;
 
             List<string>? uniqueIds = await Query.ColumnNamesAsync(npgsqlConnection, tableName);
-            if(uniqueIds is null || uniqueIds.Count == 0)
+            if (uniqueIds is null || uniqueIds.Count == 0)
             {
                 //Table not exists
 
@@ -34,11 +34,11 @@ namespace DiGi.PostgreSQL.Table
 
                 if (tableConversionOptions is not null)
                 {
-                    if(tableConversionOptions.IdentityColumn is UColumn column_Identity && column_Identity.UniqueId() is string uniqueId_Identity && !string.IsNullOrWhiteSpace(uniqueId_Identity))
+                    if (tableConversionOptions.IdentityColumn is UColumn column_Identity && column_Identity.UniqueId() is string uniqueId_Identity && !string.IsNullOrWhiteSpace(uniqueId_Identity))
                     {
                         dictionary_All[uniqueId_Identity] = column_Identity;
                     }
-                    
+
                     if (tableConversionOptions.PrimaryKeyColumns is List<UColumn> columns_TableConversionOptions_PrimaryKey)
                     {
                         foreach (UColumn column in columns_TableConversionOptions_PrimaryKey)
@@ -60,7 +60,7 @@ namespace DiGi.PostgreSQL.Table
                         }
                     }
 
-                    if(tableConversionOptions.UniqueColumns is List<UColumn> columns_TableConversionOptions_Unique)
+                    if (tableConversionOptions.UniqueColumns is List<UColumn> columns_TableConversionOptions_Unique)
                     {
                         foreach (UColumn column in columns_TableConversionOptions_Unique)
                         {
@@ -77,13 +77,13 @@ namespace DiGi.PostgreSQL.Table
                 List<UColumn> columns_Unique = [];
                 List<UColumn> columns_Other = [];
 
-                foreach(KeyValuePair<string, UColumn> keyValuePair in dictionary_All)
+                foreach (KeyValuePair<string, UColumn> keyValuePair in dictionary_All)
                 {
-                    if(uniqueIds_PrimaryKey.Contains(keyValuePair.Key))
+                    if (uniqueIds_PrimaryKey.Contains(keyValuePair.Key))
                     {
                         columns_PrimaryKey.Add(keyValuePair.Value);
                     }
-                    else if(uniqueIds_Unique.Contains(keyValuePair.Key))
+                    else if (uniqueIds_Unique.Contains(keyValuePair.Key))
                     {
                         columns_Unique.Add(keyValuePair.Value);
                     }
@@ -97,9 +97,14 @@ namespace DiGi.PostgreSQL.Table
                 {
                     foreach (UColumn column in columns)
                     {
-                        if (column is not null && !string.IsNullOrWhiteSpace(column.Name) && !dictionary_All.ContainsKey(column.Name))
+                        if (column?.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
                         {
-                            dictionary_All[column.Name] = column;
+                            continue;
+                        }
+
+                        if (!dictionary_All.ContainsKey(uniqueId))
+                        {
+                            dictionary_All[uniqueId] = column;
                             columns_Other.Add(column);
                         }
                     }
@@ -124,7 +129,7 @@ namespace DiGi.PostgreSQL.Table
 
                     string line = $"{uniqueId}    {dataTypeName}";
 
-                    if(columns_PrimaryKey is not null && columns_PrimaryKey.Find(x => x.UniqueId() == uniqueId) is not null)
+                    if (columns_PrimaryKey is not null && columns_PrimaryKey.Find(x => x.UniqueId() == uniqueId) is not null)
                     {
                         line = line + " NOT NULL";
                     }
@@ -132,15 +137,15 @@ namespace DiGi.PostgreSQL.Table
                     lines.Add(line);
                 }
 
-                stringBuilder.Append($"CREATE TABLE {tableName} (");
+                stringBuilder.Append($"CREATE TABLE \"{tableName}\" (");
                 stringBuilder.Append(string.Join(", ", lines));
 
-                if(columns_PrimaryKey is not null && columns_PrimaryKey.Count != 0)
+                if (columns_PrimaryKey is not null && columns_PrimaryKey.Count != 0)
                 {
                     columns_PrimaryKey.Sort((x, y) => x.Index.CompareTo(y.Index));
 
                     lines = [];
-                    foreach(UColumn column in columns_PrimaryKey)
+                    foreach (UColumn column in columns_PrimaryKey)
                     {
                         if (column?.UniqueId() is not string uniqueId)
                         {
@@ -150,7 +155,7 @@ namespace DiGi.PostgreSQL.Table
                         lines.Add(uniqueId);
                     }
 
-                    if(lines.Count > 0)
+                    if (lines.Count > 0)
                     {
                         stringBuilder.Append($", PRIMARY KEY ({string.Join(", ", lines)})");
                     }
@@ -189,7 +194,6 @@ namespace DiGi.PostgreSQL.Table
                             {
                                 stringBuilder.Append($" PARTITION BY LIST (\"{uniqueId}\")");
                             }
-                            
                             else if (partitioningRule is RangePartitioningRule)
                             {
                                 stringBuilder.Append($" PARTITION BY RANGE (\"{uniqueId}\")");
@@ -212,7 +216,7 @@ namespace DiGi.PostgreSQL.Table
                         continue;
                     }
 
-                    if(uniqueIds.Contains(uniqueId))
+                    if (uniqueIds.Contains(uniqueId))
                     {
                         continue;
                     }
@@ -249,7 +253,7 @@ namespace DiGi.PostgreSQL.Table
 
             string commandText = stringBuilder.ToString();
 
-            if(string.IsNullOrWhiteSpace(commandText))
+            if (string.IsNullOrWhiteSpace(commandText))
             {
                 return false;
             }
@@ -257,13 +261,6 @@ namespace DiGi.PostgreSQL.Table
             await using NpgsqlTransaction transaction = await npgsqlConnection.BeginTransactionAsync();
             try
             {
-                // If adding columns to existing table, update metadata first
-                if (columns_New is not null && columns_New.Count > 0)
-                {
-                    // Assuming Modify.UpdateAsync can accept a transaction or uses the connection's active transaction
-                    await Modify.UpdateAsync(npgsqlConnection, tableName, columns_New);
-                }
-
                 await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection, transaction);
                 await npgsqlCommand.ExecuteNonQueryAsync();
 

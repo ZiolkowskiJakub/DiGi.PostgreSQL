@@ -2,7 +2,6 @@
 using DiGi.Core.IO.Table.Classes;
 using DiGi.Core.IO.Table.Interfaces;
 using Npgsql;
-using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -18,7 +17,7 @@ namespace DiGi.PostgreSQL.Table
                 return false;
             }
 
-            // Ensure connection is open if we are managing it here, 
+            // Ensure connection is open if we are managing it here,
             // though usually, it's better to expect an open connection in an extension method.
             if (npgsqlConnection.State != System.Data.ConnectionState.Open)
             {
@@ -35,7 +34,7 @@ namespace DiGi.PostgreSQL.Table
                     category = EXCLUDED.category,
                     data = EXCLUDED.data;";
 
-            await using NpgsqlBatch npgsqlBatch = new (npgsqlConnection);
+            await using NpgsqlBatch npgsqlBatch = new(npgsqlConnection);
 
             foreach (UColumn column in columns)
             {
@@ -44,11 +43,11 @@ namespace DiGi.PostgreSQL.Table
                     continue;
                 }
 
-                NpgsqlBatchCommand npgsqlBatchCommand = new (commandText);
+                NpgsqlBatchCommand npgsqlBatchCommand = new(commandText);
 
-                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("table_name", NpgsqlDbType.Text) { Value = tableName });
-                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("unique_id", NpgsqlDbType.Text) { Value = column.UniqueId() ?? string.Empty });
-                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("name", NpgsqlDbType.Text) { Value = column.Name });
+                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("table_name", NpgsqlTypes.NpgsqlDbType.Text) { Value = tableName });
+                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("unique_id", NpgsqlTypes.NpgsqlDbType.Text) { Value = column.UniqueId() ?? string.Empty });
+                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("name", NpgsqlTypes.NpgsqlDbType.Text) { Value = column.Name });
 
                 string? description = null;
                 string? category = null;
@@ -60,25 +59,15 @@ namespace DiGi.PostgreSQL.Table
                     category = extendedColumn.Category;
                 }
 
-                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("description", NpgsqlDbType.Text) { Value = (object?)description ?? DBNull.Value });
-                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("category", NpgsqlDbType.Text) { Value = (object?)category ?? DBNull.Value });
-                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("data", NpgsqlDbType.Jsonb) { Value = column.ToSystem_String() });
+                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("description", NpgsqlTypes.NpgsqlDbType.Text) { Value = (object?)description ?? DBNull.Value });
+                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("category", NpgsqlTypes.NpgsqlDbType.Text) { Value = (object?)category ?? DBNull.Value });
+                npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter("data", NpgsqlTypes.NpgsqlDbType.Jsonb) { Value = column.ToSystem_String() });
 
                 npgsqlBatch.BatchCommands.Add(npgsqlBatchCommand);
             }
 
-            try
-            {
-                // Execute all commands in a single round-trip
-                int rowsAffected = await npgsqlBatch.ExecuteNonQueryAsync();
-                return rowsAffected > 0;
-            }
-            catch (PostgresException ex)
-            {
-                // Log exception here (e.g., using Serilog or standard ILogger)
-                System.Diagnostics.Debug.WriteLine($"{nameof(UpdateAsync)} error: {ex.Message}");
-                return false;
-            }
+            int rowsAffected = await npgsqlBatch.ExecuteNonQueryAsync();
+            return rowsAffected > 0;
         }
     }
 }

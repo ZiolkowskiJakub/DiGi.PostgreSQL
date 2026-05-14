@@ -33,7 +33,7 @@ namespace DiGi.PostgreSQL
             }
 
             // 2. Drop Tablespace
-            await DropTablespaceAsync(connectionData, tablespaceName);
+            await RemoveTablespaceAsync(connectionData, tablespaceName);
 
             return true;
         }
