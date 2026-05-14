@@ -13,7 +13,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 {
     public abstract class TablePostgreSQLConverter<UColumn> : PostgreSQLConverter<Table<UColumn>> where UColumn : IColumn
     {
-        protected abstract TableConversionOptions<UColumn>? tableConversionOptions { get; }
+        protected abstract TableConversionOptions<UColumn>? TableConversionOptions { get; }
 
         public abstract string TableName { get; }
 
@@ -69,7 +69,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             stringBuilder.AppendLine($"INSERT INTO \"{TableName}\" ({string.Join(", ", columnNames)})");
             stringBuilder.AppendLine($"VALUES ({string.Join(", ", parametersNames)})");
 
-            if (tableConversionOptions?.PrimaryKeyColumns is List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
+            if (TableConversionOptions?.PrimaryKeyColumns is List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
             {
                 columns_PrimaryKey.RemoveAll(x => x?.UniqueId() is not string uniqueId || !dictionary.ContainsKey(uniqueId));
 
@@ -156,7 +156,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
                 return true;
             }
-            catch (NpgsqlException npgsqlException)
+            catch (NpgsqlException)
             {
                 await npgsqlTransaction.RollbackAsync();
                 return false;
@@ -165,7 +165,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
         private async Task<bool> CreateTableAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<UColumn> columns)
         {
-            return await Create.TableAsync(npgsqlConnection, TableName, tableConversionOptions, columns);
+            return await Create.TableAsync(npgsqlConnection, TableName, TableConversionOptions, columns);
         }
     }
 }
