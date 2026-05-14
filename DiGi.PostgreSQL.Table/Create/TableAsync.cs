@@ -3,6 +3,7 @@ using DiGi.PostgreSQL.Table.Classes;
 using Npgsql;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.Table
@@ -16,97 +17,265 @@ namespace DiGi.PostgreSQL.Table
                 return false;
             }
 
-            Dictionary<string, UColumn> dictionary = [];
-            if (tableConversionOptions is not null)
+            StringBuilder stringBuilder = new ();
+
+            List<UColumn>? columns_New = null;
+
+            List<string>? uniqueIds = await Query.ColumnNamesAsync(npgsqlConnection, tableName);
+            if(uniqueIds is null || uniqueIds.Count == 0)
             {
-                if (tableConversionOptions.PrimaryKeyColumns is List<UColumn> columns_TableConversionOptions_PrimaryKey)
+                //Table not exists
+
+                await TableAsync_Columns(npgsqlConnection);
+
+                Dictionary<string, UColumn> dictionary_All = [];
+                HashSet<string> uniqueIds_PrimaryKey = [];
+                HashSet<string> uniqueIds_Unique = [];
+
+                if (tableConversionOptions is not null)
                 {
-                    foreach (UColumn column in columns_TableConversionOptions_PrimaryKey)
+                    if(tableConversionOptions.IdentityColumn is UColumn column_Identity && column_Identity.UniqueId() is string uniqueId_Identity && !string.IsNullOrWhiteSpace(uniqueId_Identity))
                     {
-                        if (!string.IsNullOrWhiteSpace(column?.Name))
+                        dictionary_All[uniqueId_Identity] = column_Identity;
+                    }
+                    
+                    if (tableConversionOptions.PrimaryKeyColumns is List<UColumn> columns_TableConversionOptions_PrimaryKey)
+                    {
+                        foreach (UColumn column in columns_TableConversionOptions_PrimaryKey)
                         {
-                            dictionary[column.Name] = column;
+                            if (column?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
+                            {
+                                dictionary_All[uniqueId] = column;
+                                uniqueIds_PrimaryKey.Add(uniqueId);
+                            }
+                        }
+                    }
+
+                    if (tableConversionOptions.PartitioningOptions is PartitioningOptions<UColumn> partitioningOptions)
+                    {
+                        if (partitioningOptions.Column?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
+                        {
+                            dictionary_All[uniqueId] = partitioningOptions.Column;
+                            uniqueIds_PrimaryKey.Add(uniqueId);
+                        }
+                    }
+
+                    if(tableConversionOptions.UniqueColumns is List<UColumn> columns_TableConversionOptions_Unique)
+                    {
+                        foreach (UColumn column in columns_TableConversionOptions_Unique)
+                        {
+                            if (column?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
+                            {
+                                dictionary_All[uniqueId] = column;
+                                uniqueIds_Unique.Add(uniqueId);
+                            }
                         }
                     }
                 }
 
-                if (tableConversionOptions.PartitioningOptions is PartitioningOptions<UColumn> partitioningOptions)
+                List<UColumn> columns_PrimaryKey = [];
+                List<UColumn> columns_Unique = [];
+                List<UColumn> columns_Other = [];
+
+                foreach(KeyValuePair<string, UColumn> keyValuePair in dictionary_All)
                 {
-                    if (partitioningOptions.Column?.Name is string name && !string.IsNullOrWhiteSpace(name))
+                    if(uniqueIds_PrimaryKey.Contains(keyValuePair.Key))
                     {
-                        dictionary[name] = partitioningOptions.Column;
+                        columns_PrimaryKey.Add(keyValuePair.Value);
+                    }
+                    else if(uniqueIds_Unique.Contains(keyValuePair.Key))
+                    {
+                        columns_Unique.Add(keyValuePair.Value);
+                    }
+                    else
+                    {
+                        columns_Other.Add(keyValuePair.Value);
                     }
                 }
+
+                if (columns is not null)
+                {
+                    foreach (UColumn column in columns)
+                    {
+                        if (column is not null && !string.IsNullOrWhiteSpace(column.Name) && !dictionary_All.ContainsKey(column.Name))
+                        {
+                            dictionary_All[column.Name] = column;
+                            columns_Other.Add(column);
+                        }
+                    }
+                }
+
+                List<UColumn> columns_All = [.. dictionary_All.Values];
+
+                columns_All.Sort((x, y) => x.Index.CompareTo(y.Index));
+
+                List<string> lines = [];
+                foreach (UColumn column in columns_All)
+                {
+                    if (column?.UniqueId() is not string uniqueId)
+                    {
+                        continue;
+                    }
+
+                    if (column.DataTypeName() is not string dataTypeName || string.IsNullOrWhiteSpace(dataTypeName))
+                    {
+                        continue;
+                    }
+
+                    string line = $"{uniqueId}    {dataTypeName}";
+
+                    if(columns_PrimaryKey is not null && columns_PrimaryKey.Find(x => x.UniqueId() == uniqueId) is not null)
+                    {
+                        line = line + " NOT NULL";
+                    }
+
+                    lines.Add(line);
+                }
+
+                stringBuilder.Append($"CREATE TABLE {tableName} (");
+                stringBuilder.Append(string.Join(", ", lines));
+
+                if(columns_PrimaryKey is not null && columns_PrimaryKey.Count != 0)
+                {
+                    columns_PrimaryKey.Sort((x, y) => x.Index.CompareTo(y.Index));
+
+                    lines = [];
+                    foreach(UColumn column in columns_PrimaryKey)
+                    {
+                        if (column?.UniqueId() is not string uniqueId)
+                        {
+                            continue;
+                        }
+
+                        lines.Add(uniqueId);
+                    }
+
+                    if(lines.Count > 0)
+                    {
+                        stringBuilder.Append($", PRIMARY KEY ({string.Join(", ", lines)})");
+                    }
+                }
+
+                if (columns_Unique is not null && columns_Unique.Count != 0)
+                {
+                    columns_Unique.Sort((x, y) => x.Index.CompareTo(y.Index));
+
+                    lines = [];
+                    foreach (UColumn column in columns_Unique)
+                    {
+                        if (column?.UniqueId() is not string uniqueId)
+                        {
+                            continue;
+                        }
+
+                        lines.Add(uniqueId);
+                    }
+
+                    if (lines.Count > 0)
+                    {
+                        stringBuilder.Append($", UNIQUE ({string.Join(", ", lines)})");
+                    }
+                }
+
+                stringBuilder.Append(')');
+
+                if (tableConversionOptions is not null)
+                {
+                    if (tableConversionOptions.PartitioningOptions is PartitioningOptions<UColumn> partitioningOptions && partitioningOptions.PartitioningRule is PartitioningRule partitioningRule)
+                    {
+                        if (partitioningOptions.Column?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
+                        {
+                            if (partitioningRule is ValuePartitioningRule)
+                            {
+                                stringBuilder.Append($" PARTITION BY LIST (\"{uniqueId}\")");
+                            }
+                            
+                            else if (partitioningRule is RangePartitioningRule)
+                            {
+                                stringBuilder.Append($" PARTITION BY RANGE (\"{uniqueId}\")");
+                            }
+                        }
+                    }
+                }
+
+                stringBuilder.Append(';');
             }
-
-            List<UColumn> columns_PrimaryKey = [.. dictionary.Values];
-            List<UColumn> columns_NotPrimaryKey = [];
-
-            if (columns is not null)
+            else
             {
+                //Table exists, add missing columns only
+
+                Dictionary<string, UColumn> dictionary = [];
                 foreach (UColumn column in columns)
                 {
-                    if (column is not null && !string.IsNullOrWhiteSpace(column.Name) && !dictionary.ContainsKey(column.Name))
+                    if (column?.UniqueId() is not string uniqueId)
                     {
-                        dictionary[column.Name] = column;
-                        columns_NotPrimaryKey.Add(column);
+                        continue;
                     }
-                }
-            }
 
-            List<UColumn> columns_All = [.. dictionary.Values];
-
-            List<string>? columnNames = await Query.ColumnNamesAsync(npgsqlConnection, tableName);
-            if (columnNames != null && columnNames.Count >= columns_All.Count)
-            {
-                bool update = false;
-
-                for (int i = columns_All.Count - 1; i >= 0; i--)
-                {
-                    if (!columnNames.Contains(columns_All[i].Name!))
+                    if(uniqueIds.Contains(uniqueId))
                     {
-                        update = true;
-                        break;
+                        continue;
                     }
+
+                    dictionary[uniqueId] = column;
                 }
 
-                if (!update)
+                columns_New = [.. dictionary.Values];
+                columns_New.Sort((x, y) => x.Index.CompareTo(y.Index));
+
+                await Modify.UpdateAsync(npgsqlConnection, tableName, columns_New);
+
+                List<string> definitions = [];
+                foreach (UColumn column_New in columns_New)
                 {
-                    return true;
+                    if (column_New?.UniqueId() is not string uniqueId)
+                    {
+                        continue;
+                    }
+
+                    if (column_New.DataTypeName() is not string dataTypeName || string.IsNullOrWhiteSpace(dataTypeName))
+                    {
+                        continue;
+                    }
+
+                    definitions.Add($"ADD COLUMN IF NOT EXISTS {uniqueId} {dataTypeName}");
                 }
+
+                // Using StringBuilder for explicit string manipulation to construct the batch query
+                stringBuilder.Append($"ALTER TABLE {tableName} ");
+                stringBuilder.Append(string.Join(", ", definitions));
+                stringBuilder.Append(';');
             }
 
-            columns_PrimaryKey.Sort((x, y) => x.Index.CompareTo(y.Index));
-            foreach (UColumn column in columns_PrimaryKey)
+            string commandText = stringBuilder.ToString();
+
+            if(string.IsNullOrWhiteSpace(commandText))
             {
-                if (columnNames is not null && columnNames.Contains(column.Name!))
+                return false;
+            }
+
+            await using NpgsqlTransaction transaction = await npgsqlConnection.BeginTransactionAsync();
+            try
+            {
+                // If adding columns to existing table, update metadata first
+                if (columns_New is not null && columns_New.Count > 0)
                 {
-                    continue;
+                    // Assuming Modify.UpdateAsync can accept a transaction or uses the connection's active transaction
+                    await Modify.UpdateAsync(npgsqlConnection, tableName, columns_New);
                 }
-            }
 
-            columns_NotPrimaryKey.Sort((x, y) => x.Index.CompareTo(y.Index));
-            foreach (UColumn column in columns_NotPrimaryKey)
+                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection, transaction);
+                await npgsqlCommand.ExecuteNonQueryAsync();
+
+                await transaction.CommitAsync();
+                return true;
+            }
+            catch (NpgsqlException npgsqlException)
             {
-                if (columnNames is not null && columnNames.Contains(column.Name!))
-                {
-                    continue;
-                }
+                await transaction.RollbackAsync();
+                Console.WriteLine($"{nameof(TableAsync)} failed: {npgsqlException.Message} (State: {npgsqlException.SqlState})");
+                return false;
             }
-
-            if (!await Query.TableExistsAsync(npgsqlConnection, tableName))
-            {
-                // Create data table
-            }
-
-            if (!await Query.TableExistsAsync(npgsqlConnection, Constants.TableName.Columns))
-            {
-                // Create columns table
-            }
-
-            await Modify.UpdateAsync(npgsqlConnection, tableName, columns_All);
-
-            throw new System.NotImplementedException();
         }
 
         /// <summary>
@@ -130,7 +299,6 @@ namespace DiGi.PostgreSQL.Table
                     name        text,          -- Friendly name (e.g. Revit Parameter Name)
                     description text,          -- Contextual info for LLM reasoning
                     category    text,          -- Grouping (e.g. Structural, Thermal, Identity)
-                    unit        text,          -- Unit of measurement (e.g. meters, kilograms)
                     data        jsonb NOT NULL, -- Technical metadata (StorageType, UnitType, GUID)
                     created_at  timestamptz DEFAULT now(),
 

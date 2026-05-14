@@ -7,6 +7,10 @@ namespace DiGi.PostgreSQL.Table.Classes
     {
         public List<UColumn>? PrimaryKeyColumns { get; set; }
 
+        public List<UColumn>? UniqueColumns { get; set; }
+
         public PartitioningOptions<UColumn>? PartitioningOptions { get; set; }
+
+        public UColumn? IdentityColumn { get; set; } 
     }
 }
