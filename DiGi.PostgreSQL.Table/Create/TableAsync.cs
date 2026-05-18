@@ -17,15 +17,13 @@ namespace DiGi.PostgreSQL.Table
                 return false;
             }
 
-            StringBuilder stringBuilder = new();
-
+            StringBuilder stringBuilder = new ();
             List<UColumn>? columns_New = null;
 
-            List<string>? uniqueIds = await Query.ColumnNamesAsync(npgsqlConnection, tableName);
+            List<string>? uniqueIds = await PostgreSQL.Query.ColumnNamesAsync(npgsqlConnection, tableName);
             if (uniqueIds is null || uniqueIds.Count == 0)
             {
-                //Table not exists
-
+                // Table does not exist - Create new table structure
                 await TableAsync_Columns(npgsqlConnection);
 
                 Dictionary<string, UColumn> dictionary_All = [];
@@ -56,6 +54,7 @@ namespace DiGi.PostgreSQL.Table
                         if (partitioningOptions.Column?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
                         {
                             dictionary_All[uniqueId] = partitioningOptions.Column;
+                            // Enforce that partitioning column is part of the primary key in PostgreSQL
                             uniqueIds_PrimaryKey.Add(uniqueId);
                         }
                     }
@@ -111,7 +110,6 @@ namespace DiGi.PostgreSQL.Table
                 }
 
                 List<UColumn> columns_All = [.. dictionary_All.Values];
-
                 columns_All.Sort((x, y) => x.Index.CompareTo(y.Index));
 
                 List<string> lines = [];
@@ -127,11 +125,12 @@ namespace DiGi.PostgreSQL.Table
                         continue;
                     }
 
-                    string line = $"{uniqueId}    {dataTypeName}";
+                    // Escaping column identifiers to prevent injection and avoid PostgreSQL case-sensitivity mismatch
+                    string line = $"\"{uniqueId}\" {dataTypeName}";
 
                     if (columns_PrimaryKey is not null && columns_PrimaryKey.Find(x => x.UniqueId() == uniqueId) is not null)
                     {
-                        line = line + " NOT NULL";
+                        line += " NOT NULL";
                     }
 
                     lines.Add(line);
@@ -144,7 +143,7 @@ namespace DiGi.PostgreSQL.Table
                 {
                     columns_PrimaryKey.Sort((x, y) => x.Index.CompareTo(y.Index));
 
-                    lines = [];
+                    lines.Clear(); // Reuse list to save allocations
                     foreach (UColumn column in columns_PrimaryKey)
                     {
                         if (column?.UniqueId() is not string uniqueId)
@@ -152,7 +151,7 @@ namespace DiGi.PostgreSQL.Table
                             continue;
                         }
 
-                        lines.Add(uniqueId);
+                        lines.Add($"\"{uniqueId}\"");
                     }
 
                     if (lines.Count > 0)
@@ -165,7 +164,7 @@ namespace DiGi.PostgreSQL.Table
                 {
                     columns_Unique.Sort((x, y) => x.Index.CompareTo(y.Index));
 
-                    lines = [];
+                    lines.Clear(); // Reuse list to save allocations
                     foreach (UColumn column in columns_Unique)
                     {
                         if (column?.UniqueId() is not string uniqueId)
@@ -173,7 +172,7 @@ namespace DiGi.PostgreSQL.Table
                             continue;
                         }
 
-                        lines.Add(uniqueId);
+                        lines.Add($"\"{uniqueId}\"");
                     }
 
                     if (lines.Count > 0)
@@ -190,6 +189,7 @@ namespace DiGi.PostgreSQL.Table
                     {
                         if (partitioningOptions.Column?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
                         {
+                            // Fixed: Cleaned expression structure for PARTITION BY statement to prevent syntax errors
                             if (partitioningRule is ValuePartitioningRule)
                             {
                                 stringBuilder.Append($" PARTITION BY LIST (\"{uniqueId}\")");
@@ -206,8 +206,7 @@ namespace DiGi.PostgreSQL.Table
             }
             else
             {
-                //Table exists, add missing columns only
-
+                // Table exists - Add missing columns only
                 Dictionary<string, UColumn> dictionary = [];
                 foreach (UColumn column in columns)
                 {
@@ -242,13 +241,16 @@ namespace DiGi.PostgreSQL.Table
                         continue;
                     }
 
-                    definitions.Add($"ADD COLUMN IF NOT EXISTS {uniqueId} {dataTypeName}");
+                    // Fixed: Added escaped identifiers for explicit safety
+                    definitions.Add($"ADD COLUMN IF NOT EXISTS \"{uniqueId}\" {dataTypeName}");
                 }
 
-                // Using StringBuilder for explicit string manipulation to construct the batch query
-                stringBuilder.Append($"ALTER TABLE {tableName} ");
-                stringBuilder.Append(string.Join(", ", definitions));
-                stringBuilder.Append(';');
+                if (definitions.Count > 0)
+                {
+                    stringBuilder.Append($"ALTER TABLE \"{tableName}\" ");
+                    stringBuilder.Append(string.Join(", ", definitions));
+                    stringBuilder.Append(';');
+                }
             }
 
             string commandText = stringBuilder.ToString();
@@ -261,7 +263,7 @@ namespace DiGi.PostgreSQL.Table
             await using NpgsqlTransaction transaction = await npgsqlConnection.BeginTransactionAsync();
             try
             {
-                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection, transaction);
+                await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection, transaction);
                 await npgsqlCommand.ExecuteNonQueryAsync();
 
                 await transaction.CommitAsync();

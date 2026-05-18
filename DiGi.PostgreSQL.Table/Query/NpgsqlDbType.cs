@@ -5,7 +5,7 @@ using System;
 
 namespace DiGi.PostgreSQL.Table
 {
-    public static partial class Modify
+    public static partial class Query
     {
         public static NpgsqlDbType? NpgsqlDbType(this IColumn? column)
         {

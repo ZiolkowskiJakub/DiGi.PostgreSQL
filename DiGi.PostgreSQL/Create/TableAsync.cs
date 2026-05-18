@@ -1,6 +1,9 @@
 ﻿using DiGi.PostgreSQL.Enums;
 using Npgsql;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
@@ -92,6 +95,81 @@ namespace DiGi.PostgreSQL
             await npgsqlCommand.ExecuteNonQueryAsync();
 
             return true;
+        }
+
+        public static async Task<bool> TableAsync_Partition<T>(this NpgsqlConnection? npgsqlConnection, string tableName, string partitionNameSufix, IEnumerable<T> values, Func<T, string>? conversionFunc = null)
+        {
+            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName) || string.IsNullOrWhiteSpace(partitionNameSufix) || values is null || !values.Any())
+            {
+                return false;
+            }
+
+            HashSet<string> formattedValues = [];
+            foreach (T value in values)
+            {
+                string? rawValue = conversionFunc is null ? value?.ToString() : conversionFunc.Invoke(value);
+                if (string.IsNullOrWhiteSpace(rawValue))
+                {
+                    continue;
+                }
+
+                string escapedValue = rawValue.Replace("'", "''");
+                formattedValues.Add($"'{escapedValue}'");
+            }
+
+            if (formattedValues.Count == 0)
+            {
+                return false;
+            }
+
+            NpgsqlCommandBuilder npgsqlCommandBuilder = new ();
+
+            string safeParentTable = npgsqlCommandBuilder.QuoteIdentifier(tableName);
+            string safePartitionTable = npgsqlCommandBuilder.QuoteIdentifier($"{tableName}_{partitionNameSufix}");
+            string valuesList = string.Join(", ", formattedValues);
+
+            string commandText = $@"
+                CREATE TABLE IF NOT EXISTS {safePartitionTable} 
+                PARTITION OF {safeParentTable}
+                FOR VALUES IN ({valuesList});";
+
+            await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection);
+            await npgsqlCommand.ExecuteNonQueryAsync();
+
+            return true;
+        }
+
+        public static async Task<bool> TableAsync_Partition_Default(this NpgsqlConnection? npgsqlConnection, string tableName)
+        {
+            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
+            {
+                return false;
+            }
+
+            NpgsqlCommandBuilder commandBuilder = new ();
+
+            // Secure the identifiers for PostgreSQL
+            string safeParentTable = commandBuilder.QuoteIdentifier(tableName);
+            string safeDefaultPartitionTable = commandBuilder.QuoteIdentifier($"{tableName}_default");
+
+            // Construct the DDL command using DEFAULT keyword
+            string commandText = $@"
+            CREATE TABLE IF NOT EXISTS {safeDefaultPartitionTable} 
+            PARTITION OF {safeParentTable} 
+            DEFAULT;";
+
+            await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection);
+
+            try
+            {
+                await npgsqlCommand.ExecuteNonQueryAsync();
+                return true;
+            }
+            catch (PostgresException)
+            {
+                // Handle cases where a default partition might conflict or fail
+                return false;
+            }
         }
 
         public static async Task<bool> TableAsync_Partitions(this NpgsqlConnection? npgsqlConnection)

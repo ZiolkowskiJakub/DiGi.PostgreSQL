@@ -2,7 +2,7 @@
 
 namespace DiGi.PostgreSQL.Table
 {
-    public static partial class Modify
+    public static partial class Query
     {
         public static string? UniqueId(this IColumn? column)
         {

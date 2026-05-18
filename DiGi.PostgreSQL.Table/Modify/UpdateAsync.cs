@@ -66,7 +66,17 @@ namespace DiGi.PostgreSQL.Table
                 npgsqlBatch.BatchCommands.Add(npgsqlBatchCommand);
             }
 
-            int rowsAffected = await npgsqlBatch.ExecuteNonQueryAsync();
+            int rowsAffected = 0;
+
+            try
+            {
+                rowsAffected = await npgsqlBatch.ExecuteNonQueryAsync();
+            }
+            catch(Exception? exception)
+            {
+                rowsAffected = -1;
+            }
+
             return rowsAffected > 0;
         }
     }
