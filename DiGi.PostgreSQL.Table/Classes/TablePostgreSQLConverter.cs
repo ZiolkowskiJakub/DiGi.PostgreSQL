@@ -25,7 +25,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
         public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
         {
-            if (table is null || table.RowCount == 0)
+            if (table is null)
             {
                 return false;
             }
@@ -38,7 +38,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             Dictionary<string, TColumn> dictionary = [];
             foreach (TColumn column in columns)
             {
-                if(column.UniqueId() is not string uniqueId || !string.IsNullOrWhiteSpace(uniqueId))
+                if(column.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
                 {
                     continue;
                 }
@@ -46,36 +46,26 @@ namespace DiGi.PostgreSQL.Table.Classes
                 dictionary[uniqueId] = column;
             }
 
-            string commandText = $@"
-                SELECT {string.Join(", ", dictionary.Keys)}
-                FROM {TableName}";
+            IEnumerable<string> quotedColumns = dictionary.Keys.Select(x => $"\"{x}\"");
+            string baseQuery = $"SELECT {string.Join(", ", quotedColumns)} FROM \"{TableName}\"";
 
             Dictionary<string, TColumn> dictionary_PrimaryKey = [];
-
-            if (table.RowCount > 0)
+            if (TableConversionOptions?.PrimaryKeyColumns is List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
             {
-                if (TableConversionOptions?.PrimaryKeyColumns is List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
+                foreach (UColumn column_PrimaryKey in columns_PrimaryKey)
                 {
-                    foreach (UColumn column_PrimaryKey in columns_PrimaryKey)
+                    if (column_PrimaryKey.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
                     {
-                        if (column_PrimaryKey.UniqueId() is not string uniqueId || !string.IsNullOrWhiteSpace(uniqueId))
-                        {
-                            continue;
-                        }
-
-                        if(!dictionary.TryGetValue(uniqueId, out TColumn? column))
-                        {
-                            continue;
-                        }
-
-                        dictionary_PrimaryKey[uniqueId] = column;
+                        continue;
                     }
-                }
-            }
 
-            if(dictionary_PrimaryKey != null && dictionary_PrimaryKey.Count > 0)
-            {
-                commandText += $@" WHERE {string.Join(", ", dictionary_PrimaryKey.Keys)}";
+                    if(!dictionary.TryGetValue(uniqueId, out TColumn? column))
+                    {
+                        continue;
+                    }
+
+                    dictionary_PrimaryKey[uniqueId] = column;
+                }
             }
 
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
@@ -86,21 +76,116 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             await npgsqlConnection.OpenAsync();
 
-            await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection);
-
-            throw new NotImplementedException();
-
-            if(table.Rows is IEnumerable< TRow> rows && rows.Any())
+            // Map existing rows for quick lookup during merge
+            Dictionary<string, TRow> existingRowsMap = [];
+            if (dictionary_PrimaryKey.Count > 0 && table.Rows is IEnumerable<TRow> currentRows)
             {
-                foreach(TRow row in rows)
+                foreach (TRow row in currentRows)
                 {
-
+                    StringBuilder pkKeyBuilder = new();
+                    foreach (TColumn pkCol in dictionary_PrimaryKey.Values)
+                    {
+                        pkKeyBuilder.Append(row[pkCol.Index]).Append('|');
+                    }
+                    existingRowsMap[pkKeyBuilder.ToString()] = row;
                 }
             }
-            else
-            {
 
+            // Case 1: Empty table or no PKs defined -> Pull all data
+            if (table.RowCount == 0 || dictionary_PrimaryKey.Count == 0)
+            {
+                await using NpgsqlCommand npgsqlCommand = new(baseQuery, npgsqlConnection);
+                await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync();
+                return await ProcessReaderAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap);
             }
+
+            // Case 2: Non-empty table with PKs -> Pull only matching data in batches
+            List<TRow> rowsList = [.. table.Rows];
+            for (int i = 0; i < rowsList.Count; i += batchSize)
+            {
+                List<TRow> batch = [.. rowsList.Skip(i).Take(batchSize)];
+                StringBuilder whereClause = new();
+                whereClause.Append(" WHERE ");
+
+                List<NpgsqlParameter> parameters = [];
+                for (int j = 0; j < batch.Count; j++)
+                {
+                    if (j > 0)
+                    {
+                        whereClause.Append(" OR ");
+                    }
+                    whereClause.Append('(');
+                    
+                    TRow row = batch[j];
+                    int paramIdx = 0;
+                    foreach (TColumn pkCol in dictionary_PrimaryKey.Values)
+                    {
+                        string paramName = $"@p{i}_{j}_{paramIdx}";
+                        if (paramIdx > 0)
+                        {
+                            whereClause.Append(" AND ");
+                        }
+                        whereClause.Append($"\"{pkCol.UniqueId()}\" = {paramName}");
+                        parameters.Add(new NpgsqlParameter(paramName, row[pkCol.Index] ?? DBNull.Value));
+                        paramIdx++;
+                    }
+                    whereClause.Append(')');
+                }
+
+                await using NpgsqlCommand npgsqlCommand = new(baseQuery + whereClause.ToString(), npgsqlConnection);
+                npgsqlCommand.Parameters.AddRange(parameters.ToArray());
+                await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync();
+                if (!await ProcessReaderAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static async Task<bool> ProcessReaderAsync<TColumn, TRow>(NpgsqlDataReader npgsqlDataReader, Table<TColumn, TRow> table, Dictionary<string, TColumn> dictionary, Dictionary<string, TColumn> dictionary_PrimaryKey, Dictionary<string, TRow> existingRowsMap) where TColumn : IColumn where TRow : IRow<TRow>
+        {
+            while (await npgsqlDataReader.ReadAsync())
+            {
+                Dictionary<string, object?> values = [];
+                foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
+                {
+                    values[keyValuePair.Value.Name!] = npgsqlDataReader[keyValuePair.Key];
+                }
+
+                if (dictionary_PrimaryKey.Count > 0)
+                {
+                    StringBuilder stringBuilder = new();
+                    foreach (TColumn column in dictionary_PrimaryKey.Values)
+                    {
+                        stringBuilder.Append(npgsqlDataReader[column.UniqueId()!]).Append('|');
+                    }
+                    string uniqueValue = stringBuilder.ToString();
+
+                    if (existingRowsMap.TryGetValue(uniqueValue, out TRow? row_Existing))
+                    {
+                        foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
+                        {
+                            object? value_Existing = row_Existing[keyValuePair.Value.Index];
+                            object? value_New = values[keyValuePair.Key];
+                            if ((value_Existing == null || value_Existing.Equals(Core.Query.Default(keyValuePair.Value.Type))) && value_New != null)
+                            {
+                                row_Existing[keyValuePair.Value.Index] = value_New;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        table.AddRow(values);
+                    }
+                }
+                else
+                {
+                    table.AddRow(values);
+                }
+            }
+            return true;
         }
 
         public async Task<bool> PushAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>

@@ -72,7 +72,7 @@ namespace DiGi.PostgreSQL.Table
             {
                 rowsAffected = await npgsqlBatch.ExecuteNonQueryAsync();
             }
-            catch(Exception? exception)
+            catch(Exception)
             {
                 rowsAffected = -1;
             }
