@@ -8,19 +8,106 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Npgsql.Replication.PgOutput.Messages.RelationMessage;
 
 namespace DiGi.PostgreSQL.Table.Classes
 {
     public abstract class TablePostgreSQLConverter<UColumn> : PostgreSQLConverter<Table<UColumn>> where UColumn : IColumn
     {
-        protected abstract TableConversionOptions<UColumn>? TableConversionOptions { get; }
-
-        public abstract string TableName { get; }
-
         public TablePostgreSQLConverter(ConnectionData? connectionData)
             : base(connectionData)
         {
- 
+
+        }
+
+        public abstract string TableName { get; }
+        
+        protected abstract TableConversionOptions<UColumn>? TableConversionOptions { get; }
+        
+        public async Task<HashSet<string>> GetCategories()
+        {
+            HashSet<string> categories = [];
+
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
+            if (npgsqlConnection is null)
+            {
+                return categories;
+            }
+
+            await npgsqlConnection.OpenAsync();
+
+            string query = $"SELECT category FROM \"{Constants.TableName.Columns}\" WHERE table_name = @tableName";
+
+            await using NpgsqlCommand npgsqlCommand = new(query, npgsqlConnection);
+
+            npgsqlCommand.Parameters.Add(new NpgsqlParameter("tableName", NpgsqlDbType.Text) { Value = TableName });
+
+            await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                object? value = reader["category"];
+
+                if (value == null || value == DBNull.Value)
+                {
+                    value = string.Empty;
+                }
+
+                categories.Add(value?.ToString() ?? string.Empty);
+            }
+
+            return categories;
+        }
+
+        public async Task<List<UColumn>> GetColumns(IEnumerable<string>? categories = null)
+        {
+            List<UColumn> columns = [];
+
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
+
+            if (npgsqlConnection is null)
+            {
+                return columns;
+            }
+
+            await npgsqlConnection.OpenAsync();
+
+            // Build query based on whether categories filter is provided
+            string query = $"SELECT data FROM \"{Constants.TableName.Columns}\" WHERE table_name = @tableName";
+
+            bool hasCategoriesFilter = categories != null && categories.Any();
+            if (hasCategoriesFilter)
+            {
+                query += " AND category = ANY(@categories)";
+            }
+
+            await using NpgsqlCommand npgsqlCommand = new(query, npgsqlConnection);
+            npgsqlCommand.Parameters.Add(new NpgsqlParameter("tableName", NpgsqlDbType.Text) { Value = TableName });
+
+            if (hasCategoriesFilter)
+            {
+                // Pass categories as a PostgreSQL array for the ANY operator
+                npgsqlCommand.Parameters.Add(new NpgsqlParameter("categories", NpgsqlDbType.Array | NpgsqlDbType.Text) { Value = categories!.ToArray() });
+            }
+
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+            while (await npgsqlDataReader.ReadAsync())
+            {
+                object? @object = npgsqlDataReader["data"];
+                if (@object != null && @object != DBNull.Value)
+                {
+                    string json = @object.ToString() ?? string.Empty;
+
+                    // Convert the JSON metadata back to a UColumn object using Core utility
+                    List<UColumn>? columns_Temp = Core.Convert.ToDiGi<UColumn>(json);
+                    if (columns_Temp != null && columns_Temp.Count != 0)
+                    {
+                        columns.Add(columns_Temp[0]);
+                    }
+                }
+            }
+
+            return columns;
         }
 
         public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
@@ -144,50 +231,6 @@ namespace DiGi.PostgreSQL.Table.Classes
             return true;
         }
 
-        private static async Task<bool> ProcessReaderAsync<TColumn, TRow>(NpgsqlDataReader npgsqlDataReader, Table<TColumn, TRow> table, Dictionary<string, TColumn> dictionary, Dictionary<string, TColumn> dictionary_PrimaryKey, Dictionary<string, TRow> existingRowsMap) where TColumn : IColumn where TRow : IRow<TRow>
-        {
-            while (await npgsqlDataReader.ReadAsync())
-            {
-                Dictionary<string, object?> values = [];
-                foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
-                {
-                    values[keyValuePair.Value.Name!] = npgsqlDataReader[keyValuePair.Key];
-                }
-
-                if (dictionary_PrimaryKey.Count > 0)
-                {
-                    StringBuilder stringBuilder = new();
-                    foreach (TColumn column in dictionary_PrimaryKey.Values)
-                    {
-                        stringBuilder.Append(npgsqlDataReader[column.UniqueId()!]).Append('|');
-                    }
-                    string uniqueValue = stringBuilder.ToString();
-
-                    if (existingRowsMap.TryGetValue(uniqueValue, out TRow? row_Existing))
-                    {
-                        foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
-                        {
-                            object? value_Existing = row_Existing[keyValuePair.Value.Index];
-                            object? value_New = values[keyValuePair.Key];
-                            if ((value_Existing == null || value_Existing.Equals(Core.Query.Default(keyValuePair.Value.Type))) && value_New != null)
-                            {
-                                row_Existing[keyValuePair.Value.Index] = value_New;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        table.AddRow(values);
-                    }
-                }
-                else
-                {
-                    table.AddRow(values);
-                }
-            }
-            return true;
-        }
-
         public async Task<bool> PushAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
         {
             if (table is null || table.RowCount == 0)
@@ -200,8 +243,6 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
-            TColumn? partitionColumn = default;
-
             Dictionary<string, UColumn> dictionary = [];
             foreach (TColumn column in columns)
             {
@@ -210,13 +251,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                     continue;
                 }
 
-                if(TableConversionOptions?.PartitioningOptions is PartitioningOptions<UColumn> partitioningOptions)
-                {
-                    if(column.Name is string name && name.Equals( partitioningOptions.Column?.Name))
-                    {
-                        partitionColumn = column;
-                    }
-                }
+
 
                 dictionary[uniqueId] = column;
             }
@@ -224,6 +259,66 @@ namespace DiGi.PostgreSQL.Table.Classes
             if (dictionary.Count == 0)
             {
                 return false;
+            }
+
+            TColumn? partitionColumn = default;
+
+            if (TableConversionOptions is not null)
+            {
+                if (TableConversionOptions.IdentityColumn is UColumn identityColumn)
+                {
+                    if (identityColumn?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
+                    {
+                        if (dictionary.TryGetValue(uniqueId, out UColumn? column) && column is not null)
+                        {
+                            identityColumn.Index = column.Index;
+                            dictionary[uniqueId] = identityColumn;
+                        }
+                    }
+                }
+
+                if (TableConversionOptions.UniqueColumns is List<UColumn> uniqueColumns)
+                {
+                    foreach (UColumn uniqueColumn in uniqueColumns)
+                    {
+                        if (uniqueColumn?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
+                        {
+                            if (dictionary.TryGetValue(uniqueId, out UColumn? column) && column is not null)
+                            {
+                                uniqueColumn.Index = column.Index;
+                                dictionary[uniqueId] = uniqueColumn;
+                            }
+                        }
+                    }
+                }
+
+                if (TableConversionOptions.PartitioningOptions is PartitioningOptions<UColumn> partitioningOptions)
+                {
+                    if(partitioningOptions.Column?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
+                    {
+                        if (dictionary.TryGetValue(uniqueId, out UColumn? column) && column is not null && partitioningOptions.Column is TColumn partitionColumn_Temp)
+                        {
+                            partitionColumn = partitionColumn_Temp;
+                            partitionColumn_Temp.Index = column.Index;
+                            dictionary[uniqueId] = partitionColumn_Temp;
+                        }
+                    }
+                }
+
+                if (TableConversionOptions.PrimaryKeyColumns is List<UColumn> primaryKeyColumns)
+                {
+                    foreach(UColumn primaryKeyColumn in primaryKeyColumns)
+                    {
+                        if (primaryKeyColumn?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
+                        {
+                            if (dictionary.TryGetValue(uniqueId, out UColumn? column) && column is not null)
+                            {
+                                primaryKeyColumn.Index = column.Index;
+                                dictionary[uniqueId] = primaryKeyColumn;
+                            }
+                        }
+                    }
+                }
             }
 
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
@@ -292,17 +387,17 @@ namespace DiGi.PostgreSQL.Table.Classes
             {
                 NpgsqlBatch npgsqlBatch = new(npgsqlConnection, npgsqlTransaction);
 
-                if(partitionColumn is not null)
+                if (partitionColumn is not null)
                 {
                     object?[]? values = table.GetColumnValues(partitionColumn);
-                    if(values is not null)
+                    if (values is not null)
                     {
                         HashSet<object?> values_Temp = [.. values];
 
-                        foreach(object? value in values_Temp)
+                        foreach (object? value in values_Temp)
                         {
                             string? partitionSufix = Query.PartitionNameSuffix(value);
-                            if(string.IsNullOrWhiteSpace(partitionSufix))
+                            if (string.IsNullOrWhiteSpace(partitionSufix))
                             {
                                 await PostgreSQL.Create.TableAsync_Partition_Default(npgsqlConnection, TableName);
                             }
@@ -360,6 +455,50 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
         }
 
+        private static async Task<bool> ProcessReaderAsync<TColumn, TRow>(NpgsqlDataReader npgsqlDataReader, Table<TColumn, TRow> table, Dictionary<string, TColumn> dictionary, Dictionary<string, TColumn> dictionary_PrimaryKey, Dictionary<string, TRow> existingRowsMap) where TColumn : IColumn where TRow : IRow<TRow>
+        {
+            while (await npgsqlDataReader.ReadAsync())
+            {
+                Dictionary<string, object?> values = [];
+                foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
+                {
+                    values[keyValuePair.Value.Name!] = npgsqlDataReader[keyValuePair.Key];
+                }
+
+                if (dictionary_PrimaryKey.Count > 0)
+                {
+                    StringBuilder stringBuilder = new();
+                    foreach (TColumn column in dictionary_PrimaryKey.Values)
+                    {
+                        stringBuilder.Append(npgsqlDataReader[column.UniqueId()!]).Append('|');
+                    }
+                    string uniqueValue = stringBuilder.ToString();
+
+                    if (existingRowsMap.TryGetValue(uniqueValue, out TRow? row_Existing))
+                    {
+                        foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
+                        {
+                            object? value_Existing = row_Existing[keyValuePair.Value.Index];
+                            object? value_New = values[keyValuePair.Key];
+                            if ((value_Existing == null || value_Existing.Equals(Core.Query.Default(keyValuePair.Value.Type))) && value_New != null)
+                            {
+                                row_Existing[keyValuePair.Value.Index] = value_New;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        table.AddRow(values);
+                    }
+                }
+                else
+                {
+                    table.AddRow(values);
+                }
+            }
+            return true;
+        }
+        
         private async Task<bool> CreateTableAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<UColumn> columns)
         {
             return await Create.TableAsync(npgsqlConnection, TableName, TableConversionOptions, columns);
