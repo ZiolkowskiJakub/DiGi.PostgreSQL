@@ -14,6 +14,16 @@ namespace DiGi.PostgreSQL.Table
                 return null;
             }
 
+            return NpgsqlDbType(type);
+        }
+
+        public static NpgsqlDbType? NpgsqlDbType(this Type? type)
+        {
+            if(type is null)
+            {
+                return null;
+            }
+
             Type underlyingType = Nullable.GetUnderlyingType(type) ?? type;
 
             // Using switch expression for clean, explicit mapping
@@ -21,8 +31,11 @@ namespace DiGi.PostgreSQL.Table
             {
                 // Numeric types
                 _ when underlyingType == typeof(short) => NpgsqlTypes.NpgsqlDbType.Smallint,
+                _ when underlyingType == typeof(ushort) => NpgsqlTypes.NpgsqlDbType.Integer,
                 _ when underlyingType == typeof(int) => NpgsqlTypes.NpgsqlDbType.Integer,
+                _ when underlyingType == typeof(uint) => NpgsqlTypes.NpgsqlDbType.Bigint,
                 _ when underlyingType == typeof(long) => NpgsqlTypes.NpgsqlDbType.Bigint,
+                _ when underlyingType == typeof(ulong) => NpgsqlTypes.NpgsqlDbType.Numeric,
                 _ when underlyingType == typeof(float) => NpgsqlTypes.NpgsqlDbType.Real,
                 _ when underlyingType == typeof(double) => NpgsqlTypes.NpgsqlDbType.Double,
                 _ when underlyingType == typeof(decimal) => NpgsqlTypes.NpgsqlDbType.Numeric,

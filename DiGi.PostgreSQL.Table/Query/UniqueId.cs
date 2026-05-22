@@ -11,7 +11,7 @@ namespace DiGi.PostgreSQL.Table
                 return null;
             }
 
-            return name.ToLower().Trim().Replace(" ", "_");
+            return name.ToLower().Trim().Replace(" ", "_").Replace("[", "").Replace("]", "").Replace(".", "_").Replace(",", "_");
         }
     }
 }

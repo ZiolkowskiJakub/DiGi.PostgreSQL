@@ -420,7 +420,11 @@ namespace DiGi.PostgreSQL.Table.Classes
                             continue;
                         }
 
-                        object parameterValue = row[keyValuePair.Value.Index] ?? DBNull.Value;
+                        if (!Query.TryConvert(row[keyValuePair.Value.Index], out object? parameterValue, npgsqlDbType) || parameterValue is null)
+                        {
+                            parameterValue = DBNull.Value;
+                        }
+
                         npgsqlBatchCommand.Parameters.Add(new NpgsqlParameter(keyValuePair.Key, npgsqlDbType) { Value = parameterValue });
                     }
 
