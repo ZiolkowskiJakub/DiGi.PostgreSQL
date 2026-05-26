@@ -16,24 +16,33 @@ namespace DiGi.PostgreSQL.Table.Classes
         public TablePostgreSQLConverter(ConnectionData? connectionData)
             : base(connectionData)
         {
-
         }
 
         public abstract string TableName { get; }
-        
-        protected abstract TableConversionOptions<UColumn>? TableConversionOptions { get; }
-        
-        public async Task<HashSet<string>> GetCategories()
-        {
-            HashSet<string> categories = [];
 
+        protected abstract TableConversionOptions<UColumn>? TableConversionOptions { get; }
+
+        public async Task<HashSet<string>?> GetCategories()
+        {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
-                return categories;
+                return null;
             }
 
             await npgsqlConnection.OpenAsync();
+
+            return await GetCategories(npgsqlConnection);
+        }
+
+        public async Task<HashSet<string>?> GetCategories(NpgsqlConnection? npgsqlConnection)
+        {
+            if (npgsqlConnection is null)
+            {
+                return null;
+            }
+
+            HashSet<string> categories = [];
 
             string query = $"SELECT category FROM \"{Constants.TableName.Columns}\" WHERE table_name = @tableName";
 
@@ -58,60 +67,39 @@ namespace DiGi.PostgreSQL.Table.Classes
             return categories;
         }
 
-        public async Task<List<UColumn>> GetColumns(IEnumerable<string>? categories = null)
+        public async Task<List<UColumn>?> GetColumnsByCategories(IEnumerable<string>? categories = null)
         {
-            List<UColumn> columns = [];
-
-            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
-
-            if (npgsqlConnection is null)
-            {
-                return columns;
-            }
-
-            await npgsqlConnection.OpenAsync();
-
-            // Build query based on whether categories filter is provided
-            string query = $"SELECT data FROM \"{Constants.TableName.Columns}\" WHERE table_name = @tableName";
-
-            bool hasCategoriesFilter = categories != null && categories.Any();
-            if (hasCategoriesFilter)
-            {
-                query += " AND category = ANY(@categories)";
-            }
-
-            await using NpgsqlCommand npgsqlCommand = new(query, npgsqlConnection);
-            npgsqlCommand.Parameters.Add(new NpgsqlParameter("tableName", NpgsqlDbType.Text) { Value = TableName });
-
-            if (hasCategoriesFilter)
-            {
-                // Pass categories as a PostgreSQL array for the ANY operator
-                npgsqlCommand.Parameters.Add(new NpgsqlParameter("categories", NpgsqlDbType.Array | NpgsqlDbType.Text) { Value = categories!.ToArray() });
-            }
-
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
-            while (await npgsqlDataReader.ReadAsync())
-            {
-                object? @object = npgsqlDataReader["data"];
-                if (@object != null && @object != DBNull.Value)
-                {
-                    string json = @object.ToString() ?? string.Empty;
-
-                    // Convert the JSON metadata back to a UColumn object using Core utility
-                    List<UColumn>? columns_Temp = Core.Convert.ToDiGi<UColumn>(json);
-                    if (columns_Temp != null && columns_Temp.Count != 0)
-                    {
-                        columns.Add(columns_Temp[0]);
-                    }
-                }
-            }
-
-            return columns;
+            return await GetColumns("category", categories);
         }
 
-        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<List<UColumn>?> GetColumnsByCategories(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? categories = null)
         {
-            if (table is null)
+            return await GetColumns(npgsqlConnection, "category", categories);
+        }
+
+        public async Task<List<UColumn>?> GetColumnsByNames(IEnumerable<string>? names = null)
+        {
+            return await GetColumns("name", names);
+        }
+
+        public async Task<List<UColumn>?> GetColumnsByNames(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names = null)
+        {
+            return await GetColumns(npgsqlConnection, "name", names);
+        }
+
+        public async Task<List<UColumn>?> GetColumnsByUniqueIds(IEnumerable<string>? uniqueIds = null)
+        {
+            return await GetColumns("unique_id", uniqueIds);
+        }
+
+        public async Task<List<UColumn>?> GetColumnsByUniqueIds(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? uniqueIds = null)
+        {
+            return await GetColumns(npgsqlConnection, "unique_id", uniqueIds);
+        }
+
+        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        {
+            if (table is null || npgsqlConnection is null)
             {
                 return false;
             }
@@ -124,7 +112,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             Dictionary<string, TColumn> dictionary = [];
             foreach (TColumn column in columns)
             {
-                if(column.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
+                if (column.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
                 {
                     continue;
                 }
@@ -145,7 +133,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                         continue;
                     }
 
-                    if(!dictionary.TryGetValue(uniqueId, out TColumn? column))
+                    if (!dictionary.TryGetValue(uniqueId, out TColumn? column))
                     {
                         continue;
                     }
@@ -153,14 +141,6 @@ namespace DiGi.PostgreSQL.Table.Classes
                     dictionary_PrimaryKey[uniqueId] = column;
                 }
             }
-
-            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
-            if (npgsqlConnection is null)
-            {
-                return false;
-            }
-
-            await npgsqlConnection.OpenAsync();
 
             // Map existing rows for quick lookup during merge
             Dictionary<string, TRow> existingRowsMap = [];
@@ -182,7 +162,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             {
                 await using NpgsqlCommand npgsqlCommand = new(baseQuery, npgsqlConnection);
                 await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync();
-                return await ProcessReaderAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap);
+                return await ReadAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap);
             }
 
             // Case 2: Non-empty table with PKs -> Pull only matching data in batches
@@ -201,7 +181,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                         whereClause.Append(" OR ");
                     }
                     whereClause.Append('(');
-                    
+
                     TRow row = batch[j];
                     int paramIdx = 0;
                     foreach (TColumn pkCol in dictionary_PrimaryKey.Values)
@@ -221,7 +201,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 await using NpgsqlCommand npgsqlCommand = new(baseQuery + whereClause.ToString(), npgsqlConnection);
                 npgsqlCommand.Parameters.AddRange(parameters.ToArray());
                 await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync();
-                if (!await ProcessReaderAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap))
+                if (!await ReadAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap))
                 {
                     return false;
                 }
@@ -230,9 +210,35 @@ namespace DiGi.PostgreSQL.Table.Classes
             return true;
         }
 
+        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        {
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
+            if (npgsqlConnection is null)
+            {
+                return false;
+            }
+
+            await npgsqlConnection.OpenAsync();
+
+            return await PullAsync(npgsqlConnection, table, batchSize);
+        }
+
         public async Task<bool> PushAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
         {
-            if (table is null || table.RowCount == 0)
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
+            if (npgsqlConnection is null)
+            {
+                return false;
+            }
+
+            await npgsqlConnection.OpenAsync();
+
+            return await PushAsync(npgsqlConnection, table, batchSize);
+        }
+
+        public async Task<bool> PushAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        {
+            if (table is null || table.RowCount == 0 || npgsqlConnection is null)
             {
                 return false;
             }
@@ -249,8 +255,6 @@ namespace DiGi.PostgreSQL.Table.Classes
                 {
                     continue;
                 }
-
-
 
                 dictionary[uniqueId] = column;
             }
@@ -293,7 +297,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
                 if (TableConversionOptions.PartitioningOptions is PartitioningOptions<UColumn> partitioningOptions)
                 {
-                    if(partitioningOptions.Column?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
+                    if (partitioningOptions.Column?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
                     {
                         if (dictionary.TryGetValue(uniqueId, out UColumn? column) && column is not null && partitioningOptions.Column is TColumn partitionColumn_Temp)
                         {
@@ -306,7 +310,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
                 if (TableConversionOptions.PrimaryKeyColumns is List<UColumn> primaryKeyColumns)
                 {
-                    foreach(UColumn primaryKeyColumn in primaryKeyColumns)
+                    foreach (UColumn primaryKeyColumn in primaryKeyColumns)
                     {
                         if (primaryKeyColumn?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
                         {
@@ -319,14 +323,6 @@ namespace DiGi.PostgreSQL.Table.Classes
                     }
                 }
             }
-
-            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
-            if (npgsqlConnection is null)
-            {
-                return false;
-            }
-
-            await npgsqlConnection.OpenAsync();
 
             await CreateTableAsync(npgsqlConnection, dictionary.Values);
 
@@ -458,7 +454,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
         }
 
-        private static async Task<bool> ProcessReaderAsync<TColumn, TRow>(NpgsqlDataReader npgsqlDataReader, Table<TColumn, TRow> table, Dictionary<string, TColumn> dictionary, Dictionary<string, TColumn> dictionary_PrimaryKey, Dictionary<string, TRow> existingRowsMap) where TColumn : IColumn where TRow : IRow<TRow>
+        private static async Task<bool> ReadAsync<TColumn, TRow>(NpgsqlDataReader npgsqlDataReader, Table<TColumn, TRow> table, Dictionary<string, TColumn> dictionary, Dictionary<string, TColumn> dictionary_PrimaryKey, Dictionary<string, TRow> existingRowsMap) where TColumn : IColumn where TRow : IRow<TRow>
         {
             while (await npgsqlDataReader.ReadAsync())
             {
@@ -501,10 +497,71 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
             return true;
         }
-        
+
         private async Task<bool> CreateTableAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<UColumn> columns)
         {
             return await Create.TableAsync(npgsqlConnection, TableName, TableConversionOptions, columns);
+        }
+
+        private async Task<List<UColumn>?> GetColumns(string columnName, IEnumerable<string>? values = null)
+        {
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
+
+            if (npgsqlConnection is null)
+            {
+                return null;
+            }
+
+            await npgsqlConnection.OpenAsync();
+
+            return await GetColumns(npgsqlConnection, columnName, values);
+        }
+
+        private async Task<List<UColumn>?> GetColumns(NpgsqlConnection? npgsqlConnection, string columnName, IEnumerable<string>? values = null)
+        {
+            if (npgsqlConnection is null)
+            {
+                return null;
+            }
+
+            List<UColumn> columns = [];
+
+            // Build query based on whether values are provided
+            string query = $"SELECT data FROM \"{Constants.TableName.Columns}\" WHERE table_name = @tableName";
+
+            bool hasFilter = values != null && values.Any();
+            if (hasFilter)
+            {
+                query += $" AND {columnName} = ANY(@{columnName})";
+            }
+
+            await using NpgsqlCommand npgsqlCommand = new(query, npgsqlConnection);
+            npgsqlCommand.Parameters.Add(new NpgsqlParameter("tableName", NpgsqlDbType.Text) { Value = TableName });
+
+            if (hasFilter)
+            {
+                // Pass values as a PostgreSQL array for the ANY operator
+                npgsqlCommand.Parameters.Add(new NpgsqlParameter($"{columnName}", NpgsqlDbType.Array | NpgsqlDbType.Text) { Value = values!.ToArray() });
+            }
+
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+            while (await npgsqlDataReader.ReadAsync())
+            {
+                object? @object = npgsqlDataReader["data"];
+                if (@object != null && @object != DBNull.Value)
+                {
+                    string json = @object.ToString() ?? string.Empty;
+
+                    // Convert the JSON metadata back to a UColumn object using Core utility
+                    List<UColumn>? columns_Temp = Core.Convert.ToDiGi<UColumn>(json);
+                    if (columns_Temp != null && columns_Temp.Count != 0)
+                    {
+                        columns.Add(columns_Temp[0]);
+                    }
+                }
+            }
+
+            return columns;
         }
     }
 }

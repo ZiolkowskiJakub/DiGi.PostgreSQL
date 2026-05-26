@@ -1,5 +1,4 @@
-﻿using DiGi.Core.Interfaces;
-using DiGi.Core.IO.Table.Interfaces;
+﻿using DiGi.Core.IO.Table.Interfaces;
 using System;
 
 namespace DiGi.PostgreSQL.Table
@@ -14,12 +13,12 @@ namespace DiGi.PostgreSQL.Table
         public static string? DataTypeName(this Type? type)
         {
             NpgsqlTypes.NpgsqlDbType? npgsqlDbType = NpgsqlDbType(type);
-            if(npgsqlDbType is null)
+            if (npgsqlDbType is null)
             {
                 return null;
             }
 
-            switch(npgsqlDbType)
+            switch (npgsqlDbType)
             {
                 case NpgsqlTypes.NpgsqlDbType.Double:
                     return "double precision";

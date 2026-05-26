@@ -1,5 +1,4 @@
-﻿using DiGi.Core.IO.Table.Interfaces;
-using NpgsqlTypes;
+﻿using NpgsqlTypes;
 using System;
 
 namespace DiGi.PostgreSQL.Table
@@ -8,7 +7,7 @@ namespace DiGi.PostgreSQL.Table
     {
         public static bool TryConvert(this object? @object, out object? result, NpgsqlDbType npgsqlDbType)
         {
-            switch(npgsqlDbType)
+            switch (npgsqlDbType)
             {
                 case NpgsqlTypes.NpgsqlDbType.Integer:
                     return Core.Query.TryConvert(@object, out result, typeof(int));

@@ -17,7 +17,7 @@ namespace DiGi.PostgreSQL.Table
                 return false;
             }
 
-            StringBuilder stringBuilder = new ();
+            StringBuilder stringBuilder = new();
             List<UColumn>? columns_New = null;
 
             List<string>? uniqueIds = await PostgreSQL.Query.ColumnNamesAsync(npgsqlConnection, tableName);
@@ -263,7 +263,7 @@ namespace DiGi.PostgreSQL.Table
             await using NpgsqlTransaction transaction = await npgsqlConnection.BeginTransactionAsync();
             try
             {
-                await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection, transaction);
+                await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection, transaction);
                 await npgsqlCommand.ExecuteNonQueryAsync();
 
                 await transaction.CommitAsync();

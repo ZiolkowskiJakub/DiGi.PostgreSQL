@@ -1,5 +1,4 @@
-﻿
-namespace DiGi.PostgreSQL.Table
+﻿namespace DiGi.PostgreSQL.Table
 {
     public static partial class Query
     {

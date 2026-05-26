@@ -1,7 +1,6 @@
 ﻿using DiGi.PostgreSQL.Enums;
 using Npgsql;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -122,18 +121,18 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            NpgsqlCommandBuilder npgsqlCommandBuilder = new ();
+            NpgsqlCommandBuilder npgsqlCommandBuilder = new();
 
             string safeParentTable = npgsqlCommandBuilder.QuoteIdentifier(tableName);
             string safePartitionTable = npgsqlCommandBuilder.QuoteIdentifier($"{tableName}_{partitionNameSufix}");
             string valuesList = string.Join(", ", formattedValues);
 
             string commandText = $@"
-                CREATE TABLE IF NOT EXISTS {safePartitionTable} 
+                CREATE TABLE IF NOT EXISTS {safePartitionTable}
                 PARTITION OF {safeParentTable}
                 FOR VALUES IN ({valuesList});";
 
-            await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
             await npgsqlCommand.ExecuteNonQueryAsync();
 
             return true;
@@ -146,7 +145,7 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            NpgsqlCommandBuilder commandBuilder = new ();
+            NpgsqlCommandBuilder commandBuilder = new();
 
             // Secure the identifiers for PostgreSQL
             string safeParentTable = commandBuilder.QuoteIdentifier(tableName);
@@ -154,11 +153,11 @@ namespace DiGi.PostgreSQL
 
             // Construct the DDL command using DEFAULT keyword
             string commandText = $@"
-            CREATE TABLE IF NOT EXISTS {safeDefaultPartitionTable} 
-            PARTITION OF {safeParentTable} 
+            CREATE TABLE IF NOT EXISTS {safeDefaultPartitionTable}
+            PARTITION OF {safeParentTable}
             DEFAULT;";
 
-            await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
 
             try
             {

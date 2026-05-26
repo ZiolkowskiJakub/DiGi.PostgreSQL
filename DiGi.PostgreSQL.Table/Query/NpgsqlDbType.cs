@@ -19,7 +19,7 @@ namespace DiGi.PostgreSQL.Table
 
         public static NpgsqlDbType? NpgsqlDbType(this Type? type)
         {
-            if(type is null)
+            if (type is null)
             {
                 return null;
             }
