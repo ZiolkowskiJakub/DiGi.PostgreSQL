@@ -67,6 +67,11 @@ namespace DiGi.PostgreSQL.Table.Classes
             return categories;
         }
 
+        public async Task<List<UColumn>?> GetColumns()
+        {
+            return await GetColumnsByUniqueIds();
+        }
+
         public async Task<List<UColumn>?> GetColumnsByCategories(IEnumerable<string>? categories = null)
         {
             return await GetColumns("category", categories);
