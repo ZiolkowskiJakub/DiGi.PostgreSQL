@@ -1,4 +1,5 @@
-﻿using DiGi.Core.IO.Table.Classes;
+﻿using DiGi.Core.Constants;
+using DiGi.Core.IO.Table.Classes;
 using DiGi.Core.IO.Table.Interfaces;
 using DiGi.PostgreSQL.Classes;
 using Npgsql;
@@ -67,11 +68,41 @@ namespace DiGi.PostgreSQL.Table.Classes
             return categories;
         }
 
+        public async Task<List<ColumnReference>?> GetColumnReferencesByCategories(IEnumerable<string>? categories = null)
+        {
+            return await GetColumnReferences("category", categories);
+        }
+
+        public async Task<List<ColumnReference>?> GetColumnReferencesByCategories(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? categories = null)
+        {
+            return await GetColumnReferences(npgsqlConnection, "category", categories);
+        }
+
+        public async Task<List<ColumnReference>?> GetColumnReferencesByNames(IEnumerable<string>? names = null)
+        {
+            return await GetColumnReferences("name", names);
+        }
+
+        public async Task<List<ColumnReference>?> GetColumnReferencesByNames(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names = null)
+        {
+            return await GetColumnReferences(npgsqlConnection, "name", names);
+        }
+
+        public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIds(IEnumerable<string>? uniqueIds = null)
+        {
+            return await GetColumnReferences("unique_id", uniqueIds);
+        }
+
+        public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIds(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? uniqueIds = null)
+        {
+            return await GetColumnReferences(npgsqlConnection, "unique_id", uniqueIds);
+        }
+
         public async Task<List<UColumn>?> GetColumns()
         {
             return await GetColumnsByUniqueIds();
         }
-
+        
         public async Task<List<UColumn>?> GetColumnsByCategories(IEnumerable<string>? categories = null)
         {
             return await GetColumns("category", categories);
@@ -506,6 +537,66 @@ namespace DiGi.PostgreSQL.Table.Classes
         private async Task<bool> CreateTableAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<UColumn> columns)
         {
             return await Create.TableAsync(npgsqlConnection, TableName, TableConversionOptions, columns);
+        }
+
+        private async Task<List<ColumnReference>?> GetColumnReferences(NpgsqlConnection? npgsqlConnection, string columnName, IEnumerable<string>? values = null)
+        {
+            if (npgsqlConnection is null)
+            {
+                return null;
+            }
+
+            List<ColumnReference> result = [];
+
+            // Build query based on whether values are provided
+            string query = $"SELECT id, table_name, unique_id, name, description, category FROM \"{Constants.TableName.Columns}\" WHERE table_name = @tableName";
+
+            bool hasFilter = values != null && values.Any();
+            if (hasFilter)
+            {
+                query += $" AND {columnName} = ANY(@{columnName})";
+            }
+
+            await using NpgsqlCommand npgsqlCommand = new(query, npgsqlConnection);
+            npgsqlCommand.Parameters.Add(new NpgsqlParameter("tableName", NpgsqlDbType.Text) { Value = TableName });
+
+            if (hasFilter)
+            {
+                // Pass values as a PostgreSQL array for the ANY operator
+                npgsqlCommand.Parameters.Add(new NpgsqlParameter($"{columnName}", NpgsqlDbType.Array | NpgsqlDbType.Text) { Value = values!.ToArray() });
+            }
+
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+            while (await npgsqlDataReader.ReadAsync())
+            {
+                ColumnReference columnReference = new()
+                {
+                    Id = npgsqlDataReader["id"] is int id ? id : -1,
+                    TableName = npgsqlDataReader["table_name"] as string,
+                    UniqueId = npgsqlDataReader["unique_id"] as string,
+                    Name = npgsqlDataReader["name"] as string,
+                    Description = npgsqlDataReader["description"] as string,
+                    Category = npgsqlDataReader["category"] as string
+                };
+
+                result.Add(columnReference);
+            }
+
+            return result;
+        }
+
+        private async Task<List<ColumnReference>?> GetColumnReferences(string columnName, IEnumerable<string>? values = null)
+        {
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
+
+            if (npgsqlConnection is null)
+            {
+                return null;
+            }
+
+            await npgsqlConnection.OpenAsync();
+
+            return await GetColumnReferences(columnName, values);
         }
 
         private async Task<List<UColumn>?> GetColumns(string columnName, IEnumerable<string>? values = null)
