@@ -26,7 +26,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         public ColumnReference(ColumnReference? columnReference)
             : base(columnReference)
         {
-            if(columnReference is not null)
+            if (columnReference is not null)
             {
                 Category = columnReference.Category;
                 Description = columnReference.Description;

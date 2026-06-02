@@ -1,5 +1,4 @@
-﻿using DiGi.Core.Constants;
-using DiGi.Core.IO.Table.Classes;
+﻿using DiGi.Core.IO.Table.Classes;
 using DiGi.Core.IO.Table.Interfaces;
 using DiGi.PostgreSQL.Classes;
 using Npgsql;
@@ -102,7 +101,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         {
             return await GetColumnsByUniqueIds();
         }
-        
+
         public async Task<List<UColumn>?> GetColumnsByCategories(IEnumerable<string>? categories = null)
         {
             return await GetColumns("category", categories);
@@ -497,7 +496,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 Dictionary<string, object?> values = [];
                 foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
                 {
-                    values[keyValuePair.Value.Name!] = npgsqlDataReader[keyValuePair.Key];
+                    values[keyValuePair.Value.UniqueId()!] = npgsqlDataReader[keyValuePair.Key];
                 }
 
                 if (dictionary_PrimaryKey.Count > 0)
@@ -520,6 +519,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                                 row_Existing[keyValuePair.Value.Index] = value_New;
                             }
                         }
+
+                        table.AddRow(row_Existing);
                     }
                     else
                     {
