@@ -5,6 +5,13 @@ namespace DiGi.PostgreSQL.Table
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Attempts to convert a given object to a value corresponding to the specified NpgsqlDbType.
+        /// </summary>
+        /// <param name="object">The source object to be converted.</param>
+        /// <param name="result">When this method returns, contains the converted value if successful; otherwise, null.</param>
+        /// <param name="npgsqlDbType">The target PostgreSQL database type for conversion.</param>
+        /// <returns>True if the conversion was successful; otherwise, false.</returns>
         public static bool TryConvert(this object? @object, out object? result, NpgsqlDbType npgsqlDbType)
         {
             switch (npgsqlDbType)

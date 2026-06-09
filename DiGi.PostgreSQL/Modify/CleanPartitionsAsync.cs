@@ -8,6 +8,11 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Asynchronously cleans up partitions by removing empty ones from the metadata and dropping physical tables if they contain no rows.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection to be used for the cleanup process.</param>
+        /// <returns>A list of partitions that were removed, or <see langword="null"/> if the provided connection is null or partition data could not be retrieved.</returns>
         public static async Task<List<Partition>?> CleanPartitionsAsync(NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)

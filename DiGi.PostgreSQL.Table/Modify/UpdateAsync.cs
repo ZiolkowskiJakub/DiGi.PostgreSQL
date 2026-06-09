@@ -10,6 +10,14 @@ namespace DiGi.PostgreSQL.Table
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Updates or inserts column definitions into the PostgreSQL database for a specified table using an upsert operation.
+        /// </summary>
+        /// <typeparam name="UColumn">The type of the column being updated, which must implement <see cref="IColumn"/>.</typeparam>
+        /// <param name="npgsqlConnection">The <see cref="NpgsqlConnection"/> instance used to communicate with the PostgreSQL database.</param>
+        /// <param name="tableName">The name of the table whose columns are being updated.</param>
+        /// <param name="columns">A collection of column objects implementing <see cref="IColumn"/> to be updated or inserted.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <c>true</c> if one or more rows were affected; otherwise, <c>false</c>.</returns>
         public static async Task<bool> UpdateAsync<UColumn>(this NpgsqlConnection? npgsqlConnection, string tableName, IEnumerable<UColumn> columns) where UColumn : IColumn
         {
             if (npgsqlConnection is null || columns is null || string.IsNullOrWhiteSpace(tableName))

@@ -9,6 +9,13 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Removes the specified partition unique references from the database asynchronously.
+        /// </summary>
+        /// <param name="npgsqlConnection">The connection to the PostgreSQL database.</param>
+        /// <param name="partitionUniqueReferences">The collection of partition unique references to be removed.</param>
+        /// <param name="clean">A value indicating whether to perform cleanup of partitions and types after removal.</param>
+        /// <returns>A HashSet of PartitionUniqueReference containing the successfully removed references, or <c>null</c> if the operation failed or no references were processed.</returns>
         public static async Task<HashSet<Classes.PartitionUniqueReference>?> RemoveAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<Classes.PartitionUniqueReference> partitionUniqueReferences, bool clean = true)
         {
             if (npgsqlConnection is null)

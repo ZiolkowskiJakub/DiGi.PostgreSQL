@@ -5,6 +5,12 @@ namespace DiGi.PostgreSQL.Table
 {
     public static partial class Convert
     {
+        /// <summary>
+        /// Converts a column implementation to a DiGi core column representation.
+        /// </summary>
+        /// <typeparam name="UColumn">The type of the column being converted, which must implement <see cref="IColumn"/>.</typeparam>
+        /// <param name="column">The source column instance to convert.</param>
+        /// <returns>A <see cref="Classes.Column"/> instance if the input is not null; otherwise, null.</returns>
         public static Classes.Column? ToDiGi<UColumn>(this UColumn? column) where UColumn : IColumn
         {
             if (column is null)

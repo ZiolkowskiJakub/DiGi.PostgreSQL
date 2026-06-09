@@ -11,6 +11,12 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Checks whether a specific system type exists within the database.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
+        /// <param name="type">The system type to check for existence.</param>
+        /// <returns>A task that represents the asynchronous operation, containing true if the type is found; otherwise, false.</returns>
         public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Type? type)
         {
             if (npgsqlConnection is null || type is null)
@@ -27,6 +33,12 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
             return await ContainsAsync(npgsqlConnection, type_Temp);
         }
 
+        /// <summary>
+        /// Checks whether a specific database type exists across all supported data type tables.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
+        /// <param name="type">The database type to check for existence.</param>
+        /// <returns>A task that represents the asynchronous operation, containing true if the type is found; otherwise, false.</returns>
         public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Type? type)
         {
             if (npgsqlConnection is null || type is null)
@@ -66,6 +78,12 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
             return result;
         }
 
+        /// <summary>
+        /// Checks for the existence of a collection of partition unique references within the database.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
+        /// <param name="partitionUniqueReferences">A collection of partition unique references to verify.</param>
+        /// <returns>A task that represents the asynchronous operation, containing a set of existing partition unique references, or null if the input is invalid.</returns>
         public static async Task<HashSet<Classes.PartitionUniqueReference>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<Classes.PartitionUniqueReference> partitionUniqueReferences)
         {
             if (npgsqlConnection is null || partitionUniqueReferences is null)
@@ -124,6 +142,13 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
             return result;
         }
 
+        /// <summary>
+        /// Checks for the existence of multiple unique references within a specific database partition.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
+        /// <param name="partition">The partition to search within.</param>
+        /// <param name="uniqueReferences">A collection of unique references to verify.</param>
+        /// <returns>A task that represents the asynchronous operation, containing a set of existing unique references, or null if any input is null.</returns>
         public static async Task<HashSet<IUniqueReference>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, Partition? partition, IEnumerable<IUniqueReference>? uniqueReferences)
         {
             if (npgsqlConnection is null || partition is null || uniqueReferences is null)

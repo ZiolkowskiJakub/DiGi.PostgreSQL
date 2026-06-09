@@ -8,6 +8,11 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Cleans up unused types from the database by removing those that are not associated with any partition.
+        /// </summary>
+        /// <param name="npgsqlConnection">The connection to the PostgreSQL database.</param>
+        /// <returns>A list of the types that were deleted, or null if the operation could not be performed.</returns>
         public static async Task<List<Classes.Type>?> CleanTypesAsync(NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)

@@ -7,6 +7,11 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Create
     {
+        /// <summary>
+        /// Asynchronously creates a PostgreSQL database based on the provided connection data.
+        /// </summary>
+        /// <param name="connectionData">The connection data containing the database name and server details.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains true if the database was created or already exists; otherwise, false.</returns>
         public static async Task<bool> DatabaseAsync(ConnectionData? connectionData)
         {
             if (connectionData is null || string.IsNullOrWhiteSpace(connectionData.Database))
@@ -48,6 +53,13 @@ namespace DiGi.PostgreSQL
             return true;
         }
 
+        /// <summary>
+        /// Asynchronously creates a PostgreSQL database with optional tablespace and directory specifications.
+        /// </summary>
+        /// <param name="connectionData">The connection data containing the database name and server details.</param>
+        /// <param name="tablespaceName">The optional name of the tablespace to be used for the database.</param>
+        /// <param name="directory">The optional physical directory path on the server where the tablespace should be located.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains true if the database was created or already exists; otherwise, false.</returns>
         public static async Task<bool> DatabaseAsync(this ConnectionData? connectionData, string? tablespaceName = null, string? directory = null)
         {
             if (connectionData is null || string.IsNullOrWhiteSpace(connectionData.Database))
@@ -140,6 +152,11 @@ namespace DiGi.PostgreSQL
             }
         }
 
+        /// <summary>
+        /// Asynchronously creates a PostgreSQL database using settings from a configuration file.
+        /// </summary>
+        /// <param name="postgreSQLConfigurationFile">The configuration file containing the necessary connection and tablespace details.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains true if the database was created or already exists; otherwise, false.</returns>
         public static async Task<bool> DatabaseAsync(PostgreSQLConfigurationFile? postgreSQLConfigurationFile)
         {
             if (postgreSQLConfigurationFile is null)

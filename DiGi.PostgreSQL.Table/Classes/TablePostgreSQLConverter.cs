@@ -11,17 +11,38 @@ using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.Table.Classes
 {
+    /// <summary>
+    /// Provides an abstract base class for converters that handle the translation between a <see cref="Table{T}"/>
+    /// and its PostgreSQL representation.
+    /// </summary>
+    /// <typeparam name="UColumn">The type of columns contained within the table, which must implement the <see cref="IColumn"/> interface.</typeparam>
     public abstract class TablePostgreSQLConverter<UColumn> : PostgreSQLConverter<Table<UColumn>> where UColumn : IColumn
     {
+        /// <summary>
+        /// Initializes a new instance of the TablePostgreSQLConverter class using the specified connection data.
+        /// </summary>
+        /// <param name="connectionData">The connection configuration details used to connect to the PostgreSQL database. This value can be null.</param>
         public TablePostgreSQLConverter(ConnectionData? connectionData)
             : base(connectionData)
         {
         }
 
+        /// <summary>
+        /// Gets the name of the database table associated with this entity.
+        /// </summary>
+        /// <returns>The string representing the name of the database table.</returns>
         public abstract string TableName { get; }
 
+        /// <summary>
+        /// Gets the options used to configure the table conversion process.
+        /// </summary>
+        /// <returns>The configuration options for the table conversion, or <c>null</c> if no specific options are provided.</returns>
         protected abstract TableConversionOptions<UColumn>? TableConversionOptions { get; }
 
+        /// <summary>
+        /// Asynchronously retrieves a unique set of categories from the database.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="HashSet{T}"/> of category strings if successful; otherwise, <c>null</c>.</returns>
         public async Task<HashSet<string>?> GetCategoriesAsync()
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
@@ -35,6 +56,11 @@ namespace DiGi.PostgreSQL.Table.Classes
             return await GetCategoriesAsync(npgsqlConnection);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a unique set of categories from the database using the provided connection.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the query. This value can be null.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="HashSet{T}"/> of category strings if retrieved successfully; otherwise, null.</returns>
         public async Task<HashSet<string>?> GetCategoriesAsync(NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)
@@ -67,71 +93,147 @@ namespace DiGi.PostgreSQL.Table.Classes
             return categories;
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of column references filtered by the specified categories.
+        /// </summary>
+        /// <param name="categories">An optional collection of category names to filter the results. If null, the filtering criteria may be omitted.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, null.</returns>
         public async Task<List<ColumnReference>?> GetColumnReferencesByCategoriesAsync(IEnumerable<string>? categories = null)
         {
             return await GetColumnReferencesAsync("category", categories);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of column references filtered by the specified categories.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to be used for the database operation.</param>
+        /// <param name="categories">An optional collection of category names used to filter the column references.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if successful; otherwise, null.</returns>
         public async Task<List<ColumnReference>?> GetColumnReferencesByCategoriesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? categories = null)
         {
             return await GetColumnReferencesAsync(npgsqlConnection, "category", categories);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of column references that match the specified names.
+        /// </summary>
+        /// <param name="names">An optional collection of column names to filter by. If null, the retrieval criteria may vary based on the underlying implementation.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, null.</returns>
         public async Task<List<ColumnReference>?> GetColumnReferencesByNamesAsync(IEnumerable<string>? names = null)
         {
             return await GetColumnReferencesAsync("name", names);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of column references based on the specified names.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the database query.</param>
+        /// <param name="names">An optional collection of column names to filter the search results.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, null.</returns>
         public async Task<List<ColumnReference>?> GetColumnReferencesByNamesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names = null)
         {
             return await GetColumnReferencesAsync(npgsqlConnection, "name", names);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of column references associated with the specified unique identifiers.
+        /// </summary>
+        /// <param name="uniqueIds">An optional collection of unique identifiers used to filter the column references. If null, the retrieval behavior is determined by the underlying data source.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, <see langword="null"/>.</returns>
         public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(IEnumerable<string>? uniqueIds = null)
         {
             return await GetColumnReferencesAsync("unique_id", uniqueIds);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of column references associated with the specified unique identifiers.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to communicate with the database.</param>
+        /// <param name="uniqueIds">An optional collection of unique identifier strings used to filter the column references.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, null.</returns>
         public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? uniqueIds = null)
         {
             return await GetColumnReferencesAsync(npgsqlConnection, "unique_id", uniqueIds);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of all available column definitions.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if columns are found; otherwise, <c>null</c>.</returns>
         public async Task<List<UColumn>?> GetColumnsAsync()
         {
             return await GetColumnsByUniqueIdsAsync();
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of columns filtered by the specified categories.
+        /// </summary>
+        /// <param name="categories">An optional collection of category names to filter the columns by. If null, the filtering behavior is determined by the underlying data source.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects matching the categories, or null if no results are found.</returns>
         public async Task<List<UColumn>?> GetColumnsByCategoriesAsync(IEnumerable<string>? categories = null)
         {
             return await GetColumnsAsync("category", categories);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of columns filtered by the specified categories.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to be used for the database operation.</param>
+        /// <param name="categories">An optional collection of category names used to filter the retrieved columns.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if successful; otherwise, null.</returns>
         public async Task<List<UColumn>?> GetColumnsByCategoriesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? categories = null)
         {
             return await GetColumnsAsync(npgsqlConnection, "category", categories);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of columns filtered by the specified names.
+        /// </summary>
+        /// <param name="names">An optional collection of column names to retrieve. If null, the behavior depends on the underlying data source implementation.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if matches are found; otherwise, null.</returns>
         public async Task<List<UColumn>?> GetColumnsByNamesAsync(IEnumerable<string>? names = null)
         {
             return await GetColumnsAsync("name", names);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of columns filtered by the specified names.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the database query.</param>
+        /// <param name="names">An optional collection of column names to retrieve. If null, the filter may be ignored or return no results depending on the underlying implementation.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if successful; otherwise, null.</returns>
         public async Task<List<UColumn>?> GetColumnsByNamesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names = null)
         {
             return await GetColumnsAsync(npgsqlConnection, "name", names);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of columns based on the provided unique identifiers.
+        /// </summary>
+        /// <param name="uniqueIds">An optional collection of unique identifier strings used to filter the columns. If null, the behavior is determined by the underlying data source.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects matching the specified identifiers, or null if no matches are found.</returns>
         public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(IEnumerable<string>? uniqueIds = null)
         {
             return await GetColumnsAsync("unique_id", uniqueIds);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of columns based on their unique identifiers.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the database query.</param>
+        /// <param name="uniqueIds">An optional collection of unique identifier strings used to filter the results.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if found; otherwise, null.</returns>
         public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? uniqueIds = null)
         {
             return await GetColumnsAsync(npgsqlConnection, "unique_id", uniqueIds);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a collection of unique values associated with the specified identifier.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements contained in the returned collection.</typeparam>
+        /// <param name="uniqueId">The unique identifier used to query for the values; may be null.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains an enumerable collection of nullable values of type <typeparamref name="T"/>, or null if the operation cannot be completed or no data is found.</returns>
         public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(string? uniqueId)
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
@@ -199,6 +301,15 @@ namespace DiGi.PostgreSQL.Table.Classes
             return result;
         }
 
+        /// <summary>
+        /// Asynchronously pulls data from the specified table using the provided Npgsql connection in batches.
+        /// </summary>
+        /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql database connection to use for the operation. May be null.</param>
+        /// <param name="table">The table instance from which data is being pulled. May be null.</param>
+        /// <param name="batchSize">The number of records to process per batch. Defaults to 1000.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
         public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
         {
             if (table is null || npgsqlConnection is null)
@@ -312,6 +423,14 @@ namespace DiGi.PostgreSQL.Table.Classes
             return true;
         }
 
+        /// <summary>
+        /// Asynchronously pulls data from the database for the specified table using a defined batch size.
+        /// </summary>
+        /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="table">The table instance to pull data for. This value can be null.</param>
+        /// <param name="batchSize">The number of records to retrieve in each batch. The default value is 1000.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains <see langword="true"/> if the data was pulled successfully; otherwise, <see langword="false"/>.</returns>
         public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
@@ -325,6 +444,14 @@ namespace DiGi.PostgreSQL.Table.Classes
             return await PullAsync(npgsqlConnection, table, batchSize);
         }
 
+        /// <summary>
+        /// Asynchronously pushes the contents of the specified table to the database using batch processing.
+        /// </summary>
+        /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="table">The table instance containing the data to be pushed. This value can be null.</param>
+        /// <param name="batchSize">The number of records to process in each batch. The default value is 1000.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains <c>true</c> if the push operation was successful; otherwise, <c>false</c>.</returns>
         public async Task<bool> PushAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
@@ -338,6 +465,15 @@ namespace DiGi.PostgreSQL.Table.Classes
             return await PushAsync(npgsqlConnection, table, batchSize);
         }
 
+        /// <summary>
+        /// Asynchronously pushes data from the specified table to the database using the provided Npgsql connection.
+        /// </summary>
+        /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to communicate with the database. May be null.</param>
+        /// <param name="table">The table containing the data to be pushed. May be null.</param>
+        /// <param name="batchSize">The number of records to process per batch. Defaults to 1000.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the data was successfully pushed; otherwise, <see langword="false"/>.</returns>
         public async Task<bool> PushAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
         {
             if (table is null || table.RowCount == 0 || npgsqlConnection is null)

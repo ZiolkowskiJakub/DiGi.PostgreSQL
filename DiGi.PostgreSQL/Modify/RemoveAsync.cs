@@ -9,6 +9,12 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Asynchronously removes records from the database partitions associated with the specified partition identifiers.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to be used for the database operation.</param>
+        /// <param name="partitionIds">The collection of partition identifiers to remove.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if records were removed; otherwise, false.</returns>
         public static async Task<bool> RemoveAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<short>? partitionIds)
         {
             if (npgsqlConnection is null || partitionIds == null || !partitionIds.Any())

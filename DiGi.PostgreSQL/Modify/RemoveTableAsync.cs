@@ -6,6 +6,12 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Asynchronously removes a table from the database if it exists.
+        /// </summary>
+        /// <param name="connectionData">The connection data used to establish the database connection.</param>
+        /// <param name="tableName">The name of the table to be removed.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains true if the table was successfully removed or did not exist; otherwise, false.</returns>
         public static async Task<bool> RemoveTableAsync(this ConnectionData? connectionData, string tableName)
         {
             if (connectionData is null || string.IsNullOrWhiteSpace(tableName))

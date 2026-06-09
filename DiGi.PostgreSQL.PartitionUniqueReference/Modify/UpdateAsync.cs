@@ -13,6 +13,16 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Asynchronously updates the partition unique references in the PostgreSQL database for a collection of serializable objects.
+        /// </summary>
+        /// <typeparam name="USerializableObject">The type of the serializable object, which must implement <see cref="ISerializableObject"/>.</typeparam>
+        /// <param name="npgsqlConnection">The <see cref="NpgsqlConnection"/> used to communicate with the database.</param>
+        /// <param name="serializableObjects">A collection of objects that are to be updated in the database.</param>
+        /// <param name="dataTypeFunc">A function used to determine the <see cref="DataType"/> based on a provided string key.</param>
+        /// <param name="sender">The object that initiated the request; defaults to null.</param>
+        /// <param name="partitionUniqueReferenceGeneratingEventHandler">An optional event handler for generating partition unique references; defaults to null.</param>
+        /// <returns>A task representing the asynchronous operation. The task result contains a <see cref="HashSet{T}"/> of updated <see cref="Classes.PartitionUniqueReference"/> objects, or null if the connection is null, serializable objects are null, or critical table creation fails.</returns>
         public static async Task<HashSet<Classes.PartitionUniqueReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, Func<string?, DataType> dataTypeFunc, object? sender = null, PartitionUniqueReferenceGeneratingEventHandler? partitionUniqueReferenceGeneratingEventHandler = null) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null || serializableObjects is null)

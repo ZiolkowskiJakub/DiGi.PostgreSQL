@@ -8,6 +8,13 @@ namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Checks whether the specified unique references exist in the database.
+        /// </summary>
+        /// <typeparam name="TUniqueReference">The type of the unique reference, which must implement <see cref="IUniqueReference"/>.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql connection to use for the query.</param>
+        /// <param name="uniqueReferences">A collection of unique references to check for existence.</param>
+        /// <returns>A hash set containing the unique references that were found in the database, or null if the connection or input collection is null.</returns>
         public static async Task<HashSet<TUniqueReference>?> ContainsAsync<TUniqueReference>(this NpgsqlConnection npgsqlConnection, IEnumerable<TUniqueReference>? uniqueReferences) where TUniqueReference : IUniqueReference
         {
             if (npgsqlConnection is null || uniqueReferences is null)
@@ -67,6 +74,12 @@ namespace DiGi.PostgreSQL.UniqueReference
             return result;
         }
 
+        /// <summary>
+        /// Checks whether the specified type exists in the database.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to use for the query.</param>
+        /// <param name="type">The type to check for existence.</param>
+        /// <returns>A task that represents the asynchronous operation, containing true if the type exists; otherwise, false.</returns>
         public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Type? type)
         {
             if (npgsqlConnection is null || type is null)

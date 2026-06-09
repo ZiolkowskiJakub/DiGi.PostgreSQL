@@ -13,6 +13,16 @@ namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Asynchronously updates or inserts serializable objects into the PostgreSQL database, utilizing partitioning and unique references via a batch operation.
+        /// </summary>
+        /// <typeparam name="USerializableObject">The type of object that implements <see cref="ISerializableObject"/>.</typeparam>
+        /// <param name="npgsqlConnection">The <see cref="NpgsqlConnection"/> used to connect to the PostgreSQL database.</param>
+        /// <param name="serializableObjects">An <see cref="IEnumerable{USerializableObject}"/> containing the objects to be updated or inserted.</param>
+        /// <param name="dataTypeFunc">A delegate that maps a <see cref="Type"/> to a <see cref="DataType"/>.</param>
+        /// <param name="sender">The source of the event, used when invoking the unique ID reference generating event handler.</param>
+        /// <param name="uniqueIdReferenceGeneratingEventHandler">An optional <see cref="UniqueIdReferenceGeneratingEventHandler"/> to customize the generation of unique references.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a HashSet of UniqueReference of updated references, or null if the connection or objects are null or an error occurs during table creation.</returns>
         public static async Task<HashSet<Core.Classes.UniqueReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, Func<Type?, DataType> dataTypeFunc, object? sender = null, UniqueIdReferenceGeneratingEventHandler? uniqueIdReferenceGeneratingEventHandler = null) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null || serializableObjects is null)

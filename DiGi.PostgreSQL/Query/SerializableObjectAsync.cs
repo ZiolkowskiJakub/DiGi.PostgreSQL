@@ -9,6 +9,14 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Asynchronously retrieves and deserializes a serializable object from the provided NpgsqlDataReader based on the specified data type.
+        /// </summary>
+        /// <typeparam name="USerializableObject">The type of the serializable object to retrieve, which must implement ISerializableObject.</typeparam>
+        /// <param name="npgsqlDataReader">The NpgsqlDataReader containing the data to be read.</param>
+        /// <param name="dataType">The data type of the value in the reader.</param>
+        /// <param name="index">The zero-based index of the column to read from.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the deserialized object if successful; otherwise, null.</returns>
         public static async Task<USerializableObject?> SerializableObjectAsync<USerializableObject>(NpgsqlDataReader npgsqlDataReader, Enums.DataType dataType, int index = 0) where USerializableObject : ISerializableObject
         {
             if (npgsqlDataReader is null || index == -1 || dataType == Enums.DataType.Undefined)

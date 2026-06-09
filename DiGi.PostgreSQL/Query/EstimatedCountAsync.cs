@@ -6,6 +6,14 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Gets an estimated row count for the specified table in a PostgreSQL database.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to use for the query.</param>
+        /// <param name="tableName">The name of the table to get the estimate for.</param>
+        /// <param name="analyze">A boolean indicating whether to run VACUUM ANALYZE before fetching the count.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The estimated number of rows as a long, or -1 if an error occurs or the table does not exist.</returns>
         public static async Task<long> EstimatedCountAsync(this NpgsqlConnection npgsqlConnection, string tableName, bool analyze = false, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))

@@ -7,6 +7,11 @@ namespace DiGi.PostgreSQL.Table
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Maps an <see cref="IColumn"/> to its corresponding <see cref="NpgsqlTypes.NpgsqlDbType"/>.
+        /// </summary>
+        /// <param name="column">The column for which the PostgreSQL data type is being determined.</param>
+        /// <returns>The mapped <see cref="NpgsqlTypes.NpgsqlDbType"/>, or <see langword="null"/> if the mapping cannot be determined.</returns>
         public static NpgsqlDbType? NpgsqlDbType(this IColumn? column)
         {
             if (column?.Type is not Type type)
@@ -17,6 +22,11 @@ namespace DiGi.PostgreSQL.Table
             return NpgsqlDbType(type);
         }
 
+        /// <summary>
+        /// Maps a .NET <see cref="Type"/> to its corresponding <see cref="NpgsqlTypes.NpgsqlDbType"/>.
+        /// </summary>
+        /// <param name="type">The .NET type for which the PostgreSQL data type is being determined.</param>
+        /// <returns>The mapped <see cref="NpgsqlTypes.NpgsqlDbType"/>, or <see langword="null"/> if the mapping cannot be determined.</returns>
         public static NpgsqlDbType? NpgsqlDbType(this Type? type)
         {
             if (type is null)

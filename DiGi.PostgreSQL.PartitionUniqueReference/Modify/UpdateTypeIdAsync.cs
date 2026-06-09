@@ -5,6 +5,12 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Updates or creates a type ID based on the provided name.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance used to perform the operation.</param>
+        /// <param name="name">The name of the type to update or create.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the updated or created <see cref="Classes.Type"/> object, or null if the operation failed or inputs were invalid.</returns>
         public static async Task<Classes.Type?> UpdateTypeIdAsync(this NpgsqlConnection? npgsqlConnection, string? name)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))

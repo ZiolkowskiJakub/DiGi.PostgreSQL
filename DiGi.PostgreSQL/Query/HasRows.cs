@@ -4,6 +4,12 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Checks if a specified table in the PostgreSQL database contains any rows.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the query.</param>
+        /// <param name="tableName">The name of the table to check for existence of rows.</param>
+        /// <returns>True if the table exists and contains at least one row; otherwise, false.</returns>
         public static bool HasRows(this NpgsqlConnection? npgsqlConnection, string tableName)
         {
             // Basic validation for Revit/Rhino plugin stability

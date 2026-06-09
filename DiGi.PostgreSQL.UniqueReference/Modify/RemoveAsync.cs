@@ -11,6 +11,14 @@ namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Removes a collection of unique references from the database asynchronously.
+        /// </summary>
+        /// <typeparam name="TUniqueReference">The type of the unique reference, which must implement IUniqueReference.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql connection to be used for the operation.</param>
+        /// <param name="uniqueReferences">The collection of unique references to remove.</param>
+        /// <param name="clean">A value indicating whether to clean partitions after the removal process.</param>
+        /// <returns>A list of successfully removed unique references, or null if the connection is null or no valid references were found.</returns>
         public static async Task<List<TUniqueReference>?> RemoveAsync<TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences, bool clean = true) where TUniqueReference : IUniqueReference
         {
             if (npgsqlConnection is null)
@@ -77,6 +85,13 @@ namespace DiGi.PostgreSQL.UniqueReference
             return result;
         }
 
+        /// <summary>
+        /// Removes all unique references associated with a specific type from the database asynchronously.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to be used for the operation.</param>
+        /// <param name="type">The type whose references should be removed.</param>
+        /// <param name="inheritance">A value indicating whether to include inherited types in the removal process.</param>
+        /// <returns>True if the removal was successful; otherwise, false.</returns>
         public static async Task<bool> RemoveAsync(NpgsqlConnection? npgsqlConnection, Type type, bool inheritance = true)
         {
             if (npgsqlConnection is null || type is null)

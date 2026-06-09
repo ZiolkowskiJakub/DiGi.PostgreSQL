@@ -6,6 +6,13 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Asynchronously removes a specified database and its associated tablespace from the PostgreSQL server.
+        /// </summary>
+        /// <param name="connectionData">The connection data used to connect to the PostgreSQL server.</param>
+        /// <param name="databaseName">The name of the database to be removed.</param>
+        /// <param name="tablespaceName">The name of the tablespace associated with the database to be removed.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if the removal was successful; otherwise, false.</returns>
         public static async Task<bool> RemoveDatabaseAsync(this ConnectionData? connectionData, string databaseName, string tablespaceName)
         {
             if (connectionData is null || string.IsNullOrWhiteSpace(databaseName))

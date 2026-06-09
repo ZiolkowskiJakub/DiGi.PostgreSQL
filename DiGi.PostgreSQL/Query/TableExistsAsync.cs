@@ -7,6 +7,12 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Checks if a table exists in the PostgreSQL database using the provided connection.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to use for the query.</param>
+        /// <param name="tableName">The name of the table to check for existence.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains true if the table exists; otherwise, false.</returns>
         public static async Task<bool> TableExistsAsync(this NpgsqlConnection? npgsqlConnection, string tableName)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
@@ -27,6 +33,12 @@ namespace DiGi.PostgreSQL
             return result != null && result != DBNull.Value;
         }
 
+        /// <summary>
+        /// Checks if a table exists in the PostgreSQL database using the provided connection data.
+        /// </summary>
+        /// <param name="connectionData">The connection data used to create the Npgsql connection.</param>
+        /// <param name="tableName">The name of the table to check for existence.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains true if the table exists; otherwise, false.</returns>
         public static async Task<bool> TableExistsAsync(this ConnectionData? connectionData, string tableName)
         {
             if (string.IsNullOrWhiteSpace(tableName))

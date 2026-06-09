@@ -6,6 +6,12 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Asynchronously retrieves a partition by its name from the database.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection to use for the query.</param>
+        /// <param name="name">The name of the partition to retrieve.</param>
+        /// <returns>A <see cref="Partition"/> object if found; otherwise, null.</returns>
         public static async Task<Partition?> PartitionAsync(this NpgsqlConnection? npgsqlConnection, string? name)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
@@ -35,6 +41,12 @@ namespace DiGi.PostgreSQL
             return null;
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a partition by its ID from the database.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection to use for the query.</param>
+        /// <param name="partitionId">The unique identifier of the partition to retrieve.</param>
+        /// <returns>A <see cref="Partition"/> object if found; otherwise, null.</returns>
         public static async Task<Partition?> PartitionAsync(this NpgsqlConnection? npgsqlConnection, short partitionId)
         {
             if (npgsqlConnection is null)

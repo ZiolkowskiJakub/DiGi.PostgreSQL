@@ -8,6 +8,12 @@ namespace DiGi.PostgreSQL.PartitionReference
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Asynchronously removes the specified partition references from the database.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to be used for the operation.</param>
+        /// <param name="partitionReferences">The collection of partition references to remove.</param>
+        /// <returns>A hash set containing the successfully removed partition references, or null if the connection is null or an error occurred during processing.</returns>
         public static async Task<HashSet<Classes.PartitionReference>?> RemoveAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<Classes.PartitionReference> partitionReferences)
         {
             if (npgsqlConnection is null)

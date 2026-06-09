@@ -4,6 +4,11 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Create
     {
+        /// <summary>
+        /// Creates a ConnectionData object from the provided PostgreSQL configuration file.
+        /// </summary>
+        /// <param name="postgreSQLConfigurationFile">The PostgreSQL configuration file containing connection details.</param>
+        /// <returns>A ConnectionData instance if the configuration is valid; otherwise, null.</returns>
         public static ConnectionData? ConnectionData(PostgreSQLConfigurationFile? postgreSQLConfigurationFile)
         {
             if (postgreSQLConfigurationFile is null)

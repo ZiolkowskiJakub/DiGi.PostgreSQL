@@ -7,6 +7,13 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Asynchronously checks which of the specified unique identifiers exist within a partition identified by its ID.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
+        /// <param name="partitionId">The identifier of the partition to check.</param>
+        /// <param name="uniqueIds">The collection of unique identifiers to verify.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a set of existing unique identifiers, or null if any input is null.</returns>
         public static async Task<HashSet<string>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, short? partitionId, IEnumerable<string>? uniqueIds)
         {
             if (npgsqlConnection is null || partitionId is null || uniqueIds is null)
@@ -28,6 +35,13 @@ namespace DiGi.PostgreSQL
             return await ContainsAsync(npgsqlConnection, partition, uniqueIds);
         }
 
+        /// <summary>
+        /// Asynchronously checks which of the specified unique identifiers exist within the provided partition.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
+        /// <param name="partition">The partition object to check.</param>
+        /// <param name="uniqueIds">The collection of unique identifiers to verify.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a set of existing unique identifiers, or null if any input is null.</returns>
         public static async Task<HashSet<string>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Partition? partition, IEnumerable<string>? uniqueIds)
         {
             if (npgsqlConnection is null || partition is null || uniqueIds is null)
@@ -57,6 +71,12 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
+        /// <summary>
+        /// Asynchronously checks whether any records exist within a partition identified by its ID.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
+        /// <param name="partitionId">The identifier of the partition to check.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if records exist, otherwise false.</returns>
         public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, short? partitionId)
         {
             if (npgsqlConnection is null || partitionId is null)
@@ -73,6 +93,12 @@ namespace DiGi.PostgreSQL
             return await npgsqlConnection.ContainsAsync(partition);
         }
 
+        /// <summary>
+        /// Asynchronously checks whether any records exist within a partition identified by its name.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
+        /// <param name="name">The name of the partition to check.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if records exist, otherwise false.</returns>
         public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, string? name)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
@@ -89,6 +115,12 @@ namespace DiGi.PostgreSQL
             return await npgsqlConnection.ContainsAsync(partition);
         }
 
+        /// <summary>
+        /// Asynchronously checks whether any records exist within the provided partition.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
+        /// <param name="partition">The partition object to check.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if records exist, otherwise false.</returns>
         public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Partition partition)
         {
             if (npgsqlConnection is null || partition is null)

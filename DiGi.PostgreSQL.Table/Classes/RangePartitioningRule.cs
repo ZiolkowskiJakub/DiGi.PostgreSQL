@@ -8,41 +8,73 @@ using System.Text.Json.Serialization;
 
 namespace DiGi.PostgreSQL.Table.Classes
 {
+    /// <summary>
+    /// Represents a base rule for range-based partitioning in PostgreSQL.
+    /// </summary>
     public abstract class RangePartitioningRule : PartitioningRule
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RangePartitioningRule"/> class.
+        /// </summary>
         public RangePartitioningRule()
             : base()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RangePartitioningRule"/> class using an existing rule.
+        /// </summary>
+        /// <param name="rangePartitioningRule">The source range partitioning rule to copy from.</param>
         public RangePartitioningRule(RangePartitioningRule rangePartitioningRule)
             : base(rangePartitioningRule)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RangePartitioningRule"/> class from a JSON object.
+        /// </summary>
+        /// <param name="jsonObject">The JSON object containing the rule configuration.</param>
         public RangePartitioningRule(JsonObject jsonObject)
             : base(jsonObject)
         {
         }
     }
 
+    /// <summary>
+    /// Represents a range partitioning rule for a specific numeric type.
+    /// </summary>
+    /// <typeparam name="TNumber">The numeric type used for the partition ranges.</typeparam>
     public class RangePartitioningRule<TNumber> : RangePartitioningRule where TNumber : INumber<TNumber>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RangePartitioningRule{TNumber}"/> class.
+        /// </summary>
         public RangePartitioningRule()
             : base()
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RangePartitioningRule{TNumber}"/> class using an existing rule.
+        /// </summary>
+        /// <param name="rangePartitioningRule">The source range partitioning rule to copy from.</param>
         public RangePartitioningRule(RangePartitioningRule<TNumber> rangePartitioningRule)
             : base(rangePartitioningRule)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RangePartitioningRule{TNumber}"/> class from a JSON object.
+        /// </summary>
+        /// <param name="jsonObject">The JSON object containing the rule configuration.</param>
         public RangePartitioningRule(JsonObject jsonObject)
             : base(jsonObject)
         {
         }
 
+        /// <summary>
+        /// Gets or sets the list of ranges defined for this partitioning rule.
+        /// </summary>
         [JsonInclude, JsonPropertyName(nameof(Ranges))]
         public List<Range<TNumber>>? Ranges { get; set; }
 
@@ -99,6 +131,11 @@ namespace DiGi.PostgreSQL.Table.Classes
             return fallback.Replace('.', 'p');
         }
 
+        /// <summary>
+        /// Gets the partition suffix for a given numeric value based on the defined ranges.
+        /// </summary>
+        /// <param name="value">The numeric value to evaluate.</param>
+        /// <returns>A string representing the partition suffix if a matching range is found; otherwise, null.</returns>
         public string? GetPartitionSufix(TNumber value)
         {
             Range<TNumber>? range = Ranges?.Find(x => x.In(value));

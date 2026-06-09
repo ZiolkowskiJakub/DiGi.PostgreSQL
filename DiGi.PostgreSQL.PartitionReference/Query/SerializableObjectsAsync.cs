@@ -9,6 +9,13 @@ namespace DiGi.PostgreSQL.PartitionReference
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Asynchronously retrieves a list of serializable objects associated with a specific partition name.
+        /// </summary>
+        /// <typeparam name="USerializableObject">The type of the serializable object, which must implement ISerializableObject.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql connection to use for the database query.</param>
+        /// <param name="name">The name of the partition from which to retrieve objects.</param>
+        /// <returns>A task that represents the asynchronous operation, containing a list of serializable objects or null if the connection is null.</returns>
         public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, string name) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null)
@@ -55,6 +62,13 @@ namespace DiGi.PostgreSQL.PartitionReference
             return result;
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of serializable objects associated with a collection of partition references.
+        /// </summary>
+        /// <typeparam name="USerializableObject">The type of the serializable object, which must implement ISerializableObject.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql connection to use for the database query.</param>
+        /// <param name="partitionReferences">A collection of partition references used to identify the objects to retrieve.</param>
+        /// <returns>A task that represents the asynchronous operation, containing a list of serializable objects or null if the connection or partition references are null.</returns>
         public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, IEnumerable<Classes.PartitionReference> partitionReferences) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null || partitionReferences is null)

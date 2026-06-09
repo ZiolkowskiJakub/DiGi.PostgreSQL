@@ -6,6 +6,12 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Asynchronously removes the specified tablespace from the PostgreSQL server if it is not currently in use by any database.
+        /// </summary>
+        /// <param name="connectionData">The connection data used to establish a connection to the PostgreSQL server.</param>
+        /// <param name="tablespaceName">The name of the tablespace to be removed.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <c>true</c> if the tablespace was successfully removed or did not exist; otherwise, <c>false</c>.</returns>
         public static async Task<bool> RemoveTablespaceAsync(this ConnectionData? connectionData, string tablespaceName)
         {
             if (connectionData is null || string.IsNullOrWhiteSpace(tablespaceName))

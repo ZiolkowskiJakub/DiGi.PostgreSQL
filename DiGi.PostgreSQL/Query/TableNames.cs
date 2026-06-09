@@ -6,6 +6,11 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Retrieves a list of table names from the public schema of the PostgreSQL database.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the query.</param>
+        /// <returns>A list of strings containing the table names, or null if the connection is null.</returns>
         public static List<string>? TableNames(this NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)
@@ -27,6 +32,11 @@ namespace DiGi.PostgreSQL
             return result;
         }
 
+        /// <summary>
+        /// Retrieves a list of table names from the public schema of the PostgreSQL database using provided connection data.
+        /// </summary>
+        /// <param name="connectionData">The connection data used to establish a database connection.</param>
+        /// <returns>A list of strings containing the table names, or null if the connection cannot be established.</returns>
         public static List<string>? TableNames(this ConnectionData? connectionData)
         {
             if (Create.NpgsqlConnection(connectionData) is not NpgsqlConnection npgsqlConnection)

@@ -9,6 +9,13 @@ namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Asynchronously retrieves a list of serializable objects from the database based on the specified type and inheritance settings.
+        /// </summary>
+        /// <typeparam name="USerializableObject">The type of serializable object to retrieve, which must implement <see cref="ISerializableObject"/>.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql connection used to execute the database query.</param>
+        /// <param name="inheritance">A value indicating whether to include inherited types in the retrieval process.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of retrieved serializable objects, or null if the connection is null.</returns>
         public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, bool inheritance = true) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null)
@@ -75,6 +82,14 @@ namespace DiGi.PostgreSQL.UniqueReference
             return result;
         }
 
+        /// <summary>
+        /// Asynchronously retrieves a list of serializable objects from the database using a collection of unique references.
+        /// </summary>
+        /// <typeparam name="USerializableObject">The type of serializable object to retrieve, which must implement <see cref="ISerializableObject"/>.</typeparam>
+        /// <typeparam name="TUniqueReference">The type of the unique reference used for lookup, which must implement <see cref="IUniqueReference"/>.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql connection used to execute the database query.</param>
+        /// <param name="uniqueReferences">A collection of unique references to be resolved into serializable objects.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of retrieved serializable objects, or null if the connection or unique references are null.</returns>
         public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject, TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences) where USerializableObject : ISerializableObject where TUniqueReference : IUniqueReference
         {
             if (npgsqlConnection is null || uniqueReferences is null)

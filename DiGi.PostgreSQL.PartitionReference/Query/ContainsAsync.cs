@@ -6,6 +6,12 @@ namespace DiGi.PostgreSQL.PartitionReference
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Asynchronously checks if the specified partition references exist in the database.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to be used for the operation.</param>
+        /// <param name="partitionReferences">The collection of partition references to check for existence.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a HashSet of the partition references that exist in the database, or null if the connection or the input collection is null.</returns>
         public static async Task<HashSet<Classes.PartitionReference>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<Classes.PartitionReference>? partitionReferences)
         {
             if (npgsqlConnection is null || partitionReferences is null)

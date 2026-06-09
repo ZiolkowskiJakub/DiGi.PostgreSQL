@@ -9,6 +9,14 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Create
     {
+        /// <summary>
+        /// Asynchronously creates the main objects table for a specific data type, including optional GIN indexing and type column referencing.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance used to execute the command.</param>
+        /// <param name="dataType">The data type that determines the table name and storage format.</param>
+        /// <param name="useGIN">A value indicating whether a GIN index should be created for JSON data types.</param>
+        /// <param name="includeType">A value indicating whether to include a reference column to the types lookup table.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if the table was created successfully; otherwise, false.</returns>
         public static async Task<bool> TableAsync_Objects(this NpgsqlConnection? npgsqlConnection, DataType dataType, bool useGIN = false, bool includeType = false)
         {
             if (npgsqlConnection is null || dataType == DataType.Undefined)
@@ -77,6 +85,13 @@ namespace DiGi.PostgreSQL
             }
         }
 
+        /// <summary>
+        /// Asynchronously creates a specific partition for the objects table based on the provided data type and partition identifier.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance used to execute the command.</param>
+        /// <param name="dataType">The data type associated with the parent objects table.</param>
+        /// <param name="partitionId">The unique identifier for the partition being created.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if the partition was created successfully; otherwise, false.</returns>
         public static async Task<bool> TableAsync_Objects_Partition(this NpgsqlConnection? npgsqlConnection, DataType dataType, short partitionId)
         {
             if (npgsqlConnection is null || dataType == DataType.Undefined)
@@ -96,6 +111,16 @@ namespace DiGi.PostgreSQL
             return true;
         }
 
+        /// <summary>
+        /// Asynchronously creates a partition for a specified parent table based on a collection of provided values.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the values collection.</typeparam>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance used to execute the command.</param>
+        /// <param name="tableName">The name of the parent table that is being partitioned.</param>
+        /// <param name="partitionNameSufix">The suffix to be appended to the parent table name to create the partition table name.</param>
+        /// <param name="values">A collection of values for which this partition will be responsible.</param>
+        /// <param name="conversionFunc">An optional function to convert each value of type T into a string representation for the SQL command.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if the partition was created successfully; otherwise, false.</returns>
         public static async Task<bool> TableAsync_Partition<T>(this NpgsqlConnection? npgsqlConnection, string tableName, string partitionNameSufix, IEnumerable<T> values, Func<T, string>? conversionFunc = null)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName) || string.IsNullOrWhiteSpace(partitionNameSufix) || values is null || !values.Any())
@@ -138,6 +163,12 @@ namespace DiGi.PostgreSQL
             return true;
         }
 
+        /// <summary>
+        /// Asynchronously creates a default partition for the specified parent table to handle any values not matched by other partitions.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance used to execute the command.</param>
+        /// <param name="tableName">The name of the parent table for which the default partition is created.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if the default partition was created successfully; otherwise, false.</returns>
         public static async Task<bool> TableAsync_Partition_Default(this NpgsqlConnection? npgsqlConnection, string tableName)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
@@ -171,6 +202,11 @@ namespace DiGi.PostgreSQL
             }
         }
 
+        /// <summary>
+        /// Asynchronously creates the partitions lookup table used to manage and track data partitioning.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance used to execute the command.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if the partitions table was created successfully; otherwise, false.</returns>
         public static async Task<bool> TableAsync_Partitions(this NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)

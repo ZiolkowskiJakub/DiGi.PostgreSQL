@@ -5,6 +5,13 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Updates or creates a partition ID based on the provided name and data type.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to use for database operations.</param>
+        /// <param name="name">The name of the partition.</param>
+        /// <param name="dataType">The data type associated with the partition.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the updated or created <see cref="Classes.Partition"/> object, or <see langword="null"/> if the operation failed.</returns>
         public static async Task<Classes.Partition?> UpdatePartitionIdAsync(this NpgsqlConnection? npgsqlConnection, string? name, Enums.DataType dataType)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))

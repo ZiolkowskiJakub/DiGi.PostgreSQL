@@ -3,15 +3,25 @@ using System;
 
 namespace DiGi.PostgreSQL.UniqueReference.Classes
 {
+    /// <summary>
+    /// Event arguments used during the generation of a unique ID reference.
+    /// </summary>
     public class UniqueIdReferenceGeneratingEventArgs : PostgreSQL.Classes.ReferenceGeneratingEventArgs
     {
         private string? uniqueId = null;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UniqueIdReferenceGeneratingEventArgs"/> class.
+        /// </summary>
+        /// <param name="item">The item for which the reference is being generated.</param>
         public UniqueIdReferenceGeneratingEventArgs(object? item)
             : base(item)
         {
         }
 
+        /// <summary>
+        /// Gets or sets the unique identifier string associated with this reference.
+        /// </summary>
         public string? UniqueId
         {
             get
@@ -25,6 +35,10 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             }
         }
 
+        /// <summary>
+        /// Gets the constructed <see cref="UniqueIdReference"/> based on the item type and the provided unique identifier.
+        /// </summary>
+        /// <returns>A <see cref="UniqueIdReference"/> instance if successfully created; otherwise, null.</returns>
         public UniqueIdReference? UniqueIdReference
         {
             get

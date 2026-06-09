@@ -10,6 +10,15 @@ namespace DiGi.PostgreSQL.Table
 {
     public static partial class Create
     {
+        /// <summary>
+        /// Asynchronously creates a table or adds missing columns to an existing table in the PostgreSQL database based on the provided column definitions and options.
+        /// </summary>
+        /// <typeparam name="UColumn">The type of column implementation, which must implement <see cref="IColumn"/>.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the database commands.</param>
+        /// <param name="tableName">The name of the table to be created or modified.</param>
+        /// <param name="tableConversionOptions">Optional configuration settings for table conversion, such as primary keys and partitioning rules.</param>
+        /// <param name="columns">A collection of column definitions to be applied to the table.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if the table was successfully created or updated; otherwise, false.</returns>
         public static async Task<bool> TableAsync<UColumn>(this NpgsqlConnection? npgsqlConnection, string tableName, TableConversionOptions<UColumn>? tableConversionOptions, IEnumerable<UColumn> columns) where UColumn : IColumn
         {
             if (string.IsNullOrWhiteSpace(tableName) || npgsqlConnection is null)
@@ -281,6 +290,8 @@ namespace DiGi.PostgreSQL.Table
         /// Initializes the metadata repository for dynamic column management.
         /// This table tracks all custom engineering parameters added to the partitioned main tables.
         /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to create the columns metadata table.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if the repository was successfully initialized; otherwise, false.</returns>
         public static async Task<bool> TableAsync_Columns(this NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)

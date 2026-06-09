@@ -6,6 +6,11 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Maps a PostgreSQL data type to its corresponding .NET system type.
+        /// </summary>
+        /// <param name="postgreSQLDataType">The PostgreSQL data type to convert.</param>
+        /// <returns>The corresponding .NET <see cref="Type"/> if found; otherwise, <c>null</c>.</returns>
         public static Type? Type(this PostgreSQLDataType postgreSQLDataType)
         {
             if (postgreSQLDataType == PostgreSQLDataType.Undefined)

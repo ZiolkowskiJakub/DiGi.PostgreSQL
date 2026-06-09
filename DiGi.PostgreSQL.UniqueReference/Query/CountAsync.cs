@@ -9,6 +9,13 @@ namespace DiGi.PostgreSQL.UniqueReference
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Asynchronously counts the number of records for a specified type in the database.
+        /// </summary>
+        /// <param name="npgsqlConnection">The PostgreSQL connection instance used to execute the query.</param>
+        /// <param name="type">The type of the objects to count.</param>
+        /// <param name="inheritance">A value indicating whether to include inherited types in the count.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the total record count, or -1 if the connection or type is null.</returns>
         public static async Task<long> CountAsync(this NpgsqlConnection npgsqlConnection, Type? type, bool inheritance = true)
         {
             if (npgsqlConnection is null || type is null)

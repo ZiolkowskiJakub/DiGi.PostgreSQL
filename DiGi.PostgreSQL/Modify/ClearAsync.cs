@@ -6,6 +6,13 @@ namespace DiGi.PostgreSQL
 {
     public static partial class Modify
     {
+        /// <summary>
+        /// Asynchronously clears all data from the specified table and restarts its identity sequence.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection to be used for the operation.</param>
+        /// <param name="tableName">The name of the database table to clear.</param>
+        /// <param name="cancellationToken">The cancellation token to observe while waiting for the task to complete.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if the operation succeeded; otherwise, false.</returns>
         public static async Task<bool> ClearAsync(NpgsqlConnection? npgsqlConnection, string tableName, CancellationToken cancellationToken = default)
         {
             // Use TRUNCATE for speed, or DELETE for transactional safety

@@ -1,7 +1,13 @@
 ﻿namespace DiGi.PostgreSQL.Constants
 {
+    /// <summary>
+    /// Gets the list of all configuration key names.
+    /// </summary>
     public static class Names
     {
+        /// <summary>
+        /// Contains configuration key names for PostgreSQL configuration files.
+        /// </summary>
         public static class PostgreSQLConfigurationFile
         {
             /// <summary>

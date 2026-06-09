@@ -10,6 +10,13 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 {
     public static partial class Query
     {
+        /// <summary>
+        /// Asynchronously retrieves a list of serializable objects based on the provided PostgreSQL connection and partition unique references.
+        /// </summary>
+        /// <typeparam name="USerializableObject">The type of serializable object to retrieve, which must implement ISerializableObject.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql connection used to execute the query.</param>
+        /// <param name="partitionUniqueReferences">A collection of partition unique references to filter the objects.</param>
+        /// <returns>A task that represents the asynchronous operation, containing a list of serializable objects if successful; otherwise, null.</returns>
         public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, IEnumerable<Classes.PartitionUniqueReference> partitionUniqueReferences) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null || partitionUniqueReferences is null)
