@@ -50,7 +50,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// </summary>
         /// <example>
         /// [
-        ///   { "Name": "Reference", "UniqueId": "reference, "Category": "Administrative" },
+        ///   { "Name": "Reference", "UniqueId": "reference", "Category": "Administrative" },
         ///   { "Name": "County Id", "UniqueId": "count_id", "Category": "Administrative" },
         ///   { "Name": "Floor area", "UniqueId": "floor_area", "Category": "Shape descriptors" }
         /// ]

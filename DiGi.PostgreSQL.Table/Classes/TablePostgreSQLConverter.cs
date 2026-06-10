@@ -263,16 +263,16 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return null;
             }
 
-            // 2. Prepare the SQL query. 
-            // SECURITY WARNING: Since column names cannot be parameterized, ensure 'uniqueId' 
+            // 2. Prepare the SQL query.
+            // SECURITY WARNING: Since column names cannot be parameterized, ensure 'uniqueId'
             // is validated against a whitelist to prevent SQL Injection.
             string commandQuery = $@"
-                SELECT DISTINCT {uniqueId} 
-                FROM {TableName} 
-                WHERE {uniqueId} IS NOT NULL 
+                SELECT DISTINCT {uniqueId}
+                FROM {TableName}
+                WHERE {uniqueId} IS NOT NULL
                 ORDER BY {uniqueId}";
 
-            // 3. Initialize result set. Using HashSet to ensure uniqueness in memory 
+            // 3. Initialize result set. Using HashSet to ensure uniqueness in memory
             // (complementary to the SQL DISTINCT clause).
             HashSet<T?> result = [];
 
@@ -299,6 +299,122 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Asynchronously pulls specific data from the specified table based on a unique column value.
+        /// </summary>
+        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, string columnUniqueId, object value) where TColumn : UColumn where TRow : IRow<TRow>
+        {
+            if (table is null || npgsqlConnection is null || string.IsNullOrWhiteSpace(columnUniqueId))
+            {
+                return false;
+            }
+
+            if (table.Columns is not IEnumerable<TColumn> columns || !columns.Any())
+            {
+                return false;
+            }
+
+            List<UColumn>? columns_Existing = await GetColumnsByUniqueIdsAsync([columnUniqueId]);
+            if (columns_Existing is null || columns_Existing.Count == 0)
+            {
+                return false;
+            }
+
+            UColumn? column_Existing = columns_Existing.Find(x => x?.UniqueId() == columnUniqueId);
+            if (column_Existing?.NpgsqlDbType() is not NpgsqlDbType npgsqlDbType)
+            {
+                return false;
+            }
+
+            if (!column_Existing.TryGetValidValue(value, out object? value_Temp))
+            {
+                return false;
+            }
+
+            Dictionary<string, TColumn> dictionary = [];
+            foreach (TColumn column in columns)
+            {
+                if (column.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
+                {
+                    continue;
+                }
+
+                dictionary[uniqueId] = column;
+            }
+
+            IEnumerable<string> quotedColumns = dictionary.Keys.Select(x => $"\"{x}\"");
+            string commandText = $"SELECT {string.Join(", ", quotedColumns)} FROM \"{TableName}\" WHERE \"{columnUniqueId}\" = @{columnUniqueId}";
+
+            // Setup Primary Keys dictionary for proper merging in ReadAsync
+            Dictionary<string, TColumn> dictionary_PrimaryKey = [];
+            if (TableConversionOptions?.PrimaryKeyColumns is List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
+            {
+                foreach (UColumn column_PrimaryKey in columns_PrimaryKey)
+                {
+                    if (column_PrimaryKey.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
+                    {
+                        continue;
+                    }
+
+                    if (!dictionary.TryGetValue(uniqueId, out TColumn? column))
+                    {
+                        continue;
+                    }
+
+                    dictionary_PrimaryKey[uniqueId] = column;
+                }
+            }
+
+            // Map existing rows to avoid duplicates and update them properly
+            Dictionary<string, TRow> existingRowsMap = [];
+            if (dictionary_PrimaryKey.Count > 0 && table.Rows is IEnumerable<TRow> currentRows)
+            {
+                foreach (TRow row in currentRows)
+                {
+                    StringBuilder pkKeyBuilder = new();
+                    foreach (TColumn pkCol in dictionary_PrimaryKey.Values)
+                    {
+                        pkKeyBuilder.Append(row[pkCol.Index]).Append('|');
+                    }
+                    existingRowsMap[pkKeyBuilder.ToString()] = row;
+                }
+            }
+
+            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+
+            // Explicitly using the NpgsqlDbType to avoid implicit mapping issues
+            NpgsqlParameter npgsqlParameter = new(columnUniqueId, npgsqlDbType)
+            {
+                Value = value_Temp ?? DBNull.Value
+            };
+            npgsqlCommand.Parameters.Add(npgsqlParameter);
+
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+
+            if (!await ReadAsync(npgsqlDataReader, table, dictionary, dictionary_PrimaryKey, existingRowsMap))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Asynchronously pulls specific data from the specified table based on a unique column value.
+        /// </summary>
+        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, object value) where TColumn : UColumn where TRow : IRow<TRow>
+        {
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
+            if (npgsqlConnection is null)
+            {
+                return false;
+            }
+
+            await npgsqlConnection.OpenAsync();
+
+            return await PullAsync(npgsqlConnection, table, columnUniqueId, value);
         }
 
         /// <summary>
@@ -699,7 +815,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                 Dictionary<string, object?> values = [];
                 foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
                 {
-                    values[keyValuePair.Value.UniqueId()!] = npgsqlDataReader[keyValuePair.Key];
+                    //values[keyValuePair.Value.UniqueId()!] = npgsqlDataReader[keyValuePair.Key];
+                    values[keyValuePair.Value.Name!] = npgsqlDataReader[keyValuePair.Key];
                 }
 
                 if (dictionary_PrimaryKey.Count > 0)

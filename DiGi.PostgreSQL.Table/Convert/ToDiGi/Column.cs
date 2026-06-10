@@ -22,7 +22,8 @@ namespace DiGi.PostgreSQL.Table
             {
                 Index = column.Index,
                 Name = column.Name,
-                DataType = Core.Query.DataType(column.Type)
+                DataType = Core.Query.DataType(column.Type),
+                UniqueId = column.UniqueId()
             };
 
             if (column is ExtendedColumn extendedColumn)
