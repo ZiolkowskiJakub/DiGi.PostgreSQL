@@ -302,11 +302,16 @@ namespace DiGi.PostgreSQL.Table.Classes
         }
 
         /// <summary>
-        /// Asynchronously pulls specific data from the specified table based on a unique column value.
+        /// Asynchronously pulls specific data from the specified table based on a unique column values.
         /// </summary>
-        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, string columnUniqueId, object value) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PullAsync<TObject, TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, string columnUniqueId, IEnumerable<TObject>? values) where TColumn : UColumn where TRow : IRow<TRow>
         {
-            if (table is null || npgsqlConnection is null || string.IsNullOrWhiteSpace(columnUniqueId))
+            if (table is null || npgsqlConnection is null || string.IsNullOrWhiteSpace(columnUniqueId) || values is null || !values.Any())
+            {
+                return false;
+            }
+
+            if (values is null || !values.Any())
             {
                 return false;
             }
@@ -328,7 +333,18 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
-            if (!column_Existing.TryGetValidValue(value, out object? value_Temp))
+            // Validate and collect all provided values
+            List<object> validValues = [];
+            foreach (TObject value in values)
+            {
+                if (column_Existing.TryGetValidValue(value, out object? value_Temp) && value_Temp is not null)
+                {
+                    validValues.Add(value_Temp);
+                }
+            }
+
+            // If none of the provided values were valid, there is nothing to query
+            if (validValues.Count == 0)
             {
                 return false;
             }
@@ -345,7 +361,28 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
 
             IEnumerable<string> quotedColumns = dictionary.Keys.Select(x => $"\"{x}\"");
-            string commandText = $"SELECT {string.Join(", ", quotedColumns)} FROM \"{TableName}\" WHERE \"{columnUniqueId}\" = @{columnUniqueId}";
+            string paramName = "targetValues";
+            string commandText;
+            NpgsqlParameter npgsqlParameter;
+
+            // Dynamically build the query based on the count of valid values
+            if (validValues.Count == 1)
+            {
+                commandText = $"SELECT {string.Join(", ", quotedColumns)} FROM \"{TableName}\" WHERE \"{columnUniqueId}\" = @{paramName}";
+                npgsqlParameter = new NpgsqlParameter(paramName, npgsqlDbType)
+                {
+                    Value = validValues[0]
+                };
+            }
+            else
+            {
+                commandText = $"SELECT {string.Join(", ", quotedColumns)} FROM \"{TableName}\" WHERE \"{columnUniqueId}\" = ANY(@{paramName})";
+                // Combine Array flag with the specific NpgsqlDbType
+                npgsqlParameter = new NpgsqlParameter(paramName, NpgsqlDbType.Array | npgsqlDbType)
+                {
+                    Value = validValues.ToArray()
+                };
+            }
 
             // Setup Primary Keys dictionary for proper merging in ReadAsync
             Dictionary<string, TColumn> dictionary_PrimaryKey = [];
@@ -373,7 +410,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             {
                 foreach (TRow row in currentRows)
                 {
-                    StringBuilder pkKeyBuilder = new();
+                    StringBuilder pkKeyBuilder = new ();
                     foreach (TColumn pkCol in dictionary_PrimaryKey.Values)
                     {
                         pkKeyBuilder.Append(row[pkCol.Index]).Append('|');
@@ -382,13 +419,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
             }
 
-            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
-
-            // Explicitly using the NpgsqlDbType to avoid implicit mapping issues
-            NpgsqlParameter npgsqlParameter = new(columnUniqueId, npgsqlDbType)
-            {
-                Value = value_Temp ?? DBNull.Value
-            };
+            await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection);
             npgsqlCommand.Parameters.Add(npgsqlParameter);
 
             await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
@@ -404,8 +435,29 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <summary>
         /// Asynchronously pulls specific data from the specified table based on a unique column value.
         /// </summary>
-        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, object value) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, string columnUniqueId, object? value) where TColumn : UColumn where TRow : IRow<TRow>
         {
+            return await PullAsync(npgsqlConnection, table, columnUniqueId, [value]);
+        }
+
+        /// <summary>
+        /// Asynchronously pulls specific data from the specified table based on a unique column value.
+        /// </summary>
+        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, object? value) where TColumn : UColumn where TRow : IRow<TRow>
+        {
+            return await PullAsync(table, columnUniqueId, [value]);
+        }
+
+        /// <summary>
+        /// Asynchronously pulls specific data from the specified table based on a unique column values.
+        /// </summary>
+        public async Task<bool> PullAsync<TObject, TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, IEnumerable<TObject>? values) where TColumn : UColumn where TRow : IRow<TRow>
+        {
+            if(values is null || !values.Any())
+            {
+                return false;
+            }
+
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
@@ -414,7 +466,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             await npgsqlConnection.OpenAsync();
 
-            return await PullAsync(npgsqlConnection, table, columnUniqueId, value);
+            return await PullAsync(npgsqlConnection, table, columnUniqueId, values);
         }
 
         /// <summary>
