@@ -55,7 +55,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         ///   { "Name": "Floor area", "UniqueId": "floor_area", "Category": "Shape descriptors" }
         /// ]
         /// </example>
-        [JsonInclude, JsonPropertyName("Columns")]
+        [JsonInclude, JsonPropertyName(nameof(Columns))]
         public List<Column?> Columns { get; set; } = [];
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         ///   [ "b82c4g02-920g-590b-04d4-b961059d71bg", 10366, 309.49 ]
         /// ]
         /// </example>
-        [JsonInclude, JsonPropertyName("Values")]
+        [JsonInclude, JsonPropertyName(nameof(Values))]
         public List<object?[]> Values { get; set; } = [];
     }
 }
