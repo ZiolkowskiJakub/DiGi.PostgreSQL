@@ -1,4 +1,4 @@
-﻿using DiGi.Core.IO.Table.Classes;
+using DiGi.Core.IO.Table.Classes;
 using DiGi.Core.IO.Table.Interfaces;
 using DiGi.PostgreSQL.Classes;
 using Npgsql;
@@ -410,7 +410,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             {
                 foreach (TRow row in currentRows)
                 {
-                    StringBuilder pkKeyBuilder = new ();
+                    StringBuilder pkKeyBuilder = new();
                     foreach (TColumn pkCol in dictionary_PrimaryKey.Values)
                     {
                         pkKeyBuilder.Append(row[pkCol.Index]).Append('|');
@@ -420,6 +420,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
 
             await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
             npgsqlCommand.Parameters.Add(npgsqlParameter);
 
             await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
@@ -453,7 +454,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// </summary>
         public async Task<bool> PullAsync<TObject, TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, IEnumerable<TObject>? values) where TColumn : UColumn where TRow : IRow<TRow>
         {
-            if(values is null || !values.Any())
+            if (values is null || !values.Any())
             {
                 return false;
             }
@@ -1031,6 +1032,325 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
 
             return columns;
+        }
+
+        /// <summary>
+        /// Asynchronously pulls a chunk of data from a table using keyset (cursor-based) pagination.
+        /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
+        /// </summary>
+        /// <typeparam name="TColumn">The type of column, which must implement <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="npgsqlConnection">The active database connection instance.</param>
+        /// <param name="table">The table instance to populate with page data.</param>
+        /// <param name="seekColumnUniqueId">The unique identifier of the column to sort and seek by.</param>
+        /// <param name="lastSeekValue">The seek column value of the last row from the previous page.</param>
+        /// <param name="pageSize">The maximum number of records to retrieve in this page.</param>
+        /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
+        /// <returns>A task representing the asynchronous operation, returning true if successful; otherwise, false.</returns>
+        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection npgsqlConnection, Table<TColumn, TRow>? table, string seekColumnUniqueId, object? lastSeekValue, int pageSize, object? partitionValue = null)
+            where TColumn : UColumn
+            where TRow : IRow<TRow>
+        {
+            if (table is null || npgsqlConnection is null || string.IsNullOrWhiteSpace(seekColumnUniqueId))
+            {
+                return false;
+            }
+
+            if (table.Columns is not System.Collections.Generic.IEnumerable<TColumn> columns || !columns.Any())
+            {
+                return false;
+            }
+
+            System.Collections.Generic.Dictionary<string, TColumn> dictionary_Columns = new System.Collections.Generic.Dictionary<string, TColumn>();
+            foreach (TColumn column in columns)
+            {
+                if (column.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
+                {
+                    continue;
+                }
+
+                dictionary_Columns[uniqueId] = column;
+            }
+
+            // Resolve partitioning column from conversion options
+            string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
+            bool hasPartition = !string.IsNullOrEmpty(partitionColumnUniqueId) && partitionValue != null;
+
+            if ((hasPartition && !dictionary_Columns.ContainsKey(partitionColumnUniqueId!)) || !dictionary_Columns.ContainsKey(seekColumnUniqueId))
+            {
+                return false;
+            }
+
+            System.Collections.Generic.IEnumerable<string> quotedColumns = dictionary_Columns.Keys.Select(x => $"\"{x}\"");
+
+            // Build conditional where clauses to handle optional partitioning
+            System.Collections.Generic.List<string> whereClauses = new System.Collections.Generic.List<string>();
+            if (hasPartition)
+            {
+                whereClauses.Add($"\"{partitionColumnUniqueId}\" = @partitionValue");
+            }
+            if (lastSeekValue != null)
+            {
+                whereClauses.Add($"\"{seekColumnUniqueId}\" > @lastSeekValue");
+            }
+
+            string whereQuery = whereClauses.Count > 0 ? $"WHERE {string.Join(" AND ", whereClauses)}" : string.Empty;
+
+            string commandText = $@"
+                SELECT {string.Join(", ", quotedColumns)}
+                FROM ""{TableName}""
+                {whereQuery}
+                ORDER BY ""{seekColumnUniqueId}"" ASC
+                LIMIT @pageSize";
+
+            await using NpgsqlCommand npgsqlCommand_Select = new NpgsqlCommand(commandText, npgsqlConnection);
+            npgsqlCommand_Select.Parameters.AddWithValue("pageSize", pageSize);
+            if (hasPartition)
+            {
+                npgsqlCommand_Select.Parameters.AddWithValue("partitionValue", partitionValue!);
+            }
+            if (lastSeekValue != null)
+            {
+                npgsqlCommand_Select.Parameters.AddWithValue("lastSeekValue", lastSeekValue);
+            }
+
+            System.Collections.Generic.Dictionary<string, TColumn> dictionary_PrimaryKey = new System.Collections.Generic.Dictionary<string, TColumn>();
+            if (TableConversionOptions?.PrimaryKeyColumns is System.Collections.Generic.List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
+            {
+                foreach (UColumn column_PrimaryKey in columns_PrimaryKey)
+                {
+                    if (column_PrimaryKey.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
+                    {
+                        continue;
+                    }
+
+                    if (!dictionary_Columns.TryGetValue(uniqueId, out TColumn? column))
+                    {
+                        continue;
+                    }
+
+                    dictionary_PrimaryKey[uniqueId] = column;
+                }
+            }
+
+            System.Collections.Generic.Dictionary<string, TRow> existingRows = new System.Collections.Generic.Dictionary<string, TRow>();
+            await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync();
+
+            return await ReadAsync(npgsqlDataReader_Select, table, dictionary_Columns, dictionary_PrimaryKey, existingRows);
+        }
+
+        /// <summary>
+        /// Samples partition data to dynamically detect the most common separator (comma, semicolon, or pipe).
+        /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
+        /// </summary>
+        /// <param name="npgsqlConnection">The active database connection instance.</param>
+        /// <param name="columnUniqueId">The unique identifier of the column to sample.</param>
+        /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
+        /// <returns>A task representing the async operation, returning the detected separator character string (e.g. ",", ";", or "|").</returns>
+        public async Task<string> DetectSeparatorAsync(NpgsqlConnection npgsqlConnection, string columnUniqueId, object? partitionValue = null)
+        {
+            string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
+            bool hasPartition = !string.IsNullOrEmpty(partitionColumnUniqueId) && partitionValue != null;
+
+            string commandText = $@"
+                SELECT
+                    coalesce(sum(length(""{columnUniqueId}"") - length(replace(""{columnUniqueId}"", ',', ''))), 0) as count_comma,
+                    coalesce(sum(length(""{columnUniqueId}"") - length(replace(""{columnUniqueId}"", ';', ''))), 0) as count_semi,
+                    coalesce(sum(length(""{columnUniqueId}"") - length(replace(""{columnUniqueId}"", '|', ''))), 0) as count_pipe
+                FROM (
+                    SELECT ""{columnUniqueId}""
+                    FROM ""{TableName}""
+                    {(hasPartition ? $"WHERE \"{partitionColumnUniqueId}\" = @partitionValue" : "WHERE 1=1")}
+                      AND ""{columnUniqueId}"" IS NOT NULL
+                    LIMIT 50
+                ) s;";
+
+            await using NpgsqlCommand npgsqlCommand_Detect = new NpgsqlCommand(commandText, npgsqlConnection);
+            if (hasPartition)
+            {
+                npgsqlCommand_Detect.Parameters.AddWithValue("partitionValue", partitionValue!);
+            }
+
+            await using NpgsqlDataReader npgsqlDataReader_Detect = await npgsqlCommand_Detect.ExecuteReaderAsync();
+            if (await npgsqlDataReader_Detect.ReadAsync())
+            {
+                long countComma = npgsqlDataReader_Detect.GetInt64(0);
+                long countSemi = npgsqlDataReader_Detect.GetInt64(1);
+                long countPipe = npgsqlDataReader_Detect.GetInt64(2);
+
+                if (countSemi > countComma && countSemi > countPipe)
+                {
+                    return ";";
+                }
+                if (countPipe > countComma && countPipe > countSemi)
+                {
+                    return "|";
+                }
+            }
+            return ","; // Default separator
+        }
+
+        /// <summary>
+        /// Computes aggregate statistics on a specific column in a partition.
+        /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
+        /// </summary>
+        /// <typeparam name="TColumn">The column type implementation.</typeparam>
+        /// <param name="npgsqlConnection">The active database connection instance.</param>
+        /// <param name="columnUniqueId">The unique identifier of the column to aggregate.</param>
+        /// <param name="aggregateFunction">The aggregation function to perform.</param>
+        /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
+        /// <param name="separator">The custom separator character; if null, it is dynamically detected.</param>
+        /// <returns>A task representing the async operation, returning the aggregation result as a <see cref="System.Text.Json.Nodes.JsonNode"/>.</returns>
+        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.AggregateFunction aggregateFunction, object? partitionValue = null, string? separator = null)
+            where TColumn : UColumn
+        {
+            // 1. Column Whitelist Validation to prevent SQL injection
+            System.Collections.Generic.List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, [columnUniqueId]);
+            if (existingColumns is null || existingColumns.Count == 0)
+            {
+                return null;
+            }
+
+            // Resolve partitioning column from conversion options
+            string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
+            bool hasPartition = !string.IsNullOrEmpty(partitionColumnUniqueId) && partitionValue != null;
+
+            string commandText;
+            if (aggregateFunction == Enums.AggregateFunction.SplitValueDistribution || aggregateFunction == Enums.AggregateFunction.SplitDistinctCount)
+            {
+                if (aggregateFunction == Enums.AggregateFunction.SplitValueDistribution)
+                {
+                    commandText = $@"
+                        SELECT trim(both ' ' from unnested_item) as item, count(*) as count
+                        FROM (
+                            SELECT unnest(string_to_array(""{columnUniqueId}"", @separator)) as unnested_item
+                            FROM ""{TableName}""
+                            WHERE {(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1")} AND ""{columnUniqueId}"" IS NOT NULL
+                        ) subquery
+                        GROUP BY item
+                        ORDER BY count DESC;";
+                }
+                else
+                {
+                    commandText = $@"
+                        SELECT count(DISTINCT trim(both ' ' from unnested_item))
+                        FROM (
+                            SELECT unnest(string_to_array(""{columnUniqueId}"", @separator)) as unnested_item
+                            FROM ""{TableName}""
+                            WHERE {(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1")} AND ""{columnUniqueId}"" IS NOT NULL
+                        ) subquery;";
+                }
+            }
+            else
+            {
+                string sqlFunc = aggregateFunction switch
+                {
+                    Enums.AggregateFunction.Avg => $"AVG(\"{columnUniqueId}\")",
+                    Enums.AggregateFunction.Sum => $"SUM(\"{columnUniqueId}\")",
+                    Enums.AggregateFunction.Min => $"MIN(\"{columnUniqueId}\")",
+                    Enums.AggregateFunction.Max => $"MAX(\"{columnUniqueId}\")",
+                    Enums.AggregateFunction.Count => "COUNT(*)",
+                    Enums.AggregateFunction.DistinctCount => $"COUNT(DISTINCT \"{columnUniqueId}\")",
+                    _ => throw new System.ComponentModel.InvalidEnumArgumentException()
+                };
+
+                commandText = $@"
+                    SELECT {sqlFunc}
+                    FROM ""{TableName}""
+                    WHERE {(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1")}";
+            }
+
+            await using NpgsqlCommand npgsqlCommand_Aggregate = new NpgsqlCommand(commandText, npgsqlConnection);
+            if (hasPartition)
+            {
+                npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
+            }
+            if (aggregateFunction == Enums.AggregateFunction.SplitValueDistribution || aggregateFunction == Enums.AggregateFunction.SplitDistinctCount)
+            {
+                string actualSeparator = separator ?? string.Empty;
+                if (string.IsNullOrEmpty(actualSeparator))
+                {
+                    actualSeparator = await DetectSeparatorAsync(npgsqlConnection, columnUniqueId, partitionValue);
+                }
+                npgsqlCommand_Aggregate.Parameters.AddWithValue("separator", actualSeparator);
+            }
+
+            if (aggregateFunction == Enums.AggregateFunction.SplitValueDistribution)
+            {
+                await using NpgsqlDataReader npgsqlDataReader_Distribution = await npgsqlCommand_Aggregate.ExecuteReaderAsync();
+                System.Text.Json.Nodes.JsonArray jsonArray_Result = new System.Text.Json.Nodes.JsonArray();
+                while (await npgsqlDataReader_Distribution.ReadAsync())
+                {
+                    System.Text.Json.Nodes.JsonObject jsonObject_Item = new System.Text.Json.Nodes.JsonObject();
+                    jsonObject_Item["item"] = npgsqlDataReader_Distribution.GetString(0);
+                    jsonObject_Item["count"] = npgsqlDataReader_Distribution.GetInt64(1);
+                    jsonArray_Result.Add(jsonObject_Item);
+                }
+                return jsonArray_Result;
+            }
+            else
+            {
+                object? resultValue = await npgsqlCommand_Aggregate.ExecuteScalarAsync();
+                return System.Text.Json.Nodes.JsonValue.Create(resultValue == System.DBNull.Value ? null : resultValue);
+            }
+        }
+
+        /// <summary>
+        /// Generates a value distribution histogram for a specific column in a partition.
+        /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
+        /// </summary>
+        /// <typeparam name="TColumn">The type of column, which must implement <typeparamref name="UColumn"/>.</typeparam>
+        /// <param name="npgsqlConnection">The active database connection instance.</param>
+        /// <param name="columnUniqueId">The unique identifier of the column to aggregate.</param>
+        /// <param name="bucketCount">The total number of buckets to segment the value range into.</param>
+        /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
+        /// <returns>A task representing the async operation, returning the histogram data as a <see cref="System.Text.Json.Nodes.JsonArray"/>.</returns>
+        public async Task<System.Text.Json.Nodes.JsonArray?> GetHistogramSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, int bucketCount, object? partitionValue = null)
+            where TColumn : UColumn
+        {
+            System.Collections.Generic.List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, [columnUniqueId]);
+            if (existingColumns is null || existingColumns.Count == 0)
+            {
+                return null;
+            }
+
+            string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
+            bool hasPartition = !string.IsNullOrEmpty(partitionColumnUniqueId) && partitionValue != null;
+
+            string commandText = $@"
+                SELECT width_bucket(""{columnUniqueId}"", min_val, max_val, @bucketCount) as bucket,
+                       min(""{columnUniqueId}"") as range_start,
+                       max(""{columnUniqueId}"") as range_end,
+                       count(*) as count
+                FROM ""{TableName}""
+                CROSS JOIN (
+                    SELECT min(""{columnUniqueId}"") as min_val, max(""{columnUniqueId}"") as max_val
+                    FROM ""{TableName}""
+                    WHERE {(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1")}
+                ) stats
+                WHERE {(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1")}
+                GROUP BY bucket
+                ORDER BY bucket;";
+
+            await using NpgsqlCommand npgsqlCommand_Histogram = new NpgsqlCommand(commandText, npgsqlConnection);
+            npgsqlCommand_Histogram.Parameters.AddWithValue("bucketCount", bucketCount);
+            if (hasPartition)
+            {
+                npgsqlCommand_Histogram.Parameters.AddWithValue("partitionValue", partitionValue!);
+            }
+
+            await using NpgsqlDataReader npgsqlDataReader_Histogram = await npgsqlCommand_Histogram.ExecuteReaderAsync();
+            System.Text.Json.Nodes.JsonArray jsonArray_Result = new System.Text.Json.Nodes.JsonArray();
+            while (await npgsqlDataReader_Histogram.ReadAsync())
+            {
+                System.Text.Json.Nodes.JsonObject jsonObject_Bucket = new System.Text.Json.Nodes.JsonObject();
+                jsonObject_Bucket["bucket"] = npgsqlDataReader_Histogram.GetInt32(0);
+                jsonObject_Bucket["rangeStart"] = npgsqlDataReader_Histogram.IsDBNull(1) ? null : System.Convert.ToDouble(npgsqlDataReader_Histogram.GetValue(1));
+                jsonObject_Bucket["rangeEnd"] = npgsqlDataReader_Histogram.IsDBNull(2) ? null : System.Convert.ToDouble(npgsqlDataReader_Histogram.GetValue(2));
+                jsonObject_Bucket["count"] = npgsqlDataReader_Histogram.GetInt64(3);
+                jsonArray_Result.Add(jsonObject_Bucket);
+            }
+            return jsonArray_Result;
         }
     }
 }
