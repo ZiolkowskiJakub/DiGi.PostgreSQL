@@ -419,7 +419,6 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
             }
 
-            await using NpgsqlCommand npgsqlCommand = new (commandText, npgsqlConnection);
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
             npgsqlCommand.Parameters.Add(npgsqlParameter);
 
