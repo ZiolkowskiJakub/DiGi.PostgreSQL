@@ -3,10 +3,10 @@ using System.ComponentModel;
 namespace DiGi.PostgreSQL.Table.Enums
 {
     /// <summary>
-    /// Specifies statistical and text-parsing aggregation calculations.
+    /// Specifies statistical aggregation calculations for single-value column operations.
     /// </summary>
-    [Description("Specifies statistical and text-parsing aggregation calculations.")]
-    public enum AggregateFunction
+    [Description("Specifies statistical aggregation calculations for single-value column operations.")]
+    public enum SinglevalueAggregateFunction
     {
         /// <summary>Calculates the average value of a column.</summary>
         [Description("Calculates the average value of a column.")]
@@ -30,14 +30,6 @@ namespace DiGi.PostgreSQL.Table.Enums
 
         /// <summary>Counts the unique values in a column.</summary>
         [Description("Counts the unique values in a column.")]
-        DistinctCount,
-
-        /// <summary>Splits multi-value string items by a separator, and counts unique sub-items.</summary>
-        [Description("Splits multi-value string items by a separator, and counts unique sub-items.")]
-        SplitDistinctCount,
-
-        /// <summary>Splits multi-value string items by a separator, groups them, and counts sub-item frequencies.</summary>
-        [Description("Splits multi-value string items by a separator, groups them, and counts sub-item frequencies.")]
-        SplitValueDistribution
+        DistinctCount
     }
 }
