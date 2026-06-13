@@ -65,7 +65,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                     LIMIT 50
                 ) s;";
 
-            await using NpgsqlCommand npgsqlCommand_Detect = new NpgsqlCommand(commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Detect = new (commandText, npgsqlConnection);
             if (hasPartition)
             {
                 npgsqlCommand_Detect.Parameters.AddWithValue("partitionValue", partitionValue!);
@@ -106,10 +106,8 @@ namespace DiGi.PostgreSQL.Table.Classes
         {
             // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
             HashSet<string> uniqueIds = [columnUniqueId];
-            if (filterGroup is not null)
-            {
-                filterGroup.CollectColumnUniqueIds(uniqueIds);
-            }
+
+            filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
             List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
             if (existingColumns is null || existingColumns.Count == 0)
@@ -140,7 +138,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             StringBuilder stringBuilder_Where = new();
             stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
 
-            await using NpgsqlCommand npgsqlCommand_Aggregate = new NpgsqlCommand(string.Empty, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Aggregate = new (string.Empty, npgsqlConnection);
             if (hasPartition)
             {
                 npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
@@ -189,10 +187,8 @@ namespace DiGi.PostgreSQL.Table.Classes
         {
             // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
             HashSet<string> uniqueIds = [columnUniqueId];
-            if (filterGroup is not null)
-            {
-                filterGroup.CollectColumnUniqueIds(uniqueIds);
-            }
+
+            filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
             List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
             if (existingColumns is null || existingColumns.Count == 0)
@@ -212,7 +208,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             StringBuilder stringBuilder_Where = new();
             stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
 
-            await using NpgsqlCommand npgsqlCommand_Aggregate = new NpgsqlCommand(string.Empty, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Aggregate = new (string.Empty, npgsqlConnection);
             if (hasPartition)
             {
                 npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
@@ -279,12 +275,15 @@ namespace DiGi.PostgreSQL.Table.Classes
             if (multivalueAggregateFunction == Enums.MultivalueAggregateFunction.SplitValueDistribution)
             {
                 await using NpgsqlDataReader npgsqlDataReader_Distribution = await npgsqlCommand_Aggregate.ExecuteReaderAsync();
-                System.Text.Json.Nodes.JsonArray jsonArray_Result = new System.Text.Json.Nodes.JsonArray();
+                System.Text.Json.Nodes.JsonArray jsonArray_Result = [];
                 while (await npgsqlDataReader_Distribution.ReadAsync())
                 {
-                    System.Text.Json.Nodes.JsonObject jsonObject_Item = new System.Text.Json.Nodes.JsonObject();
-                    jsonObject_Item["item"] = npgsqlDataReader_Distribution.GetString(0);
-                    jsonObject_Item["count"] = npgsqlDataReader_Distribution.GetInt64(1);
+                    System.Text.Json.Nodes.JsonObject jsonObject_Item = new()
+                    {
+                        ["item"] = npgsqlDataReader_Distribution.GetString(0),
+                        ["count"] = npgsqlDataReader_Distribution.GetInt64(1)
+                    };
+
                     jsonArray_Result.Add(jsonObject_Item);
                 }
                 return jsonArray_Result;
@@ -501,10 +500,8 @@ namespace DiGi.PostgreSQL.Table.Classes
         {
             // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
             HashSet<string> uniqueIds = [columnUniqueId];
-            if (filterGroup is not null)
-            {
-                filterGroup.CollectColumnUniqueIds(uniqueIds);
-            }
+
+            filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
             List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
             if (existingColumns is null || existingColumns.Count == 0)
@@ -523,7 +520,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             StringBuilder stringBuilder_Where = new();
             stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
 
-            await using NpgsqlCommand npgsqlCommand_Histogram = new NpgsqlCommand(string.Empty, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Histogram = new (string.Empty, npgsqlConnection);
             npgsqlCommand_Histogram.Parameters.AddWithValue("bucketCount", bucketCount);
             if (hasPartition)
             {
@@ -563,12 +560,15 @@ namespace DiGi.PostgreSQL.Table.Classes
             npgsqlCommand_Histogram.CommandText = commandText;
 
             await using NpgsqlDataReader npgsqlDataReader_Histogram = await npgsqlCommand_Histogram.ExecuteReaderAsync();
-            System.Text.Json.Nodes.JsonArray jsonArray_Result = new System.Text.Json.Nodes.JsonArray();
+            System.Text.Json.Nodes.JsonArray jsonArray_Result = [];
             while (await npgsqlDataReader_Histogram.ReadAsync())
             {
-                System.Text.Json.Nodes.JsonObject jsonObject_Bucket = new System.Text.Json.Nodes.JsonObject();
-                jsonObject_Bucket["bucket"] = npgsqlDataReader_Histogram.GetInt32(0);
-                jsonObject_Bucket["rangeStart"] = npgsqlDataReader_Histogram.IsDBNull(1) ? null : System.Convert.ToDouble(npgsqlDataReader_Histogram.GetValue(1));
+                System.Text.Json.Nodes.JsonObject jsonObject_Bucket = new()
+                {
+                    ["bucket"] = npgsqlDataReader_Histogram.GetInt32(0),
+                    ["rangeStart"] = npgsqlDataReader_Histogram.IsDBNull(1) ? null : System.Convert.ToDouble(npgsqlDataReader_Histogram.GetValue(1))
+                };
+
                 jsonObject_Bucket["rangeEnd"] = npgsqlDataReader_Histogram.IsDBNull(2) ? null : System.Convert.ToDouble(npgsqlDataReader_Histogram.GetValue(2));
                 jsonObject_Bucket["count"] = npgsqlDataReader_Histogram.GetInt64(3);
                 jsonArray_Result.Add(jsonObject_Bucket);
@@ -615,10 +615,8 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             // 2. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
             HashSet<string> uniqueIds = [columnUniqueId];
-            if (filterGroup is not null)
-            {
-                filterGroup.CollectColumnUniqueIds(uniqueIds);
-            }
+
+            filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
             List<UColumn>? columns_Existing = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
             if (columns_Existing is null || columns_Existing.Count == 0)
@@ -999,6 +997,211 @@ namespace DiGi.PostgreSQL.Table.Classes
         }
 
         /// <summary>
+        /// Asynchronously pulls data from the specified table using the provided Npgsql connection, applying a filter group in batches.
+        /// </summary>
+        /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="npgsqlConnection">The Npgsql database connection to use for the operation. May be null.</param>
+        /// <param name="table">The table instance from which data is being pulled. May be null.</param>
+        /// <param name="filterGroup">The filter group used to restrict the data retrieved from the database.</param>
+        /// <param name="batchSize">The maximum number of rows to retrieve in each batch. The default value is 1000.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
+        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, FilterGroup filterGroup, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        {
+            if (table is null || npgsqlConnection is null || filterGroup is null)
+            {
+                return false;
+            }
+
+            if (table.Columns is not IEnumerable<TColumn> tColumns_Table || !tColumns_Table.Any())
+            {
+                return false;
+            }
+
+            HashSet<string> uniqueIds = [];
+            foreach (TColumn tColumn in tColumns_Table)
+            {
+                if (tColumn.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
+                {
+                    continue;
+                }
+
+                uniqueIds.Add(uniqueId);
+            }
+
+            filterGroup.CollectColumnUniqueIds(uniqueIds);
+
+            List<UColumn>? uColumns_Metadata = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
+            if (uColumns_Metadata is null || uColumns_Metadata.Count == 0)
+            {
+                return false;
+            }
+
+            Dictionary<string, TColumn> tColumns_Dictionary = [];
+            foreach (TColumn tColumn in tColumns_Table)
+            {
+                if (tColumn.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
+                {
+                    continue;
+                }
+
+                tColumns_Dictionary[uniqueId] = tColumn;
+            }
+
+            IEnumerable<string> strings_QuotedColumns = tColumns_Dictionary.Keys.Select(x => $"\"{x}\"");
+            string string_BaseQuery = $"SELECT {string.Join(", ", strings_QuotedColumns)} FROM \"{TableName}\"";
+
+            Dictionary<string, TColumn> tColumns_PrimaryKey = [];
+            if (TableConversionOptions?.PrimaryKeyColumns is List<UColumn> uColumns_PkMetadata && uColumns_PkMetadata.Count != 0)
+            {
+                foreach (UColumn uColumn_Pk in uColumns_PkMetadata)
+                {
+                    if (uColumn_Pk.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
+                    {
+                        continue;
+                    }
+
+                    if (!tColumns_Dictionary.TryGetValue(uniqueId, out TColumn? tColumn))
+                    {
+                        continue;
+                    }
+
+                    tColumns_PrimaryKey[uniqueId] = tColumn;
+                }
+            }
+
+            Dictionary<string, TRow> tRows_ExistingMap = [];
+            if (tColumns_PrimaryKey.Count > 0 && table.Rows is IEnumerable<TRow> tRows_Current)
+            {
+                foreach (TRow tRow in tRows_Current)
+                {
+                    StringBuilder stringBuilder_PkKey = new ();
+                    foreach (TColumn tColumn_Pk in tColumns_PrimaryKey.Values)
+                    {
+                        stringBuilder_PkKey.Append(tRow[tColumn_Pk.Index]).Append('|');
+                    }
+                    tRows_ExistingMap[stringBuilder_PkKey.ToString()] = tRow;
+                }
+            }
+
+            if (table.RowCount == 0 || tColumns_PrimaryKey.Count == 0)
+            {
+                await using NpgsqlCommand npgsqlCommand_Select = new (string_BaseQuery, npgsqlConnection);
+                int parameterIndex = 0;
+                StringBuilder stringBuilder_Filter = new ();
+
+                if (!filterGroup.TryBuildFilterGroupSql(uColumns_Metadata, stringBuilder_Filter, npgsqlCommand_Select.Parameters, ref parameterIndex))
+                {
+                    return false;
+                }
+
+                string string_FinalQuery = string_BaseQuery;
+                if (stringBuilder_Filter.Length > 0)
+                {
+                    string_FinalQuery += $" WHERE {stringBuilder_Filter}";
+                }
+
+                npgsqlCommand_Select.CommandText = string_FinalQuery;
+
+                await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync();
+                return await ReadAsync(npgsqlDataReader_Select, table, tColumns_Dictionary, tColumns_PrimaryKey, tRows_ExistingMap);
+            }
+
+            List<TRow> tRows_All = [.. table.Rows];
+            for (int i = 0; i < tRows_All.Count; i += batchSize)
+            {
+                List<TRow> tRows_Batch = [.. tRows_All.Skip(i).Take(batchSize)];
+                StringBuilder stringBuilder_Where = new ();
+                stringBuilder_Where.Append(" WHERE ");
+                stringBuilder_Where.Append('(');
+
+                for (int j = 0; j < tRows_Batch.Count; j++)
+                {
+                    if (j > 0)
+                    {
+                        stringBuilder_Where.Append(" OR ");
+                    }
+                    stringBuilder_Where.Append('(');
+
+                    TRow tRow = tRows_Batch[j];
+                    int paramIdx = 0;
+                    foreach (TColumn tColumn_Pk in tColumns_PrimaryKey.Values)
+                    {
+                        string string_ParamName = $"@pk_{i}_{j}_{paramIdx}";
+                        if (paramIdx > 0)
+                        {
+                            stringBuilder_Where.Append(" AND ");
+                        }
+                        stringBuilder_Where.Append($"\"{tColumn_Pk.UniqueId()}\" = {string_ParamName}");
+                        paramIdx++;
+                    }
+                    stringBuilder_Where.Append(')');
+                }
+                stringBuilder_Where.Append(')');
+
+                await using NpgsqlCommand npgsqlCommand_SelectBatch = new (string_BaseQuery, npgsqlConnection);
+                
+                for (int j = 0; j < tRows_Batch.Count; j++)
+                {
+                    TRow tRow = tRows_Batch[j];
+                    int paramIdx = 0;
+                    foreach (TColumn tColumn_Pk in tColumns_PrimaryKey.Values)
+                    {
+                        string string_ParamName = $"@pk_{i}_{j}_{paramIdx}";
+                        npgsqlCommand_SelectBatch.Parameters.Add(new NpgsqlParameter(string_ParamName, tRow[tColumn_Pk.Index] ?? DBNull.Value));
+                        paramIdx++;
+                    }
+                }
+
+                int filterParamIndex = 0;
+                StringBuilder stringBuilder_Filter = new ();
+                if (!filterGroup.TryBuildFilterGroupSql(uColumns_Metadata, stringBuilder_Filter, npgsqlCommand_SelectBatch.Parameters, ref filterParamIndex))
+                {
+                    return false;
+                }
+
+                if (stringBuilder_Filter.Length > 0)
+                {
+                    stringBuilder_Where.Append(" AND ");
+                    stringBuilder_Where.Append('(');
+                    stringBuilder_Where.Append(stringBuilder_Filter);
+                    stringBuilder_Where.Append(')');
+                }
+
+                npgsqlCommand_SelectBatch.CommandText = string_BaseQuery + stringBuilder_Where.ToString();
+                await using NpgsqlDataReader npgsqlDataReader_SelectBatch = await npgsqlCommand_SelectBatch.ExecuteReaderAsync();
+                if (!await ReadAsync(npgsqlDataReader_SelectBatch, table, tColumns_Dictionary, tColumns_PrimaryKey, tRows_ExistingMap))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Asynchronously pulls data from the database for the specified table using a filter group.
+        /// </summary>
+        /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="table">The table instance to pull data for. This value can be null.</param>
+        /// <param name="filterGroup">The filter group used to restrict the data retrieved from the database.</param>
+        /// <param name="batchSize">The maximum number of rows to retrieve in each batch. The default value is 1000.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains <see langword="true"/> if the data was pulled successfully; otherwise, <see langword="false"/>.</returns>
+        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, FilterGroup filterGroup, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        {
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
+            if (npgsqlConnection is null)
+            {
+                return false;
+            }
+
+            await npgsqlConnection.OpenAsync();
+
+            return await PullAsync(npgsqlConnection, table, filterGroup, batchSize);
+        }
+
+        /// <summary>
         /// Asynchronously pulls a chunk of data from a table using keyset (cursor-based) pagination.
         /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
         /// </summary>
@@ -1025,7 +1228,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
-            Dictionary<string, TColumn> dictionary_Columns = new Dictionary<string, TColumn>();
+            Dictionary<string, TColumn> dictionary_Columns = [];
             foreach (TColumn column in columns)
             {
                 if (column.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
@@ -1048,7 +1251,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             IEnumerable<string> quotedColumns = dictionary_Columns.Keys.Select(x => $"\"{x}\"");
 
             // Build conditional where clauses to handle optional partitioning
-            List<string> whereClauses = new List<string>();
+            List<string> whereClauses = [];
             if (hasPartition)
             {
                 whereClauses.Add($"\"{partitionColumnUniqueId}\" = @partitionValue");
@@ -1067,7 +1270,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 ORDER BY ""{seekColumnUniqueId}"" ASC
                 LIMIT @pageSize";
 
-            await using NpgsqlCommand npgsqlCommand_Select = new NpgsqlCommand(commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Select = new (commandText, npgsqlConnection);
             npgsqlCommand_Select.Parameters.AddWithValue("pageSize", pageSize);
             if (hasPartition)
             {
@@ -1078,7 +1281,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 npgsqlCommand_Select.Parameters.AddWithValue("lastSeekValue", lastSeekValue);
             }
 
-            Dictionary<string, TColumn> dictionary_PrimaryKey = new Dictionary<string, TColumn>();
+            Dictionary<string, TColumn> dictionary_PrimaryKey = [];
             if (TableConversionOptions?.PrimaryKeyColumns is List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
             {
                 foreach (UColumn column_PrimaryKey in columns_PrimaryKey)
@@ -1097,7 +1300,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
             }
 
-            Dictionary<string, TRow> existingRows = new Dictionary<string, TRow>();
+            Dictionary<string, TRow> existingRows = [];
             await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync();
 
             return await ReadAsync(npgsqlDataReader_Select, table, dictionary_Columns, dictionary_PrimaryKey, existingRows);
