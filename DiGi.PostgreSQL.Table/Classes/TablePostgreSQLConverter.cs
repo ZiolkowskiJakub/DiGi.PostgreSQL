@@ -91,7 +91,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         }
 
         /// <summary>
-        /// Computes single-value aggregate statistics on a specific column in a partition.
+        /// Computes single-value aggregate statistics on a specific column in a partition with optional dynamic filtering.
         /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
         /// </summary>
         /// <typeparam name="TColumn">The column type implementation.</typeparam>
@@ -99,13 +99,25 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="columnUniqueId">The unique identifier of the column to aggregate.</param>
         /// <param name="singlevalueAggregateFunction">The single-value aggregation function to perform.</param>
         /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
+        /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to aggregation.</param>
         /// <returns>A task representing the async operation, returning the aggregation result as a <see cref="System.Text.Json.Nodes.JsonNode"/>.</returns>
-        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.SinglevalueAggregateFunction singlevalueAggregateFunction, object? partitionValue = null)
+        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.SinglevalueAggregateFunction singlevalueAggregateFunction, object? partitionValue = null, FilterGroup? filterGroup = null)
             where TColumn : UColumn
         {
-            // 1. Column Whitelist Validation to prevent SQL injection
-            System.Collections.Generic.List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, [columnUniqueId]);
+            // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
+            HashSet<string> uniqueIds = [columnUniqueId];
+            if (filterGroup is not null)
+            {
+                filterGroup.CollectColumnUniqueIds(uniqueIds);
+            }
+
+            List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
             if (existingColumns is null || existingColumns.Count == 0)
+            {
+                return null;
+            }
+
+            if (!existingColumns.Exists(x => x?.UniqueId() == columnUniqueId))
             {
                 return null;
             }
@@ -125,23 +137,43 @@ namespace DiGi.PostgreSQL.Table.Classes
                 _ => throw new System.ComponentModel.InvalidEnumArgumentException()
             };
 
-            string commandText = $@"
-                SELECT {sqlFunc}
-                FROM ""{TableName}""
-                WHERE {(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1")}";
+            StringBuilder stringBuilder_Where = new();
+            stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
 
-            await using NpgsqlCommand npgsqlCommand_Aggregate = new NpgsqlCommand(commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Aggregate = new NpgsqlCommand(string.Empty, npgsqlConnection);
             if (hasPartition)
             {
                 npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
             }
+
+            int parameterIndex = 0;
+            if (filterGroup is not null)
+            {
+                StringBuilder stringBuilder_Filter = new();
+                if (!filterGroup.TryBuildFilterGroupSql(existingColumns, stringBuilder_Filter, npgsqlCommand_Aggregate.Parameters, ref parameterIndex))
+                {
+                    return null;
+                }
+
+                if (stringBuilder_Filter.Length > 0)
+                {
+                    stringBuilder_Where.Append(" AND ").Append(stringBuilder_Filter);
+                }
+            }
+
+            string commandText = $@"
+                SELECT {sqlFunc}
+                FROM ""{TableName}""
+                WHERE {stringBuilder_Where}";
+
+            npgsqlCommand_Aggregate.CommandText = commandText;
 
             object? resultValue = await npgsqlCommand_Aggregate.ExecuteScalarAsync();
             return System.Text.Json.Nodes.JsonValue.Create(resultValue == System.DBNull.Value ? null : resultValue);
         }
 
         /// <summary>
-        /// Computes multi-value aggregate statistics on a specific column in a partition.
+        /// Computes multi-value aggregate statistics on a specific column in a partition with optional dynamic filtering.
         /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
         /// </summary>
         /// <typeparam name="TColumn">The column type implementation.</typeparam>
@@ -150,13 +182,25 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="multivalueAggregateFunction">The multi-value aggregation function to perform.</param>
         /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
         /// <param name="separator">The custom separator character; if null, it is dynamically detected.</param>
+        /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to aggregation.</param>
         /// <returns>A task representing the async operation, returning the aggregation result as a <see cref="System.Text.Json.Nodes.JsonNode"/>.</returns>
-        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.MultivalueAggregateFunction multivalueAggregateFunction, object? partitionValue = null, string? separator = null)
+        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.MultivalueAggregateFunction multivalueAggregateFunction, object? partitionValue = null, string? separator = null, FilterGroup? filterGroup = null)
             where TColumn : UColumn
         {
-            // 1. Column Whitelist Validation to prevent SQL injection
-            System.Collections.Generic.List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, [columnUniqueId]);
+            // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
+            HashSet<string> uniqueIds = [columnUniqueId];
+            if (filterGroup is not null)
+            {
+                filterGroup.CollectColumnUniqueIds(uniqueIds);
+            }
+
+            List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
             if (existingColumns is null || existingColumns.Count == 0)
+            {
+                return null;
+            }
+
+            if (!existingColumns.Exists(x => x?.UniqueId() == columnUniqueId))
             {
                 return null;
             }
@@ -164,6 +208,30 @@ namespace DiGi.PostgreSQL.Table.Classes
             // Resolve partitioning column from conversion options
             string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
             bool hasPartition = !string.IsNullOrEmpty(partitionColumnUniqueId) && partitionValue != null;
+
+            StringBuilder stringBuilder_Where = new();
+            stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
+
+            await using NpgsqlCommand npgsqlCommand_Aggregate = new NpgsqlCommand(string.Empty, npgsqlConnection);
+            if (hasPartition)
+            {
+                npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
+            }
+
+            int parameterIndex = 0;
+            if (filterGroup is not null)
+            {
+                StringBuilder stringBuilder_Filter = new();
+                if (!filterGroup.TryBuildFilterGroupSql(existingColumns, stringBuilder_Filter, npgsqlCommand_Aggregate.Parameters, ref parameterIndex))
+                {
+                    return null;
+                }
+
+                if (stringBuilder_Filter.Length > 0)
+                {
+                    stringBuilder_Where.Append(" AND ").Append(stringBuilder_Filter);
+                }
+            }
 
             string commandText;
             if (multivalueAggregateFunction == Enums.MultivalueAggregateFunction.SplitValueDistribution || multivalueAggregateFunction == Enums.MultivalueAggregateFunction.SplitDistinctCount)
@@ -175,7 +243,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                         FROM (
                             SELECT unnest(string_to_array(""{columnUniqueId}"", @separator)) as unnested_item
                             FROM ""{TableName}""
-                            WHERE {(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1")} AND ""{columnUniqueId}"" IS NOT NULL
+                            WHERE {stringBuilder_Where} AND ""{columnUniqueId}"" IS NOT NULL
                         ) subquery
                         GROUP BY item
                         ORDER BY count DESC;";
@@ -187,7 +255,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                         FROM (
                             SELECT unnest(string_to_array(""{columnUniqueId}"", @separator)) as unnested_item
                             FROM ""{TableName}""
-                            WHERE {(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1")} AND ""{columnUniqueId}"" IS NOT NULL
+                            WHERE {stringBuilder_Where} AND ""{columnUniqueId}"" IS NOT NULL
                         ) subquery;";
                 }
             }
@@ -196,11 +264,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                 throw new System.ComponentModel.InvalidEnumArgumentException();
             }
 
-            await using NpgsqlCommand npgsqlCommand_Aggregate = new NpgsqlCommand(commandText, npgsqlConnection);
-            if (hasPartition)
-            {
-                npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
-            }
+            npgsqlCommand_Aggregate.CommandText = commandText;
+
             if (multivalueAggregateFunction == Enums.MultivalueAggregateFunction.SplitValueDistribution || multivalueAggregateFunction == Enums.MultivalueAggregateFunction.SplitDistinctCount)
             {
                 string actualSeparator = separator ?? string.Empty;
@@ -330,22 +395,22 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <summary>
         /// Asynchronously retrieves a list of column references associated with the specified unique identifiers.
         /// </summary>
-        /// <param name="uniqueIds">An optional collection of unique identifiers used to filter the column references. If null, the retrieval behavior is determined by the underlying data source.</param>
+        /// <param name="columnUniqueIds">An optional collection of unique identifiers used to filter the column references. If null, the retrieval behavior is determined by the underlying data source.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, <see langword="null"/>.</returns>
-        public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(IEnumerable<string>? uniqueIds = null)
+        public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(IEnumerable<string>? columnUniqueIds = null)
         {
-            return await GetColumnReferencesAsync("unique_id", uniqueIds);
+            return await GetColumnReferencesAsync("unique_id", columnUniqueIds);
         }
 
         /// <summary>
         /// Asynchronously retrieves a list of column references associated with the specified unique identifiers.
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection instance used to communicate with the database.</param>
-        /// <param name="uniqueIds">An optional collection of unique identifier strings used to filter the column references.</param>
+        /// <param name="columnUniqueIds">An optional collection of unique identifier strings used to filter the column references.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, null.</returns>
-        public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? uniqueIds = null)
+        public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? columnUniqueIds = null)
         {
-            return await GetColumnReferencesAsync(npgsqlConnection, "unique_id", uniqueIds);
+            return await GetColumnReferencesAsync(npgsqlConnection, "unique_id", columnUniqueIds);
         }
 
         /// <summary>
@@ -402,26 +467,26 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <summary>
         /// Asynchronously retrieves a list of columns based on the provided unique identifiers.
         /// </summary>
-        /// <param name="uniqueIds">An optional collection of unique identifier strings used to filter the columns. If null, the behavior is determined by the underlying data source.</param>
+        /// <param name="columnUniqueIds">An optional collection of unique identifier strings used to filter the columns. If null, the behavior is determined by the underlying data source.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects matching the specified identifiers, or null if no matches are found.</returns>
-        public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(IEnumerable<string>? uniqueIds = null)
+        public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(IEnumerable<string>? columnUniqueIds = null)
         {
-            return await GetColumnsAsync("unique_id", uniqueIds);
+            return await GetColumnsAsync("unique_id", columnUniqueIds);
         }
 
         /// <summary>
         /// Asynchronously retrieves a list of columns based on their unique identifiers.
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the database query.</param>
-        /// <param name="uniqueIds">An optional collection of unique identifier strings used to filter the results.</param>
+        /// <param name="columnUniqueIds">An optional collection of unique identifier strings used to filter the results.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if found; otherwise, null.</returns>
-        public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? uniqueIds = null)
+        public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? columnUniqueIds = null)
         {
-            return await GetColumnsAsync(npgsqlConnection, "unique_id", uniqueIds);
+            return await GetColumnsAsync(npgsqlConnection, "unique_id", columnUniqueIds);
         }
 
         /// <summary>
-        /// Generates a value distribution histogram for a specific column in a partition.
+        /// Generates a value distribution histogram for a specific column in a partition with optional dynamic filtering.
         /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
         /// </summary>
         /// <typeparam name="TColumn">The type of column, which must implement <typeparamref name="UColumn"/>.</typeparam>
@@ -429,18 +494,56 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="columnUniqueId">The unique identifier of the column to aggregate.</param>
         /// <param name="bucketCount">The total number of buckets to segment the value range into.</param>
         /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
+        /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to aggregation.</param>
         /// <returns>A task representing the async operation, returning the histogram data as a <see cref="System.Text.Json.Nodes.JsonArray"/>.</returns>
-        public async Task<System.Text.Json.Nodes.JsonArray?> GetHistogramSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, int bucketCount, object? partitionValue = null)
+        public async Task<System.Text.Json.Nodes.JsonArray?> GetHistogramSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, int bucketCount, object? partitionValue = null, FilterGroup? filterGroup = null)
             where TColumn : UColumn
         {
-            System.Collections.Generic.List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, [columnUniqueId]);
+            // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
+            HashSet<string> uniqueIds = [columnUniqueId];
+            if (filterGroup is not null)
+            {
+                filterGroup.CollectColumnUniqueIds(uniqueIds);
+            }
+
+            List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
             if (existingColumns is null || existingColumns.Count == 0)
+            {
+                return null;
+            }
+
+            if (!existingColumns.Exists(x => x?.UniqueId() == columnUniqueId))
             {
                 return null;
             }
 
             string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
             bool hasPartition = !string.IsNullOrEmpty(partitionColumnUniqueId) && partitionValue != null;
+
+            StringBuilder stringBuilder_Where = new();
+            stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
+
+            await using NpgsqlCommand npgsqlCommand_Histogram = new NpgsqlCommand(string.Empty, npgsqlConnection);
+            npgsqlCommand_Histogram.Parameters.AddWithValue("bucketCount", bucketCount);
+            if (hasPartition)
+            {
+                npgsqlCommand_Histogram.Parameters.AddWithValue("partitionValue", partitionValue!);
+            }
+
+            int parameterIndex = 0;
+            if (filterGroup is not null)
+            {
+                StringBuilder stringBuilder_Filter = new();
+                if (!filterGroup.TryBuildFilterGroupSql(existingColumns, stringBuilder_Filter, npgsqlCommand_Histogram.Parameters, ref parameterIndex))
+                {
+                    return null;
+                }
+
+                if (stringBuilder_Filter.Length > 0)
+                {
+                    stringBuilder_Where.Append(" AND ").Append(stringBuilder_Filter);
+                }
+            }
 
             string commandText = $@"
                 SELECT width_bucket(""{columnUniqueId}"", min_val, max_val, @bucketCount) as bucket,
@@ -451,18 +554,13 @@ namespace DiGi.PostgreSQL.Table.Classes
                 CROSS JOIN (
                     SELECT min(""{columnUniqueId}"") as min_val, max(""{columnUniqueId}"") as max_val
                     FROM ""{TableName}""
-                    WHERE {(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1")}
+                    WHERE {stringBuilder_Where}
                 ) stats
-                WHERE {(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1")}
+                WHERE {stringBuilder_Where}
                 GROUP BY bucket
                 ORDER BY bucket;";
 
-            await using NpgsqlCommand npgsqlCommand_Histogram = new NpgsqlCommand(commandText, npgsqlConnection);
-            npgsqlCommand_Histogram.Parameters.AddWithValue("bucketCount", bucketCount);
-            if (hasPartition)
-            {
-                npgsqlCommand_Histogram.Parameters.AddWithValue("partitionValue", partitionValue!);
-            }
+            npgsqlCommand_Histogram.CommandText = commandText;
 
             await using NpgsqlDataReader npgsqlDataReader_Histogram = await npgsqlCommand_Histogram.ExecuteReaderAsync();
             System.Text.Json.Nodes.JsonArray jsonArray_Result = new System.Text.Json.Nodes.JsonArray();
@@ -482,9 +580,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// Asynchronously retrieves a collection of unique values associated with the specified identifier.
         /// </summary>
         /// <typeparam name="T">The type of the elements contained in the returned collection.</typeparam>
-        /// <param name="uniqueId">The unique identifier used to query for the values; may be null.</param>
+        /// <param name="columnUniqueId">The unique identifier of the column used to query for the values; may be null.</param>
+        /// <param name="filterGroup">The optional hierarchical filters to apply prior to retrieving the unique values.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains an enumerable collection of nullable values of type <typeparamref name="T"/>, or null if the operation cannot be completed or no data is found.</returns>
-        public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(string? uniqueId)
+        public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(string? columnUniqueId, FilterGroup? filterGroup = null)
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
 
@@ -495,7 +594,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             await npgsqlConnection.OpenAsync();
 
-            return await GetUniqueValuesAsync<T>(npgsqlConnection, uniqueId);
+            return await GetUniqueValuesAsync<T>(npgsqlConnection, columnUniqueId, filterGroup);
         }
 
         /// <summary>
@@ -503,52 +602,89 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// </summary>
         /// <typeparam name="T">The target type for the retrieved values.</typeparam>
         /// <param name="npgsqlConnection">The active PostgreSQL connection instance.</param>
-        /// <param name="uniqueId">The name of the database column to query.</param>
+        /// <param name="columnUniqueId">The name of the database column to query.</param>
+        /// <param name="filterGroup">The optional hierarchical filters to apply prior to retrieving the unique values.</param>
         /// <returns>An enumerable containing unique values from the column, or null if input is invalid.</returns>
-        public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(NpgsqlConnection? npgsqlConnection, string? uniqueId)
+        public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(NpgsqlConnection? npgsqlConnection, string? columnUniqueId, FilterGroup? filterGroup = null)
         {
             // 1. Basic input validation: Check if connection exists and uniqueId (column name) is provided.
-            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(uniqueId))
+            if (npgsqlConnection is null || string.IsNullOrWhiteSpace(columnUniqueId))
             {
                 return null;
             }
 
-            // 2. Prepare the SQL query.
-            // SECURITY WARNING: Since column names cannot be parameterized, ensure 'uniqueId'
-            // is validated against a whitelist to prevent SQL Injection.
+            // 2. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
+            HashSet<string> uniqueIds = [columnUniqueId];
+            if (filterGroup is not null)
+            {
+                filterGroup.CollectColumnUniqueIds(uniqueIds);
+            }
+
+            List<UColumn>? columns_Existing = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
+            if (columns_Existing is null || columns_Existing.Count == 0)
+            {
+                return null;
+            }
+
+            if (!columns_Existing.Exists(x => x?.UniqueId() == columnUniqueId))
+            {
+                return null;
+            }
+
+            // 3. Initialize SQL command and parameters builder.
+            await using NpgsqlCommand npgsqlCommand = new(string.Empty, npgsqlConnection);
+
+            StringBuilder stringBuilder_Where = new();
+            stringBuilder_Where.Append($"\"{columnUniqueId}\" IS NOT NULL");
+
+            int parameterIndex = 0;
+            if (filterGroup is not null)
+            {
+                StringBuilder stringBuilder_Filter = new();
+                if (!filterGroup.TryBuildFilterGroupSql(columns_Existing, stringBuilder_Filter, npgsqlCommand.Parameters, ref parameterIndex))
+                {
+                    return null;
+                }
+
+                if (stringBuilder_Filter.Length > 0)
+                {
+                    stringBuilder_Where.Append(" AND ").Append(stringBuilder_Filter);
+                }
+            }
+
+            // 4. Prepare the SQL query.
             string commandQuery = $@"
-                SELECT DISTINCT {uniqueId}
-                FROM {TableName}
-                WHERE {uniqueId} IS NOT NULL
-                ORDER BY {uniqueId}";
+                SELECT DISTINCT ""{columnUniqueId}""
+                FROM ""{TableName}""
+                WHERE {stringBuilder_Where}
+                ORDER BY ""{columnUniqueId}""";
 
-            // 3. Initialize result set. Using HashSet to ensure uniqueness in memory
+            npgsqlCommand.CommandText = commandQuery;
+
+            // 5. Initialize result set. Using HashSet to ensure uniqueness in memory
             // (complementary to the SQL DISTINCT clause).
-            HashSet<T?> result = [];
+            HashSet<T?> uniqueValues = [];
 
-            // 4. Create and execute the Npgsql command.
-            using NpgsqlCommand npgsqlCommand = new(commandQuery, npgsqlConnection);
+            // 6. Open a data reader to stream results from the database.
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
 
-            // 5. Open a data reader to stream results from the database.
-            using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
-
-            // 6. Iterate through the records returned by PostgreSQL.
+            // 7. Iterate through the records returned by PostgreSQL.
             while (await npgsqlDataReader.ReadAsync())
             {
                 // Check for database NULL or try to convert the raw object to the generic type T.
                 if (npgsqlDataReader.IsDBNull(0) || !Core.Query.TryConvert(npgsqlDataReader.GetValue(0), out T? value))
                 {
                     // If value is NULL or conversion fails, add the default value for type T.
-                    result.Add(default);
+                    uniqueValues.Add(default);
                 }
                 else
                 {
                     // Add the successfully converted value to the result set.
-                    result.Add(value);
+                    uniqueValues.Add(value);
                 }
             }
 
-            return result;
+            return uniqueValues;
         }
 
         /// <summary>
@@ -884,12 +1020,12 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
-            if (table.Columns is not System.Collections.Generic.IEnumerable<TColumn> columns || !columns.Any())
+            if (table.Columns is not IEnumerable<TColumn> columns || !columns.Any())
             {
                 return false;
             }
 
-            System.Collections.Generic.Dictionary<string, TColumn> dictionary_Columns = new System.Collections.Generic.Dictionary<string, TColumn>();
+            Dictionary<string, TColumn> dictionary_Columns = new Dictionary<string, TColumn>();
             foreach (TColumn column in columns)
             {
                 if (column.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
@@ -909,10 +1045,10 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
-            System.Collections.Generic.IEnumerable<string> quotedColumns = dictionary_Columns.Keys.Select(x => $"\"{x}\"");
+            IEnumerable<string> quotedColumns = dictionary_Columns.Keys.Select(x => $"\"{x}\"");
 
             // Build conditional where clauses to handle optional partitioning
-            System.Collections.Generic.List<string> whereClauses = new System.Collections.Generic.List<string>();
+            List<string> whereClauses = new List<string>();
             if (hasPartition)
             {
                 whereClauses.Add($"\"{partitionColumnUniqueId}\" = @partitionValue");
@@ -942,8 +1078,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                 npgsqlCommand_Select.Parameters.AddWithValue("lastSeekValue", lastSeekValue);
             }
 
-            System.Collections.Generic.Dictionary<string, TColumn> dictionary_PrimaryKey = new System.Collections.Generic.Dictionary<string, TColumn>();
-            if (TableConversionOptions?.PrimaryKeyColumns is System.Collections.Generic.List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
+            Dictionary<string, TColumn> dictionary_PrimaryKey = new Dictionary<string, TColumn>();
+            if (TableConversionOptions?.PrimaryKeyColumns is List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
             {
                 foreach (UColumn column_PrimaryKey in columns_PrimaryKey)
                 {
@@ -961,7 +1097,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
             }
 
-            System.Collections.Generic.Dictionary<string, TRow> existingRows = new System.Collections.Generic.Dictionary<string, TRow>();
+            Dictionary<string, TRow> existingRows = new Dictionary<string, TRow>();
             await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync();
 
             return await ReadAsync(npgsqlDataReader_Select, table, dictionary_Columns, dictionary_PrimaryKey, existingRows);
