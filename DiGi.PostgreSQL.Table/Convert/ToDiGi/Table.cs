@@ -39,7 +39,7 @@ namespace DiGi.PostgreSQL.Table
 
             foreach (URow row in rows)
             {
-                result.Values.Add(row?.GetValues() ?? []);
+                result.Rows.Add(row?.GetValues() ?? []);
             }
 
             return result;

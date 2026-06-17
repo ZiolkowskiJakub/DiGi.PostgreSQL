@@ -28,11 +28,11 @@ namespace DiGi.PostgreSQL.Table.Classes
             if (table is not null)
             {
                 Columns = Core.Query.Clone(table.Columns) ?? [];
-                if (table.Values != null)
+                if (table.Rows != null)
                 {
-                    foreach (object?[] values in table.Values)
+                    foreach (object?[] row in table.Rows)
                     {
-                        Values.Add([.. values]);
+                        Rows.Add([.. row]);
                     }
                 }
             }
@@ -59,7 +59,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         public List<Column?> Columns { get; set; } = [];
 
         /// <summary>
-        /// Gets or sets the data values stored in the table.
+        /// Gets or sets the data values in rows stored in the table.
         /// </summary>
         /// <example>
         /// [
@@ -67,7 +67,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         ///   [ "b82c4g02-920g-590b-04d4-b961059d71bg", 10366, 309.49 ]
         /// ]
         /// </example>
-        [JsonInclude, JsonPropertyName(nameof(Values))]
-        public List<object?[]> Values { get; set; } = [];
+        [JsonInclude, JsonPropertyName(nameof(Rows))]
+        public List<object?[]> Rows { get; set; } = [];
     }
 }

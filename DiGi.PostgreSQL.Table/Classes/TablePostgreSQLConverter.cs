@@ -1579,7 +1579,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                         foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
                         {
                             object? value_Existing = row_Existing[keyValuePair.Value.Index];
-                            object? value_New = values[keyValuePair.Key];
+                            object? value_New = values[keyValuePair.Value.Name!];
                             if ((value_Existing == null || value_Existing.Equals(Core.Query.Default(keyValuePair.Value.Type))) && value_New != null)
                             {
                                 row_Existing[keyValuePair.Value.Index] = value_New;
