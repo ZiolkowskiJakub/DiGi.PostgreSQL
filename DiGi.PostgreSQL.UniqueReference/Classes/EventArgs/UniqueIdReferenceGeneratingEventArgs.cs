@@ -1,4 +1,4 @@
-﻿using DiGi.Core.Classes;
+using DiGi.Core.Classes;
 using System;
 
 namespace DiGi.PostgreSQL.UniqueReference.Classes
@@ -35,10 +35,7 @@ namespace DiGi.PostgreSQL.UniqueReference.Classes
             }
         }
 
-        /// <summary>
-        /// Gets the constructed <see cref="UniqueIdReference"/> based on the item type and the provided unique identifier.
-        /// </summary>
-        /// <returns>A <see cref="UniqueIdReference"/> instance if successfully created; otherwise, null.</returns>
+        /// <summary> Gets the constructed <see cref="UniqueIdReference" /> based on the item type and the provided unique identifier. </summary>
         public UniqueIdReference? UniqueIdReference
         {
             get

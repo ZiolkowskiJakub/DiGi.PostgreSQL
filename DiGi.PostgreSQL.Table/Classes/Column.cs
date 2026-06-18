@@ -10,16 +10,18 @@ namespace DiGi.PostgreSQL.Table.Classes
     public class Column : SerializableObject
     {
         /// <summary>
-        /// Initializes a new instance of the Column class from a JsonObject.
+        /// Initializes a new instance of the <see cref="Column"/> class from a <see cref="JsonObject"/>.
         /// </summary>
+        /// <param name="jsonObject">The <see cref="JsonObject"/> used to initialize the column properties.</param>
         public Column(JsonObject? jsonObject)
             : base(jsonObject)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the Column class by cloning another Column.
+        /// Initializes a new instance of the <see cref="Column"/> class by cloning another Column instance.
         /// </summary>
+        /// <param name="column">The source <see cref="Column"/> instance to copy values from.</param>
         public Column(Column? column)
             : base(column)
         {

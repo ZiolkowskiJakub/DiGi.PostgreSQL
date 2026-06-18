@@ -1,4 +1,4 @@
-﻿using DiGi.PostgreSQL.Enums;
+using DiGi.PostgreSQL.Enums;
 using Npgsql;
 using System;
 using System.Collections.Generic;
@@ -239,9 +239,10 @@ namespace DiGi.PostgreSQL
         }
 
         /// <summary>
-        /// Creates a lookup table for object types to optimize storage and filtering.
-        /// Includes a timestamp for auditing when the type was first introduced.
+        /// Asynchronously creates the 'types' lookup table in the PostgreSQL database to optimize storage and filtering, including a timestamp for auditing when the type was first introduced.
         /// </summary>
+        /// <param name="npgsqlConnection">The <see cref="Npgsql.NpgsqlConnection"/> instance used to execute the create table command.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is true if the table was created successfully or already exists; otherwise, false.</returns>
         public static async Task<bool> TableAsync_Types(this NpgsqlConnection? npgsqlConnection)
         {
             if (npgsqlConnection is null)

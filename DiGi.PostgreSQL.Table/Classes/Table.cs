@@ -11,8 +11,9 @@ namespace DiGi.PostgreSQL.Table.Classes
     public class Table : SerializableObject
     {
         /// <summary>
-        /// Initializes a new instance of the Table class from a JsonObject.
+        /// Initializes a new instance of the <see cref="Table"/> class using the provided <see cref="JsonObject"/>.
         /// </summary>
+        /// <param name="jsonObject">The <see cref="JsonObject"/> containing the table data, or null to initialize an empty table.</param>
         public Table(JsonObject? jsonObject)
 
             : base(jsonObject)
@@ -20,8 +21,9 @@ namespace DiGi.PostgreSQL.Table.Classes
         }
 
         /// <summary>
-        /// Initializes a new instance of the Table class by cloning another Table.
+        /// Initializes a new instance of the <see cref="Table"/> class by cloning an existing table instance.
         /// </summary>
+        /// <param name="table">The source <see cref="Table"/> instance to clone from, or null to initialize an empty table.</param>
         public Table(Table? table)
             : base(table)
         {

@@ -27,10 +27,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         {
         }
 
-        /// <summary>
-        /// Gets the name of the database table associated with this entity.
-        /// </summary>
-        /// <returns>The string representing the name of the database table.</returns>
+        /// <summary> Gets the name of the database table associated with this entity. </summary>
         public abstract string TableName { get; }
 
         /// <summary>
@@ -686,8 +683,16 @@ namespace DiGi.PostgreSQL.Table.Classes
         }
 
         /// <summary>
-        /// Asynchronously pulls specific data from the specified table based on a unique column values.
+        /// Asynchronously pulls specific data from the specified table based on unique column values.
         /// </summary>
+        /// <typeparam name="TObject">The type of the values being used for the pull operation.</typeparam>
+        /// <typeparam name="TColumn">The type of columns in the table, which must inherit from <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of rows in the table, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="npgsqlConnection">The PostgreSQL connection to be used for the operation.</param>
+        /// <param name="table">The table object from which data is being pulled.</param>
+        /// <param name="columnUniqueId">The unique identifier of the column used to filter or identify the data.</param>
+        /// <param name="values">A collection of values associated with the specified column unique ID.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="bool"/> value indicating whether the pull operation was successful.</returns>
         public async Task<bool> PullAsync<TObject, TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, string columnUniqueId, IEnumerable<TObject>? values) where TColumn : UColumn where TRow : IRow<TRow>
         {
             if (table is null || npgsqlConnection is null || string.IsNullOrWhiteSpace(columnUniqueId) || values is null || !values.Any())
@@ -817,8 +822,15 @@ namespace DiGi.PostgreSQL.Table.Classes
         }
 
         /// <summary>
-        /// Asynchronously pulls specific data from the specified table based on a unique column value.
+        /// Asynchronously pulls specific data from the specified table based on a unique column value using the provided PostgreSQL connection.
         /// </summary>
+        /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="npgsqlConnection">The PostgreSQL connection to be used for the operation. May be null.</param>
+        /// <param name="table">The table instance from which data is being pulled. May be null.</param>
+        /// <param name="columnUniqueId">The unique identifier of the column used to filter the data.</param>
+        /// <param name="value">The value used to identify the record to pull. May be null.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
         public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, string columnUniqueId, object? value) where TColumn : UColumn where TRow : IRow<TRow>
         {
             return await PullAsync(npgsqlConnection, table, columnUniqueId, [value]);
@@ -827,14 +839,27 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <summary>
         /// Asynchronously pulls specific data from the specified table based on a unique column value.
         /// </summary>
+        /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="table">The table instance from which data is being pulled. May be null.</param>
+        /// <param name="columnUniqueId">The unique identifier of the column used to filter the data.</param>
+        /// <param name="value">The value used to identify the record to pull. May be null.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
         public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, object? value) where TColumn : UColumn where TRow : IRow<TRow>
         {
             return await PullAsync(table, columnUniqueId, [value]);
         }
 
         /// <summary>
-        /// Asynchronously pulls specific data from the specified table based on a unique column values.
+        /// Asynchronously pulls specific data from the specified table based on unique column values.
         /// </summary>
+        /// <typeparam name="TObject">The type of the values used for filtering.</typeparam>
+        /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="table">The table instance from which data is being pulled. May be null.</param>
+        /// <param name="columnUniqueId">The unique identifier of the column used to filter the data.</param>
+        /// <param name="values">A collection of values used to identify the records to pull. May be null.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
         public async Task<bool> PullAsync<TObject, TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, IEnumerable<TObject>? values) where TColumn : UColumn where TRow : IRow<TRow>
         {
             if (values is null || !values.Any())
@@ -1728,3 +1753,4 @@ namespace DiGi.PostgreSQL.Table.Classes
         }
     }
 }
+

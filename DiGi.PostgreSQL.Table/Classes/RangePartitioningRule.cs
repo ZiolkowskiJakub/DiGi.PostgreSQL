@@ -79,10 +79,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         public List<Range<TNumber>>? Ranges { get; set; }
 
         /// <summary>
-        /// Converts a numeric value to a parametric string.
-        /// Replaces '-' with 'm' at the start and '.' with 'p'.
-        /// Example: -1.0010 becomes "m1p001".
+        /// Converts a numeric value to a parametric string representation, replacing the negative sign '-' with 'm' and the decimal separator '.' with 'p'.
         /// </summary>
+        /// <param name="value">The numeric value to be formatted.</param>
+        /// <returns>A string representing the numeric value in the parametric format.</returns>
         public static string ToString(TNumber value)
         {
             if (value is ISpanFormattable spanFormattable)
