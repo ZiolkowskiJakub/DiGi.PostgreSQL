@@ -1,5 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using DiGi.PostgreSQL.Table.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace DiGi.PostgreSQL.Table.Classes
 {

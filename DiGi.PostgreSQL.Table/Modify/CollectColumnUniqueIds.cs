@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using DiGi.PostgreSQL.Table.Classes;
+using System.Collections.Generic;
 
 namespace DiGi.PostgreSQL.Table
 {

@@ -62,7 +62,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                     LIMIT 50
                 ) s;";
 
-            await using NpgsqlCommand npgsqlCommand_Detect = new (commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Detect = new(commandText, npgsqlConnection);
             if (hasPartition)
             {
                 npgsqlCommand_Detect.Parameters.AddWithValue("partitionValue", partitionValue!);
@@ -135,7 +135,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             StringBuilder stringBuilder_Where = new();
             stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
 
-            await using NpgsqlCommand npgsqlCommand_Aggregate = new (string.Empty, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Aggregate = new(string.Empty, npgsqlConnection);
             if (hasPartition)
             {
                 npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
@@ -205,7 +205,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             StringBuilder stringBuilder_Where = new();
             stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
 
-            await using NpgsqlCommand npgsqlCommand_Aggregate = new (string.Empty, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Aggregate = new(string.Empty, npgsqlConnection);
             if (hasPartition)
             {
                 npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
@@ -517,7 +517,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             StringBuilder stringBuilder_Where = new();
             stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
 
-            await using NpgsqlCommand npgsqlCommand_Histogram = new (string.Empty, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Histogram = new(string.Empty, npgsqlConnection);
             npgsqlCommand_Histogram.Parameters.AddWithValue("bucketCount", bucketCount);
             if (hasPartition)
             {
@@ -1100,7 +1100,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             {
                 foreach (TRow tRow in tRows_Current)
                 {
-                    StringBuilder stringBuilder_PkKey = new ();
+                    StringBuilder stringBuilder_PkKey = new();
                     foreach (TColumn tColumn_Pk in tColumns_PrimaryKey.Values)
                     {
                         stringBuilder_PkKey.Append(tRow[tColumn_Pk.Index]).Append('|');
@@ -1111,9 +1111,9 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             if (table.RowCount == 0 || tColumns_PrimaryKey.Count == 0)
             {
-                await using NpgsqlCommand npgsqlCommand_Select = new (string_BaseQuery, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand_Select = new(string_BaseQuery, npgsqlConnection);
                 int parameterIndex = 0;
-                StringBuilder stringBuilder_Filter = new ();
+                StringBuilder stringBuilder_Filter = new();
 
                 if (!filterGroup.TryBuildFilterGroupSql(uColumns_Metadata, stringBuilder_Filter, npgsqlCommand_Select.Parameters, ref parameterIndex))
                 {
@@ -1136,7 +1136,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             for (int i = 0; i < tRows_All.Count; i += batchSize)
             {
                 List<TRow> tRows_Batch = [.. tRows_All.Skip(i).Take(batchSize)];
-                StringBuilder stringBuilder_Where = new ();
+                StringBuilder stringBuilder_Where = new();
                 stringBuilder_Where.Append(" WHERE ");
                 stringBuilder_Where.Append('(');
 
@@ -1164,8 +1164,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
                 stringBuilder_Where.Append(')');
 
-                await using NpgsqlCommand npgsqlCommand_SelectBatch = new (string_BaseQuery, npgsqlConnection);
-                
+                await using NpgsqlCommand npgsqlCommand_SelectBatch = new(string_BaseQuery, npgsqlConnection);
+
                 for (int j = 0; j < tRows_Batch.Count; j++)
                 {
                     TRow tRow = tRows_Batch[j];
@@ -1179,7 +1179,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
 
                 int filterParamIndex = 0;
-                StringBuilder stringBuilder_Filter = new ();
+                StringBuilder stringBuilder_Filter = new();
                 if (!filterGroup.TryBuildFilterGroupSql(uColumns_Metadata, stringBuilder_Filter, npgsqlCommand_SelectBatch.Parameters, ref filterParamIndex))
                 {
                     return false;
@@ -1295,7 +1295,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 ORDER BY ""{seekColumnUniqueId}"" ASC
                 LIMIT @pageSize";
 
-            await using NpgsqlCommand npgsqlCommand_Select = new (commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand_Select = new(commandText, npgsqlConnection);
             npgsqlCommand_Select.Parameters.AddWithValue("pageSize", pageSize);
             if (hasPartition)
             {
@@ -1753,4 +1753,3 @@ namespace DiGi.PostgreSQL.Table.Classes
         }
     }
 }
-
