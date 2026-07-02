@@ -1,7 +1,9 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
+    <File Path="DefaultDocumentation.json" />
     <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
   </Folder>
   <Project Path="DiGi.PostgreSQL.PartitionReference/DiGi.PostgreSQL.PartitionReference.csproj" Id="c663fb08-f24c-4646-81de-18803c569401" />
   <Project Path="DiGi.PostgreSQL.PartitionUniqueReference/DiGi.PostgreSQL.PartitionUniqueReference.csproj" Id="6b6cb83a-cd96-4545-bc83-726e8dc656f9" />
