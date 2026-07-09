@@ -1,4 +1,4 @@
-#### [DiGi\.PostgreSQL](index.md 'index')
+#### [DiGi\.PostgreSQL](DiGi.PostgreSQL.Overview.md 'DiGi\.PostgreSQL\.Overview')
 
 ## DiGi\.PostgreSQL\.Classes Namespace
 ### Classes

@@ -1,4 +1,4 @@
-#### [DiGi\.PostgreSQL\.UniqueReference](index.md 'index')
+#### [DiGi\.PostgreSQL\.UniqueReference](DiGi.PostgreSQL.UniqueReference.Overview.md 'DiGi\.PostgreSQL\.UniqueReference\.Overview')
 
 ## DiGi\.PostgreSQL\.UniqueReference Assembly
 

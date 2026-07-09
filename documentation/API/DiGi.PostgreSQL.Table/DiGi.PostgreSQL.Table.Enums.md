@@ -1,4 +1,4 @@
-#### [DiGi\.PostgreSQL\.Table](index.md 'index')
+#### [DiGi\.PostgreSQL\.Table](DiGi.PostgreSQL.Table.Overview.md 'DiGi\.PostgreSQL\.Table\.Overview')
 
 ## DiGi\.PostgreSQL\.Table\.Enums Namespace
 ### Enums

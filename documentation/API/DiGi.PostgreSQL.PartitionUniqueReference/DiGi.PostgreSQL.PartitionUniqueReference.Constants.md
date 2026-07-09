@@ -1,4 +1,4 @@
-#### [DiGi\.PostgreSQL\.PartitionUniqueReference](index.md 'index')
+#### [DiGi\.PostgreSQL\.PartitionUniqueReference](DiGi.PostgreSQL.PartitionUniqueReference.Overview.md 'DiGi\.PostgreSQL\.PartitionUniqueReference\.Overview')
 
 ## DiGi\.PostgreSQL\.PartitionUniqueReference\.Constants Namespace
 ### Classes
