@@ -1,4 +1,4 @@
-﻿using DiGi.Core.Interfaces;
+using DiGi.Core.Interfaces;
 using DiGi.PostgreSQL.Classes;
 using DiGi.PostgreSQL.Enums;
 using DiGi.PostgreSQL.PartitionUniqueReference.Classes;
@@ -70,13 +70,13 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 
             bool succeded;
 
-            succeded = await Create.TableAsync_Partitions(npgsqlConnection);
+            succeded = await PostgreSQL.Create.TableAsync_Partitions(npgsqlConnection);
             if (!succeded)
             {
                 return null;
             }
 
-            succeded = await Create.TableAsync_Types(npgsqlConnection);
+            succeded = await PostgreSQL.Create.TableAsync_Types(npgsqlConnection);
             if (!succeded)
             {
                 return null;
@@ -95,7 +95,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
             {
                 DataType dataType = dataTypeFunc.Invoke(keyValuePair.Key);
 
-                succeded = await Create.TableAsync_Objects(npgsqlConnection, dataType, false, true);
+                succeded = await PostgreSQL.Create.TableAsync_Objects(npgsqlConnection, dataType, false, true);
                 if (!succeded)
                 {
                     continue;

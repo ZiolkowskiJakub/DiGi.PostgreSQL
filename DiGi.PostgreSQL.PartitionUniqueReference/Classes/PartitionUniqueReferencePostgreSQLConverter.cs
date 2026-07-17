@@ -1,4 +1,4 @@
-﻿using DiGi.Core.Interfaces;
+using DiGi.Core.Interfaces;
 using DiGi.PostgreSQL.Classes;
 using DiGi.PostgreSQL.Enums;
 using DiGi.PostgreSQL.PartitionUniqueReference.Delegates;
@@ -37,7 +37,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
         /// <returns>A task that represents the asynchronous operation. The task result contains true if any partitions or types were cleaned; otherwise, false.</returns>
         public async Task<bool> Clean(bool partitions = true, bool types = true)
         {
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return false;
@@ -73,7 +73,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
                 return false;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return false;
@@ -96,7 +96,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
                 return false;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return false;
@@ -119,7 +119,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
                 return null;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return null;
@@ -180,7 +180,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
                 return null;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return null;
@@ -204,7 +204,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
                 return null;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return null;
@@ -271,7 +271,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
                 return null;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return null;

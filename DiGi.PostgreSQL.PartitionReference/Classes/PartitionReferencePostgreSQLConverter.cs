@@ -1,4 +1,4 @@
-﻿using DiGi.Core.Interfaces;
+using DiGi.Core.Interfaces;
 using DiGi.PostgreSQL.Classes;
 using DiGi.PostgreSQL.Enums;
 using DiGi.PostgreSQL.PartitionReference.Delegates;
@@ -42,7 +42,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
                 return null;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return null;
@@ -65,7 +65,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
                 return -1;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return -1;
@@ -132,7 +132,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
                 return null;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return null;
@@ -156,7 +156,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
                 return default;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return default;
@@ -200,7 +200,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
                 return null;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return null;
@@ -240,7 +240,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
                 return null;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return null;
@@ -301,7 +301,7 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
                 return null;
             }
 
-            await using NpgsqlConnection? npgsqlConnection = Create.NpgsqlConnection(ConnectionData);
+            await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return null;

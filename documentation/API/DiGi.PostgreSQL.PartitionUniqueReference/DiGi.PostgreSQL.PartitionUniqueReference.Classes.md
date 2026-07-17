@@ -14,6 +14,21 @@ public class PartitionUniqueReference : DiGi.Core.Classes.SerializableReference
 ```
 
 Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → [DiGi\.Core\.Classes\.Object](https://learn.microsoft.com/en-us/dotnet/api/digi.core.classes.object 'DiGi\.Core\.Classes\.Object') → [DiGi\.Core\.Classes\.SerializableObject](https://learn.microsoft.com/en-us/dotnet/api/digi.core.classes.serializableobject 'DiGi\.Core\.Classes\.SerializableObject') → [DiGi\.Core\.Classes\.SerializableReference](https://learn.microsoft.com/en-us/dotnet/api/digi.core.classes.serializablereference 'DiGi\.Core\.Classes\.SerializableReference') → PartitionUniqueReference
+
+### Example
+Renders and parses \(via [DiGi\.Core\.Query\.TryParse\(System\.String,DiGi\.Core\.Interfaces\.IReference@\)](https://learn.microsoft.com/en-us/dotnet/api/digi.core.query.tryparse#digi-core-query-tryparse(system-string-digi-core-interfaces-ireference@) 'DiGi\.Core\.Query\.TryParse\(System\.String,DiGi\.Core\.Interfaces\.IReference@\)')\) as the discriminator, the
+partition name, then the nested unique reference:
+
+```csharp
+PartitionUnique::building2d::(Guid::(Type::DiGi.GIS.Classes.Building2D,DiGi.GIS)::0f8fad5bd9cb469fa16570867728950e)
+```
+
+### Remarks
+TODO \[ReferenceFormat\]: The rendered form changed\. It used to be `name->nestedReference`, where
+`->` came from a local Constants\.Reference that shadowed DiGi\.Core's; it is now the shared
+discriminated grammar, and it no longer returns null when a field is missing \(which made every blank instance
+compare equal\)\. Database\-safe for the same reason as [DiGi\.PostgreSQL\.PartitionReference](https://learn.microsoft.com/en-us/dotnet/api/digi.postgresql.partitionreference 'DiGi\.PostgreSQL\.PartitionReference'): partitions are named
+from the Name property, not from this string\.
 ### Constructors
 
 <a name='DiGi.PostgreSQL.PartitionUniqueReference.Classes.PartitionUniqueReference.PartitionUniqueReference()'></a>
@@ -97,6 +112,19 @@ public string? Name { get; }
 #### Property Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
+<a name='DiGi.PostgreSQL.PartitionUniqueReference.Classes.PartitionUniqueReference.Segments'></a>
+
+## PartitionUniqueReference\.Segments Property
+
+Gets the segments of this reference's string form: the partition name, then the nested unique reference\.
+
+```csharp
+protected override System.Collections.Generic.IEnumerable<string?> Segments { protected get; }
+```
+
+#### Property Value
+[System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
 <a name='DiGi.PostgreSQL.PartitionUniqueReference.Classes.PartitionUniqueReference.UniqueReference'></a>
 
 ## PartitionUniqueReference\.UniqueReference Property
@@ -161,20 +189,6 @@ public override int GetHashCode();
 #### Returns
 [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')  
 A 32\-bit signed integer hash code\.
-
-<a name='DiGi.PostgreSQL.PartitionUniqueReference.Classes.PartitionUniqueReference.ToString()'></a>
-
-## PartitionUniqueReference\.ToString\(\) Method
-
-Returns a string representation of the partition unique reference\.
-
-```csharp
-public override string? ToString();
-```
-
-#### Returns
-[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
-A string combining the name and unique reference, or null if either is missing\.
 
 <a name='DiGi.PostgreSQL.PartitionUniqueReference.Classes.PartitionUniqueReferenceGeneratingEventArgs'></a>
 

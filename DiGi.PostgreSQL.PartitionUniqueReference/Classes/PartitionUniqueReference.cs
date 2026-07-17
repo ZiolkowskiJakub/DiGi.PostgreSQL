@@ -1,5 +1,6 @@
 ﻿using DiGi.Core.Classes;
 using DiGi.Core.Interfaces;
+using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
@@ -8,6 +9,18 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
     /// <summary>
     /// Represents a unique reference for a partition.
     /// </summary>
+    /// <example>
+    /// Renders and parses (via <see cref="Core.Query.TryParse(string?, out IReference?)"/>) as the discriminator, the
+    /// partition name, then the nested unique reference:
+    /// <code>PartitionUnique::building2d::(Guid::(Type::DiGi.GIS.Classes.Building2D,DiGi.GIS)::0f8fad5bd9cb469fa16570867728950e)</code>
+    /// </example>
+    /// <remarks>
+    /// TODO [ReferenceFormat]: The rendered form changed. It used to be <c>name-&gt;nestedReference</c>, where
+    /// <c>-&gt;</c> came from a local Constants.Reference that shadowed DiGi.Core's; it is now the shared
+    /// discriminated grammar, and it no longer returns null when a field is missing (which made every blank instance
+    /// compare equal). Database-safe for the same reason as <see cref="PartitionReference"/>: partitions are named
+    /// from the Name property, not from this string.
+    /// </remarks>
     public class PartitionUniqueReference : SerializableReference
     {
         [JsonInclude, JsonPropertyName("Name")]
@@ -114,18 +127,14 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
             return base.GetHashCode();
         }
 
-        /// <summary>
-        /// Returns a string representation of the partition unique reference.
-        /// </summary>
-        /// <returns>A string combining the name and unique reference, or null if either is missing.</returns>
-        public override string? ToString()
+        /// <summary>Gets the segments of this reference's string form: the partition name, then the nested unique reference.</summary>
+        [JsonIgnore]
+        protected override IEnumerable<string?> Segments
         {
-            if (string.IsNullOrWhiteSpace(name) || uniqueReference == null)
+            get
             {
-                return null;
+                return [Core.Query.Segment(name), Core.Query.Segment(uniqueReference)];
             }
-
-            return $"{name}{Constants.Reference.Separator}{uniqueReference}";
         }
     }
 }

@@ -3,6 +3,38 @@
 ## DiGi\.PostgreSQL\.PartitionUniqueReference Namespace
 ### Classes
 
+<a name='DiGi.PostgreSQL.PartitionUniqueReference.Create'></a>
+
+## Create Class
+
+```csharp
+public static class Create
+```
+
+Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → Create
+### Methods
+
+<a name='DiGi.PostgreSQL.PartitionUniqueReference.Create.PartitionUniqueReference(System.Collections.Generic.IReadOnlyList_string_)'></a>
+
+## Create\.PartitionUniqueReference\(IReadOnlyList\<string\>\) Method
+
+Rebuilds a [PartitionUniqueReference](DiGi.PostgreSQL.PartitionUniqueReference.Classes.md#DiGi.PostgreSQL.PartitionUniqueReference.Classes.PartitionUniqueReference 'DiGi\.PostgreSQL\.PartitionUniqueReference\.Classes\.PartitionUniqueReference') from the segments of its string form\.
+
+```csharp
+public static DiGi.Core.Interfaces.IReference? PartitionUniqueReference(System.Collections.Generic.IReadOnlyList<string?>? segments);
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.PartitionUniqueReference.Create.PartitionUniqueReference(System.Collections.Generic.IReadOnlyList_string_).segments'></a>
+
+`segments` [System\.Collections\.Generic\.IReadOnlyList&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1 'System\.Collections\.Generic\.IReadOnlyList\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ireadonlylist-1 'System\.Collections\.Generic\.IReadOnlyList\`1')
+
+The segments: the partition name, then the nested unique reference\.
+
+#### Returns
+[DiGi\.Core\.Interfaces\.IReference](https://learn.microsoft.com/en-us/dotnet/api/digi.core.interfaces.ireference 'DiGi\.Core\.Interfaces\.IReference')  
+The reference, or `null` if the segments do not describe one\.
+
 <a name='DiGi.PostgreSQL.PartitionUniqueReference.Modify'></a>
 
 ## Modify Class
