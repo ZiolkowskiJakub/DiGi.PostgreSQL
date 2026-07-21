@@ -164,7 +164,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             npgsqlCommand_Aggregate.CommandText = commandText;
 
             object? resultValue = await npgsqlCommand_Aggregate.ExecuteScalarAsync();
-            return System.Text.Json.Nodes.JsonValue.Create(resultValue == System.DBNull.Value ? null : resultValue);
+            return System.Text.Json.Nodes.JsonValue.Create(resultValue == DBNull.Value ? null : resultValue);
         }
 
         /// <summary>
@@ -288,7 +288,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             else
             {
                 object? resultValue = await npgsqlCommand_Aggregate.ExecuteScalarAsync();
-                return System.Text.Json.Nodes.JsonValue.Create(resultValue == System.DBNull.Value ? null : resultValue);
+                return System.Text.Json.Nodes.JsonValue.Create(resultValue == DBNull.Value ? null : resultValue);
             }
         }
 
