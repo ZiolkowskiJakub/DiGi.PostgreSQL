@@ -475,40 +475,40 @@ The PostgreSQL connection to be used for the cleanup process\.
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[Partition](DiGi.PostgreSQL.Classes.md#DiGi.PostgreSQL.Classes.Partition 'DiGi\.PostgreSQL\.Classes\.Partition')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A list of partitions that were removed, or [null](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/keywords/null') if the provided connection is null or partition data could not be retrieved\.
 
-<a name='DiGi.PostgreSQL.Modify.ClearAsync(Npgsql.NpgsqlConnection,string,System.Threading.CancellationToken,int)'></a>
+<a name='DiGi.PostgreSQL.Modify.ClearAsync(Npgsql.NpgsqlConnection,string,int,System.Threading.CancellationToken)'></a>
 
-## Modify\.ClearAsync\(NpgsqlConnection, string, CancellationToken, int\) Method
+## Modify\.ClearAsync\(NpgsqlConnection, string, int, CancellationToken\) Method
 
 Asynchronously clears all data from the specified table and restarts its identity sequence\.
 
 ```csharp
-public static System.Threading.Tasks.Task<bool> ClearAsync(Npgsql.NpgsqlConnection? npgsqlConnection, string tableName, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken), int commandTimeout=30);
+public static System.Threading.Tasks.Task<bool> ClearAsync(Npgsql.NpgsqlConnection? npgsqlConnection, string tableName, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Modify.ClearAsync(Npgsql.NpgsqlConnection,string,System.Threading.CancellationToken,int).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Modify.ClearAsync(Npgsql.NpgsqlConnection,string,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The Npgsql connection to be used for the operation\.
 
-<a name='DiGi.PostgreSQL.Modify.ClearAsync(Npgsql.NpgsqlConnection,string,System.Threading.CancellationToken,int).tableName'></a>
+<a name='DiGi.PostgreSQL.Modify.ClearAsync(Npgsql.NpgsqlConnection,string,int,System.Threading.CancellationToken).tableName'></a>
 
 `tableName` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The name of the database table to clear\.
 
-<a name='DiGi.PostgreSQL.Modify.ClearAsync(Npgsql.NpgsqlConnection,string,System.Threading.CancellationToken,int).cancellationToken'></a>
-
-`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
-
-The cancellation token to observe while waiting for the task to complete\.
-
-<a name='DiGi.PostgreSQL.Modify.ClearAsync(Npgsql.NpgsqlConnection,string,System.Threading.CancellationToken,int).commandTimeout'></a>
+<a name='DiGi.PostgreSQL.Modify.ClearAsync(Npgsql.NpgsqlConnection,string,int,System.Threading.CancellationToken).commandTimeout'></a>
 
 `commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
 The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Modify.ClearAsync(Npgsql.NpgsqlConnection,string,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The cancellation token to observe while waiting for the task to complete\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
