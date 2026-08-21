@@ -1688,7 +1688,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             await npgsqlConnection.OpenAsync();
 
-            return await GetColumnReferencesAsync(columnName, values);
+            return await GetColumnReferencesAsync(npgsqlConnection, columnName, values);
         }
 
         private async Task<List<UColumn>?> GetColumnsAsync(string columnName, IEnumerable<string>? values = null)
