@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.Table.Classes
@@ -97,8 +98,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="singlevalueAggregateFunction">The single-value aggregation function to perform.</param>
         /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
         /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to aggregation.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task representing the async operation, returning the aggregation result as a <see cref="System.Text.Json.Nodes.JsonNode"/>.</returns>
-        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.SinglevalueAggregateFunction singlevalueAggregateFunction, object? partitionValue = null, FilterGroup? filterGroup = null)
+        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.SinglevalueAggregateFunction singlevalueAggregateFunction, object? partitionValue = null, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
             where TColumn : UColumn
         {
             // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
@@ -136,6 +139,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
 
             await using NpgsqlCommand npgsqlCommand_Aggregate = new(string.Empty, npgsqlConnection);
+            npgsqlCommand_Aggregate.CommandTimeout = commandTimeout;
             if (hasPartition)
             {
                 npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
@@ -163,7 +167,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             npgsqlCommand_Aggregate.CommandText = commandText;
 
-            object? resultValue = await npgsqlCommand_Aggregate.ExecuteScalarAsync();
+            object? resultValue = await npgsqlCommand_Aggregate.ExecuteScalarAsync(cancellationToken);
             return System.Text.Json.Nodes.JsonValue.Create(resultValue == DBNull.Value ? null : resultValue);
         }
 
@@ -178,8 +182,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
         /// <param name="separator">The custom separator character; if null, it is dynamically detected.</param>
         /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to aggregation.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task representing the async operation, returning the aggregation result as a <see cref="System.Text.Json.Nodes.JsonNode"/>.</returns>
-        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.MultivalueAggregateFunction multivalueAggregateFunction, object? partitionValue = null, string? separator = null, FilterGroup? filterGroup = null)
+        public async Task<System.Text.Json.Nodes.JsonNode?> GetAggregateSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, Enums.MultivalueAggregateFunction multivalueAggregateFunction, object? partitionValue = null, string? separator = null, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
             where TColumn : UColumn
         {
             // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
@@ -206,6 +212,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
 
             await using NpgsqlCommand npgsqlCommand_Aggregate = new(string.Empty, npgsqlConnection);
+            npgsqlCommand_Aggregate.CommandTimeout = commandTimeout;
             if (hasPartition)
             {
                 npgsqlCommand_Aggregate.Parameters.AddWithValue("partitionValue", partitionValue!);
@@ -271,9 +278,9 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             if (multivalueAggregateFunction == Enums.MultivalueAggregateFunction.SplitValueDistribution)
             {
-                await using NpgsqlDataReader npgsqlDataReader_Distribution = await npgsqlCommand_Aggregate.ExecuteReaderAsync();
+                await using NpgsqlDataReader npgsqlDataReader_Distribution = await npgsqlCommand_Aggregate.ExecuteReaderAsync(cancellationToken);
                 System.Text.Json.Nodes.JsonArray jsonArray_Result = [];
-                while (await npgsqlDataReader_Distribution.ReadAsync())
+                while (await npgsqlDataReader_Distribution.ReadAsync(cancellationToken))
                 {
                     System.Text.Json.Nodes.JsonObject jsonObject_Item = new()
                     {
@@ -287,7 +294,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
             else
             {
-                object? resultValue = await npgsqlCommand_Aggregate.ExecuteScalarAsync();
+                object? resultValue = await npgsqlCommand_Aggregate.ExecuteScalarAsync(cancellationToken);
                 return System.Text.Json.Nodes.JsonValue.Create(resultValue == DBNull.Value ? null : resultValue);
             }
         }
@@ -295,8 +302,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <summary>
         /// Asynchronously retrieves a unique set of categories from the database.
         /// </summary>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="HashSet{T}"/> of category strings if successful; otherwise, <c>null</c>.</returns>
-        public async Task<HashSet<string>?> GetCategoriesAsync()
+        public async Task<HashSet<string>?> GetCategoriesAsync(int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
@@ -304,17 +313,19 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return null;
             }
 
-            await npgsqlConnection.OpenAsync();
+            await npgsqlConnection.OpenAsync(cancellationToken);
 
-            return await GetCategoriesAsync(npgsqlConnection);
+            return await GetCategoriesAsync(npgsqlConnection, commandTimeout, cancellationToken);
         }
 
         /// <summary>
         /// Asynchronously retrieves a unique set of categories from the database using the provided connection.
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the query. This value can be null.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="HashSet{T}"/> of category strings if retrieved successfully; otherwise, null.</returns>
-        public async Task<HashSet<string>?> GetCategoriesAsync(NpgsqlConnection? npgsqlConnection)
+        public async Task<HashSet<string>?> GetCategoriesAsync(NpgsqlConnection? npgsqlConnection, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null)
             {
@@ -326,12 +337,13 @@ namespace DiGi.PostgreSQL.Table.Classes
             string query = $"SELECT category FROM \"{Constants.TableName.Columns}\" WHERE table_name = @tableName";
 
             await using NpgsqlCommand npgsqlCommand = new(query, npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
 
             npgsqlCommand.Parameters.Add(new NpgsqlParameter("tableName", NpgsqlDbType.Text) { Value = TableName });
 
-            await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync();
+            await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
 
-            while (await reader.ReadAsync())
+            while (await reader.ReadAsync(cancellationToken))
             {
                 object? value = reader["category"];
 
@@ -350,10 +362,12 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// Asynchronously retrieves a list of column references filtered by the specified categories.
         /// </summary>
         /// <param name="categories">An optional collection of category names to filter the results. If null, the filtering criteria may be omitted.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, null.</returns>
-        public async Task<List<ColumnReference>?> GetColumnReferencesByCategoriesAsync(IEnumerable<string>? categories = null)
+        public async Task<List<ColumnReference>?> GetColumnReferencesByCategoriesAsync(IEnumerable<string>? categories = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnReferencesAsync("category", categories);
+            return await GetColumnReferencesAsync("category", categories, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -361,10 +375,12 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection to be used for the database operation.</param>
         /// <param name="categories">An optional collection of category names used to filter the column references.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if successful; otherwise, null.</returns>
-        public async Task<List<ColumnReference>?> GetColumnReferencesByCategoriesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? categories = null)
+        public async Task<List<ColumnReference>?> GetColumnReferencesByCategoriesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? categories = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnReferencesAsync(npgsqlConnection, "category", categories);
+            return await GetColumnReferencesAsync(npgsqlConnection, "category", categories, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -422,8 +438,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// Asynchronously retrieves a list of columns filtered by the specified categories.
         /// </summary>
         /// <param name="categories">An optional collection of category names to filter the columns by. If null, the filtering behavior is determined by the underlying data source.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects matching the categories, or null if no results are found.</returns>
-        public async Task<List<UColumn>?> GetColumnsByCategoriesAsync(IEnumerable<string>? categories = null)
+        public async Task<List<UColumn>?> GetColumnsByCategoriesAsync(IEnumerable<string>? categories = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             return await GetColumnsAsync("category", categories);
         }
@@ -433,8 +451,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection to be used for the database operation.</param>
         /// <param name="categories">An optional collection of category names used to filter the retrieved columns.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if successful; otherwise, null.</returns>
-        public async Task<List<UColumn>?> GetColumnsByCategoriesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? categories = null)
+        public async Task<List<UColumn>?> GetColumnsByCategoriesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? categories = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             return await GetColumnsAsync(npgsqlConnection, "category", categories);
         }
@@ -464,8 +484,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// Asynchronously retrieves a list of columns based on the provided unique identifiers.
         /// </summary>
         /// <param name="columnUniqueIds">An optional collection of unique identifier strings used to filter the columns. If null, the behavior is determined by the underlying data source.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects matching the specified identifiers, or null if no matches are found.</returns>
-        public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(IEnumerable<string>? columnUniqueIds = null)
+        public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(IEnumerable<string>? columnUniqueIds = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             return await GetColumnsAsync("unique_id", columnUniqueIds);
         }
@@ -475,8 +497,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the database query.</param>
         /// <param name="columnUniqueIds">An optional collection of unique identifier strings used to filter the results.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if found; otherwise, null.</returns>
-        public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? columnUniqueIds = null)
+        public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? columnUniqueIds = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             return await GetColumnsAsync(npgsqlConnection, "unique_id", columnUniqueIds);
         }
@@ -491,8 +515,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="bucketCount">The total number of buckets to segment the value range into.</param>
         /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
         /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to aggregation.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task representing the async operation, returning the histogram data as a <see cref="System.Text.Json.Nodes.JsonArray"/>.</returns>
-        public async Task<System.Text.Json.Nodes.JsonArray?> GetHistogramSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, int bucketCount, object? partitionValue = null, FilterGroup? filterGroup = null)
+        public async Task<System.Text.Json.Nodes.JsonArray?> GetHistogramSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, int bucketCount, object? partitionValue = null, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
             where TColumn : UColumn
         {
             // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
@@ -518,6 +544,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             stringBuilder_Where.Append(hasPartition ? $"\"{partitionColumnUniqueId}\" = @partitionValue" : "1=1");
 
             await using NpgsqlCommand npgsqlCommand_Histogram = new(string.Empty, npgsqlConnection);
+            npgsqlCommand_Histogram.CommandTimeout = commandTimeout;
             npgsqlCommand_Histogram.Parameters.AddWithValue("bucketCount", bucketCount);
             if (hasPartition)
             {
@@ -556,9 +583,9 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             npgsqlCommand_Histogram.CommandText = commandText;
 
-            await using NpgsqlDataReader npgsqlDataReader_Histogram = await npgsqlCommand_Histogram.ExecuteReaderAsync();
+            await using NpgsqlDataReader npgsqlDataReader_Histogram = await npgsqlCommand_Histogram.ExecuteReaderAsync(cancellationToken);
             System.Text.Json.Nodes.JsonArray jsonArray_Result = [];
-            while (await npgsqlDataReader_Histogram.ReadAsync())
+            while (await npgsqlDataReader_Histogram.ReadAsync(cancellationToken))
             {
                 System.Text.Json.Nodes.JsonObject jsonObject_Bucket = new()
                 {
@@ -579,8 +606,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <typeparam name="T">The type of the elements contained in the returned collection.</typeparam>
         /// <param name="columnUniqueId">The unique identifier of the column used to query for the values; may be null.</param>
         /// <param name="filterGroup">The optional hierarchical filters to apply prior to retrieving the unique values.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains an enumerable collection of nullable values of type <typeparamref name="T"/>, or null if the operation cannot be completed or no data is found.</returns>
-        public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(string? columnUniqueId, FilterGroup? filterGroup = null)
+        public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(string? columnUniqueId, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
 
@@ -589,9 +618,9 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return null;
             }
 
-            await npgsqlConnection.OpenAsync();
+            await npgsqlConnection.OpenAsync(cancellationToken);
 
-            return await GetUniqueValuesAsync<T>(npgsqlConnection, columnUniqueId, filterGroup);
+            return await GetUniqueValuesAsync<T>(npgsqlConnection, columnUniqueId, filterGroup, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -601,8 +630,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="npgsqlConnection">The active PostgreSQL connection instance.</param>
         /// <param name="columnUniqueId">The name of the database column to query.</param>
         /// <param name="filterGroup">The optional hierarchical filters to apply prior to retrieving the unique values.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>An enumerable containing unique values from the column, or null if input is invalid.</returns>
-        public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(NpgsqlConnection? npgsqlConnection, string? columnUniqueId, FilterGroup? filterGroup = null)
+        public async Task<IEnumerable<T?>?> GetUniqueValuesAsync<T>(NpgsqlConnection? npgsqlConnection, string? columnUniqueId, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             // 1. Basic input validation: Check if connection exists and uniqueId (column name) is provided.
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(columnUniqueId))
@@ -628,6 +659,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             // 3. Initialize SQL command and parameters builder.
             await using NpgsqlCommand npgsqlCommand = new(string.Empty, npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
 
             StringBuilder stringBuilder_Where = new();
             stringBuilder_Where.Append($"\"{columnUniqueId}\" IS NOT NULL");
@@ -661,10 +693,10 @@ namespace DiGi.PostgreSQL.Table.Classes
             HashSet<T?> uniqueValues = [];
 
             // 6. Open a data reader to stream results from the database.
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
 
             // 7. Iterate through the records returned by PostgreSQL.
-            while (await npgsqlDataReader.ReadAsync())
+            while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
                 // Check for database NULL or try to convert the raw object to the generic type T.
                 if (npgsqlDataReader.IsDBNull(0) || !Core.Query.TryConvert(npgsqlDataReader.GetValue(0), out T? value))
@@ -692,8 +724,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="table">The table object from which data is being pulled.</param>
         /// <param name="columnUniqueId">The unique identifier of the column used to filter or identify the data.</param>
         /// <param name="values">A collection of values associated with the specified column unique ID.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="bool"/> value indicating whether the pull operation was successful.</returns>
-        public async Task<bool> PullAsync<TObject, TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, string columnUniqueId, IEnumerable<TObject>? values) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PullAsync<TObject, TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, string columnUniqueId, IEnumerable<TObject>? values, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
             if (table is null || npgsqlConnection is null || string.IsNullOrWhiteSpace(columnUniqueId) || values is null || !values.Any())
             {
@@ -809,9 +843,10 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
             npgsqlCommand.Parameters.Add(npgsqlParameter);
 
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
 
             if (!await ReadAsync(npgsqlDataReader, table, dictionary, dictionary_PrimaryKey, existingRowsMap))
             {
@@ -830,10 +865,12 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="table">The table instance from which data is being pulled. May be null.</param>
         /// <param name="columnUniqueId">The unique identifier of the column used to filter the data.</param>
         /// <param name="value">The value used to identify the record to pull. May be null.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
-        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, string columnUniqueId, object? value) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, string columnUniqueId, object? value, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
-            return await PullAsync(npgsqlConnection, table, columnUniqueId, [value]);
+            return await PullAsync(npgsqlConnection, table, columnUniqueId, [value], commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -844,10 +881,12 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="table">The table instance from which data is being pulled. May be null.</param>
         /// <param name="columnUniqueId">The unique identifier of the column used to filter the data.</param>
         /// <param name="value">The value used to identify the record to pull. May be null.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
-        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, object? value) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, object? value, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
-            return await PullAsync(table, columnUniqueId, [value]);
+            return await PullAsync(table, columnUniqueId, [value], commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -859,8 +898,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="table">The table instance from which data is being pulled. May be null.</param>
         /// <param name="columnUniqueId">The unique identifier of the column used to filter the data.</param>
         /// <param name="values">A collection of values used to identify the records to pull. May be null.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
-        public async Task<bool> PullAsync<TObject, TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, IEnumerable<TObject>? values) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PullAsync<TObject, TColumn, TRow>(Table<TColumn, TRow>? table, string columnUniqueId, IEnumerable<TObject>? values, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
             if (values is null || !values.Any())
             {
@@ -873,9 +914,9 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
-            await npgsqlConnection.OpenAsync();
+            await npgsqlConnection.OpenAsync(cancellationToken);
 
-            return await PullAsync(npgsqlConnection, table, columnUniqueId, values);
+            return await PullAsync(npgsqlConnection, table, columnUniqueId, values, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -886,8 +927,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="npgsqlConnection">The Npgsql database connection to use for the operation. May be null.</param>
         /// <param name="table">The table instance from which data is being pulled. May be null.</param>
         /// <param name="batchSize">The number of records to process per batch. Defaults to 1000.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
-        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, int batchSize = 1000, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
             if (table is null || npgsqlConnection is null)
             {
@@ -951,7 +994,8 @@ namespace DiGi.PostgreSQL.Table.Classes
             if (table.RowCount == 0 || dictionary_PrimaryKey.Count == 0)
             {
                 await using NpgsqlCommand npgsqlCommand = new(baseQuery, npgsqlConnection);
-                await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync();
+                npgsqlCommand.CommandTimeout = commandTimeout;
+                await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
                 return await ReadAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap);
             }
 
@@ -989,8 +1033,9 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
 
                 await using NpgsqlCommand npgsqlCommand = new(baseQuery + whereClause.ToString(), npgsqlConnection);
+                npgsqlCommand.CommandTimeout = commandTimeout;
                 npgsqlCommand.Parameters.AddRange(parameters.ToArray());
-                await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync();
+                await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
                 if (!await ReadAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap))
                 {
                     return false;
@@ -1007,8 +1052,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
         /// <param name="table">The table instance to pull data for. This value can be null.</param>
         /// <param name="batchSize">The number of records to retrieve in each batch. The default value is 1000.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains <see langword="true"/> if the data was pulled successfully; otherwise, <see langword="false"/>.</returns>
-        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
@@ -1016,9 +1063,9 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
-            await npgsqlConnection.OpenAsync();
+            await npgsqlConnection.OpenAsync(cancellationToken);
 
-            return await PullAsync(npgsqlConnection, table, batchSize);
+            return await PullAsync(npgsqlConnection, table, batchSize, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -1030,8 +1077,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="table">The table instance from which data is being pulled. May be null.</param>
         /// <param name="filterGroup">The filter group used to restrict the data retrieved from the database.</param>
         /// <param name="batchSize">The maximum number of rows to retrieve in each batch. The default value is 1000.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the pull operation completed successfully; otherwise, <see langword="false"/>.</returns>
-        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, FilterGroup filterGroup, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, FilterGroup filterGroup, int batchSize = 1000, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
             if (table is null || npgsqlConnection is null || filterGroup is null)
             {
@@ -1112,6 +1161,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             if (table.RowCount == 0 || tColumns_PrimaryKey.Count == 0)
             {
                 await using NpgsqlCommand npgsqlCommand_Select = new(string_BaseQuery, npgsqlConnection);
+                npgsqlCommand_Select.CommandTimeout = commandTimeout;
                 int parameterIndex = 0;
                 StringBuilder stringBuilder_Filter = new();
 
@@ -1128,7 +1178,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
                 npgsqlCommand_Select.CommandText = string_FinalQuery;
 
-                await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync();
+                await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync(cancellationToken);
                 return await ReadAsync(npgsqlDataReader_Select, table, tColumns_Dictionary, tColumns_PrimaryKey, tRows_ExistingMap);
             }
 
@@ -1165,6 +1215,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 stringBuilder_Where.Append(')');
 
                 await using NpgsqlCommand npgsqlCommand_SelectBatch = new(string_BaseQuery, npgsqlConnection);
+                npgsqlCommand_SelectBatch.CommandTimeout = commandTimeout;
 
                 for (int j = 0; j < tRows_Batch.Count; j++)
                 {
@@ -1194,7 +1245,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
 
                 npgsqlCommand_SelectBatch.CommandText = string_BaseQuery + stringBuilder_Where.ToString();
-                await using NpgsqlDataReader npgsqlDataReader_SelectBatch = await npgsqlCommand_SelectBatch.ExecuteReaderAsync();
+                await using NpgsqlDataReader npgsqlDataReader_SelectBatch = await npgsqlCommand_SelectBatch.ExecuteReaderAsync(cancellationToken);
                 if (!await ReadAsync(npgsqlDataReader_SelectBatch, table, tColumns_Dictionary, tColumns_PrimaryKey, tRows_ExistingMap))
                 {
                     return false;
@@ -1212,8 +1263,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="table">The table instance to pull data for. This value can be null.</param>
         /// <param name="filterGroup">The filter group used to restrict the data retrieved from the database.</param>
         /// <param name="batchSize">The maximum number of rows to retrieve in each batch. The default value is 1000.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains <see langword="true"/> if the data was pulled successfully; otherwise, <see langword="false"/>.</returns>
-        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, FilterGroup filterGroup, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PullAsync<TColumn, TRow>(Table<TColumn, TRow>? table, FilterGroup filterGroup, int batchSize = 1000, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
@@ -1221,9 +1274,9 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
-            await npgsqlConnection.OpenAsync();
+            await npgsqlConnection.OpenAsync(cancellationToken);
 
-            return await PullAsync(npgsqlConnection, table, filterGroup, batchSize);
+            return await PullAsync(npgsqlConnection, table, filterGroup, batchSize, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -1238,8 +1291,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="lastSeekValue">The seek column value of the last row from the previous page.</param>
         /// <param name="pageSize">The maximum number of records to retrieve in this page.</param>
         /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task representing the asynchronous operation, returning true if successful; otherwise, false.</returns>
-        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection npgsqlConnection, Table<TColumn, TRow>? table, string seekColumnUniqueId, object? lastSeekValue, int pageSize, object? partitionValue = null)
+        public async Task<bool> PullAsync<TColumn, TRow>(NpgsqlConnection npgsqlConnection, Table<TColumn, TRow>? table, string seekColumnUniqueId, object? lastSeekValue, int pageSize, object? partitionValue = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
             where TColumn : UColumn
             where TRow : IRow<TRow>
         {
@@ -1296,6 +1351,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 LIMIT @pageSize";
 
             await using NpgsqlCommand npgsqlCommand_Select = new(commandText, npgsqlConnection);
+            npgsqlCommand_Select.CommandTimeout = commandTimeout;
             npgsqlCommand_Select.Parameters.AddWithValue("pageSize", pageSize);
             if (hasPartition)
             {
@@ -1326,7 +1382,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
 
             Dictionary<string, TRow> existingRows = [];
-            await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync();
+            await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync(cancellationToken);
 
             return await ReadAsync(npgsqlDataReader_Select, table, dictionary_Columns, dictionary_PrimaryKey, existingRows);
         }
@@ -1338,18 +1394,22 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
         /// <param name="table">The table instance containing the data to be pushed. This value can be null.</param>
         /// <param name="batchSize">The number of records to process in each batch. The default value is 1000.</param>
+        /// <param name="commandTimeout">The timeout in seconds applied to every batch the push executes. A value of 0 disables the timeout. A batch carries <paramref name="batchSize"/> rows over every column of the table, so a wide table needs far more than the 30 second default.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete. Cancelling rolls the transaction back and throws rather than returning false.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains <c>true</c> if the push operation was successful; otherwise, <c>false</c>.</returns>
-        public async Task<bool> PushAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PushAsync<TColumn, TRow>(Table<TColumn, TRow>? table, int batchSize = 1000, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
             if (npgsqlConnection is null)
             {
                 return false;
             }
 
-            await npgsqlConnection.OpenAsync();
+            await npgsqlConnection.OpenAsync(cancellationToken);
 
-            return await PushAsync(npgsqlConnection, table, batchSize);
+            return await PushAsync(npgsqlConnection, table, batchSize, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -1360,9 +1420,13 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="npgsqlConnection">The Npgsql connection instance used to communicate with the database. May be null.</param>
         /// <param name="table">The table containing the data to be pushed. May be null.</param>
         /// <param name="batchSize">The number of records to process per batch. Defaults to 1000.</param>
+        /// <param name="commandTimeout">The timeout in seconds applied to every batch the push executes. A value of 0 disables the timeout. A batch carries <paramref name="batchSize"/> rows over every column of the table, so a wide table needs far more than the 30 second default.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete. Cancelling rolls the transaction back and throws rather than returning false.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is <see langword="true"/> if the data was successfully pushed; otherwise, <see langword="false"/>.</returns>
-        public async Task<bool> PushAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, int batchSize = 1000) where TColumn : UColumn where TRow : IRow<TRow>
+        public async Task<bool> PushAsync<TColumn, TRow>(NpgsqlConnection? npgsqlConnection, Table<TColumn, TRow>? table, int batchSize = 1000, int commandTimeout = 30, CancellationToken cancellationToken = default) where TColumn : UColumn where TRow : IRow<TRow>
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (table is null || table.RowCount == 0 || npgsqlConnection is null)
             {
                 return false;
@@ -1501,11 +1565,11 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             int rowCounter = 0;
 
-            await using NpgsqlTransaction npgsqlTransaction = await npgsqlConnection.BeginTransactionAsync();
+            await using NpgsqlTransaction npgsqlTransaction = await npgsqlConnection.BeginTransactionAsync(cancellationToken);
 
             try
             {
-                NpgsqlBatch npgsqlBatch = new(npgsqlConnection, npgsqlTransaction);
+                NpgsqlBatch npgsqlBatch = new(npgsqlConnection, npgsqlTransaction) { Timeout = commandTimeout };
 
                 if (partitionColumn is not null)
                 {
@@ -1531,6 +1595,8 @@ namespace DiGi.PostgreSQL.Table.Classes
 
                 foreach (TRow row in table)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     NpgsqlBatchCommand npgsqlBatchCommand = new(commandText);
 
                     foreach (KeyValuePair<string, UColumn> keyValuePair in dictionary)
@@ -1553,28 +1619,33 @@ namespace DiGi.PostgreSQL.Table.Classes
 
                     if (rowCounter % batchSize == 0)
                     {
-                        await npgsqlBatch.ExecuteNonQueryAsync();
+                        await npgsqlBatch.ExecuteNonQueryAsync(cancellationToken);
                         await npgsqlBatch.DisposeAsync();
 
-                        npgsqlBatch = new NpgsqlBatch(npgsqlConnection, npgsqlTransaction);
+                        npgsqlBatch = new NpgsqlBatch(npgsqlConnection, npgsqlTransaction) { Timeout = commandTimeout };
                     }
                 }
 
                 if (npgsqlBatch.BatchCommands.Count > 0)
                 {
-                    await npgsqlBatch.ExecuteNonQueryAsync();
+                    await npgsqlBatch.ExecuteNonQueryAsync(cancellationToken);
                     await npgsqlBatch.DisposeAsync();
                 }
 
-                await npgsqlTransaction.CommitAsync();
+                await npgsqlTransaction.CommitAsync(cancellationToken);
 
                 await Modify.UpdateAsync(npgsqlConnection, TableName, dictionary.Values);
 
                 return true;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                await npgsqlTransaction.RollbackAsync(CancellationToken.None);
+                throw;
+            }
             catch (NpgsqlException)
             {
-                await npgsqlTransaction.RollbackAsync();
+                await npgsqlTransaction.RollbackAsync(CancellationToken.None);
                 return false;
             }
         }
@@ -1631,7 +1702,16 @@ namespace DiGi.PostgreSQL.Table.Classes
             return await Create.TableAsync(npgsqlConnection, TableName, TableConversionOptions, columns);
         }
 
-        private async Task<List<ColumnReference>?> GetColumnReferencesAsync(NpgsqlConnection? npgsqlConnection, string columnName, IEnumerable<string>? values = null)
+        /// <summary>
+        /// Asynchronously reads the stored column metadata for this table, optionally narrowed to the rows whose <paramref name="columnName"/> matches one of <paramref name="values"/>.
+        /// </summary>
+        /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the query. This value can be null.</param>
+        /// <param name="columnName">The metadata column to match on. Callers pass a literal - it is written into the statement and is never caller supplied.</param>
+        /// <param name="values">The optional values to match. Null or empty reads every column of the table.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the matching <see cref="ColumnReference"/> list, or null when the connection is null.</returns>
+        private async Task<List<ColumnReference>?> GetColumnReferencesAsync(NpgsqlConnection? npgsqlConnection, string columnName, IEnumerable<string>? values = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null)
             {
@@ -1650,6 +1730,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
 
             await using NpgsqlCommand npgsqlCommand = new(query, npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
             npgsqlCommand.Parameters.Add(new NpgsqlParameter("tableName", NpgsqlDbType.Text) { Value = TableName });
 
             if (hasFilter)
@@ -1658,8 +1739,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                 npgsqlCommand.Parameters.Add(new NpgsqlParameter($"{columnName}", NpgsqlDbType.Array | NpgsqlDbType.Text) { Value = values!.ToArray() });
             }
 
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
-            while (await npgsqlDataReader.ReadAsync())
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
+            while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
                 ColumnReference columnReference = new()
                 {
@@ -1677,7 +1758,15 @@ namespace DiGi.PostgreSQL.Table.Classes
             return result;
         }
 
-        private async Task<List<ColumnReference>?> GetColumnReferencesAsync(string columnName, IEnumerable<string>? values = null)
+        /// <summary>
+        /// Asynchronously opens a connection and reads the stored column metadata for this table, optionally narrowed to the rows whose <paramref name="columnName"/> matches one of <paramref name="values"/>.
+        /// </summary>
+        /// <param name="columnName">The metadata column to match on. Callers pass a literal - it is written into the statement and is never caller supplied.</param>
+        /// <param name="values">The optional values to match. Null or empty reads every column of the table.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the matching <see cref="ColumnReference"/> list, or null when no connection could be built.</returns>
+        private async Task<List<ColumnReference>?> GetColumnReferencesAsync(string columnName, IEnumerable<string>? values = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
 
@@ -1686,9 +1775,9 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return null;
             }
 
-            await npgsqlConnection.OpenAsync();
+            await npgsqlConnection.OpenAsync(cancellationToken);
 
-            return await GetColumnReferencesAsync(npgsqlConnection, columnName, values);
+            return await GetColumnReferencesAsync(npgsqlConnection, columnName, values, commandTimeout, cancellationToken);
         }
 
         private async Task<List<UColumn>?> GetColumnsAsync(string columnName, IEnumerable<string>? values = null)

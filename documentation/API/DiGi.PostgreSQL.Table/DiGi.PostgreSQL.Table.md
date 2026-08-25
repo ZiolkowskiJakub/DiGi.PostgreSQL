@@ -14,6 +14,37 @@ public static class Convert
 Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → Convert
 ### Methods
 
+<a name='DiGi.PostgreSQL.Table.Convert.ToDiGi_UColumn_(thisSystem.Collections.Generic.IEnumerable_UColumn_)'></a>
+
+## Convert\.ToDiGi\<UColumn\>\(this IEnumerable\<UColumn\>\) Method
+
+Converts a collection of column implementations to DiGi core column representations\.
+
+Columns that convert to nothing are left out rather than carried through as nulls, so the result is always safe to enumerate.
+
+```csharp
+public static System.Collections.Generic.List<DiGi.PostgreSQL.Table.Classes.Column>? ToDiGi<UColumn>(this System.Collections.Generic.IEnumerable<UColumn>? columns)
+    where UColumn : DiGi.Core.IO.Table.Interfaces.IColumn;
+```
+#### Type parameters
+
+<a name='DiGi.PostgreSQL.Table.Convert.ToDiGi_UColumn_(thisSystem.Collections.Generic.IEnumerable_UColumn_).UColumn'></a>
+
+`UColumn`
+
+The type of the columns being converted, which must implement [DiGi\.Core\.IO\.Table\.Interfaces\.IColumn](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.interfaces.icolumn 'DiGi\.Core\.IO\.Table\.Interfaces\.IColumn')\.
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Convert.ToDiGi_UColumn_(thisSystem.Collections.Generic.IEnumerable_UColumn_).columns'></a>
+
+`columns` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[UColumn](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Convert.ToDiGi_UColumn_(thisSystem.Collections.Generic.IEnumerable_UColumn_).UColumn 'DiGi\.PostgreSQL\.Table\.Convert\.ToDiGi\<UColumn\>\(this System\.Collections\.Generic\.IEnumerable\<UColumn\>\)\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The source columns to convert\.
+
+#### Returns
+[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[Column](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.Column 'DiGi\.PostgreSQL\.Table\.Classes\.Column')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')  
+A list of [Column](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.Column 'DiGi\.PostgreSQL\.Table\.Classes\.Column') instances if the input is not null; otherwise, null\.
+
 <a name='DiGi.PostgreSQL.Table.Convert.ToDiGi_UColumn_(thisUColumn)'></a>
 
 ## Convert\.ToDiGi\<UColumn\>\(this UColumn\) Method
