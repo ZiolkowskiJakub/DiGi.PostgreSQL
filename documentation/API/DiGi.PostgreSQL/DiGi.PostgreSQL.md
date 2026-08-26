@@ -925,7 +925,7 @@ A task that represents the asynchronous operation, containing the total row coun
 Gets an estimated row count for the specified table in a PostgreSQL database\.
 
 ```csharp
-public static System.Threading.Tasks.Task<long> EstimatedCountAsync(this Npgsql.NpgsqlConnection npgsqlConnection, string tableName, bool analyze=false, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+public static System.Threading.Tasks.Task<System.Nullable<long>> EstimatedCountAsync(this Npgsql.NpgsqlConnection? npgsqlConnection, string tableName, bool analyze=false, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
@@ -954,8 +954,8 @@ A boolean indicating whether to run VACUUM ANALYZE before fetching the count\.
 A token to monitor for cancellation requests\.
 
 #### Returns
-[System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
-The estimated number of rows as a long, or \-1 if an error occurs or the table does not exist\.
+[System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
+The estimated number of rows as a nullable long, \-1 if the table exists but has not been analysed, or null if the table does not exist or connection is invalid\.
 
 <a name='DiGi.PostgreSQL.Query.HasRows(thisNpgsql.NpgsqlConnection,string)'></a>
 

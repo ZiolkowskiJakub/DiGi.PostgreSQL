@@ -1,4 +1,4 @@
-﻿using Npgsql;
+using Npgsql;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,32 +13,32 @@ namespace DiGi.PostgreSQL
         /// <param name="tableName">The name of the table to get the estimate for.</param>
         /// <param name="analyze">A boolean indicating whether to run VACUUM ANALYZE before fetching the count.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>The estimated number of rows as a long, or -1 if an error occurs or the table does not exist.</returns>
-        public static async Task<long> EstimatedCountAsync(this NpgsqlConnection npgsqlConnection, string tableName, bool analyze = false, CancellationToken cancellationToken = default)
+        /// <returns>The estimated number of rows as a nullable long, -1 if the table exists but has not been analysed, or null if the table does not exist or connection is invalid.</returns>
+        public static async Task<long?> EstimatedCountAsync(this NpgsqlConnection? npgsqlConnection, string tableName, bool analyze = false, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
             {
-                return -1;
+                return null;
             }
 
             if (!await TableExistsAsync(npgsqlConnection, tableName))
             {
-                return -1;
+                return null;
             }
 
             if (analyze)
             {
                 // Explicitly run ANALYZE to refresh statistics
                 string commandText_Analyze = $"VACUUM ANALYZE {tableName}";
-                using NpgsqlCommand npgsqlCommand_Analyze = new(commandText_Analyze, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand_Analyze = new(commandText_Analyze, npgsqlConnection);
 
-                await npgsqlCommand_Analyze.ExecuteNonQueryAsync();
+                await npgsqlCommand_Analyze.ExecuteNonQueryAsync(cancellationToken);
             }
 
             // Querying the system catalogs for an estimate
-            const string commandText_Select = "SELECT reltuples AS estimate FROM pg_class WHERE oid = @tableName::regclass"; ;
+            const string commandText_Select = "SELECT reltuples AS estimate FROM pg_class WHERE oid = to_regclass(@tableName)";
 
-            using NpgsqlCommand npgsqlCommand = new(commandText_Select, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand = new(commandText_Select, npgsqlConnection);
 
             npgsqlCommand.Parameters.AddWithValue("tableName", tableName);
             object? @object = await npgsqlCommand.ExecuteScalarAsync(cancellationToken);
@@ -49,6 +49,14 @@ namespace DiGi.PostgreSQL
             else if (@object is int @int)
             {
                 return @int;
+            }
+            else if (@object is float @float)
+            {
+                return (long)@float;
+            }
+            else if (@object is double @double)
+            {
+                return (long)@double;
             }
             else if (Core.Query.IsNumeric(@object))
             {
