@@ -918,36 +918,42 @@ The cancellation token to observe\.
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation, containing the total row count across all matching partitions or \-1 if an error occurs\.
 
-<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,System.Threading.CancellationToken)'></a>
+<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,int,System.Threading.CancellationToken)'></a>
 
-## Query\.EstimatedCountAsync\(this NpgsqlConnection, string, bool, CancellationToken\) Method
+## Query\.EstimatedCountAsync\(this NpgsqlConnection, string, bool, int, CancellationToken\) Method
 
 Gets an estimated row count for the specified table in a PostgreSQL database\.
 
 ```csharp
-public static System.Threading.Tasks.Task<System.Nullable<long>> EstimatedCountAsync(this Npgsql.NpgsqlConnection? npgsqlConnection, string tableName, bool analyze=false, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+public static System.Threading.Tasks.Task<System.Nullable<long>> EstimatedCountAsync(this Npgsql.NpgsqlConnection? npgsqlConnection, string tableName, bool analyze=false, int commandTimeout=600, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,System.Threading.CancellationToken).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The Npgsql connection to use for the query\.
 
-<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,System.Threading.CancellationToken).tableName'></a>
+<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,int,System.Threading.CancellationToken).tableName'></a>
 
 `tableName` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The name of the table to get the estimate for\.
 
-<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,System.Threading.CancellationToken).analyze'></a>
+<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,int,System.Threading.CancellationToken).analyze'></a>
 
 `analyze` [System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')
 
 A boolean indicating whether to run VACUUM ANALYZE before fetching the count\.
 
-<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,System.Threading.CancellationToken).cancellationToken'></a>
+<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds applied to every command executed\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,int,System.Threading.CancellationToken).cancellationToken'></a>
 
 `cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
 
@@ -956,6 +962,63 @@ A token to monitor for cancellation requests\.
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 The estimated number of rows as a nullable long, \-1 if the table exists but has not been analysed, or null if the table does not exist or connection is invalid\.
+
+<a name='DiGi.PostgreSQL.Query.EstimatedCountsAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,bool,int,int,System.Threading.CancellationToken)'></a>
+
+## Query\.EstimatedCountsAsync\(this NpgsqlConnection, IEnumerable\<string\>, bool, int, int, CancellationToken\) Method
+
+Gets estimated row counts for many tables at once, reading the planner's statistics for the whole set in a single catalog query per batch\.
+
+This is the plural form of [EstimatedCountAsync\(this NpgsqlConnection, string, bool, int, CancellationToken\)](DiGi.PostgreSQL.md#DiGi.PostgreSQL.Query.EstimatedCountAsync(thisNpgsql.NpgsqlConnection,string,bool,int,System.Threading.CancellationToken) 'DiGi\.PostgreSQL\.Query\.EstimatedCountAsync\(this Npgsql\.NpgsqlConnection, string, bool, int, System\.Threading\.CancellationToken\)') and exists because calling the singular in a loop issues two round trips per table - one existence check and one catalog read. Reading `pg_class` by name answers both questions at once: a table that does not exist simply produces no row.
+
+A table is absent from the result when it does not exist, and carries `-1` when it exists but has never been analysed, mirroring the `null` and `-1` the singular returns for those two cases.
+
+Setting [analyze](DiGi.PostgreSQL.md#DiGi.PostgreSQL.Query.EstimatedCountsAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,bool,int,int,System.Threading.CancellationToken).analyze 'DiGi\.PostgreSQL\.Query\.EstimatedCountsAsync\(this Npgsql\.NpgsqlConnection, System\.Collections\.Generic\.IEnumerable\<string\>, bool, int, int, System\.Threading\.CancellationToken\)\.analyze') costs one `VACUUM ANALYZE` statement per existing table. That work is per table by construction and cannot be batched, so the cost grows with the size of [tableNames](DiGi.PostgreSQL.md#DiGi.PostgreSQL.Query.EstimatedCountsAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,bool,int,int,System.Threading.CancellationToken).tableNames 'DiGi\.PostgreSQL\.Query\.EstimatedCountsAsync\(this Npgsql\.NpgsqlConnection, System\.Collections\.Generic\.IEnumerable\<string\>, bool, int, int, System\.Threading\.CancellationToken\)\.tableNames') - budget [commandTimeout](DiGi.PostgreSQL.md#DiGi.PostgreSQL.Query.EstimatedCountsAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,bool,int,int,System.Threading.CancellationToken).commandTimeout 'DiGi\.PostgreSQL\.Query\.EstimatedCountsAsync\(this Npgsql\.NpgsqlConnection, System\.Collections\.Generic\.IEnumerable\<string\>, bool, int, int, System\.Threading\.CancellationToken\)\.commandTimeout') accordingly.
+
+```csharp
+public static System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<string,long>?> EstimatedCountsAsync(this Npgsql.NpgsqlConnection? npgsqlConnection, System.Collections.Generic.IEnumerable<string>? tableNames, bool analyze=false, int batchSize=1000, int commandTimeout=600, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Query.EstimatedCountsAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,bool,int,int,System.Threading.CancellationToken).npgsqlConnection'></a>
+
+`npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
+
+The Npgsql connection to use for the query\.
+
+<a name='DiGi.PostgreSQL.Query.EstimatedCountsAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,bool,int,int,System.Threading.CancellationToken).tableNames'></a>
+
+`tableNames` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The names of the tables to estimate\. Blank entries and duplicates are ignored\.
+
+<a name='DiGi.PostgreSQL.Query.EstimatedCountsAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,bool,int,int,System.Threading.CancellationToken).analyze'></a>
+
+`analyze` [System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')
+
+A boolean indicating whether to run VACUUM ANALYZE on each existing table before reading the estimates\.
+
+<a name='DiGi.PostgreSQL.Query.EstimatedCountsAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,bool,int,int,System.Threading.CancellationToken).batchSize'></a>
+
+`batchSize` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The maximum number of table names sent in a single catalog query\.
+
+<a name='DiGi.PostgreSQL.Query.EstimatedCountsAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,bool,int,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds applied to every command executed\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Query.EstimatedCountsAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,bool,int,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+A token to monitor for cancellation requests\.
+
+#### Returns
+[System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.Dictionary&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[,](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
+A dictionary keyed by table name holding the estimated row count for every table that exists, an empty dictionary when no usable name was supplied, or null when the connection or the names are null\.
 
 <a name='DiGi.PostgreSQL.Query.HasRows(thisNpgsql.NpgsqlConnection,string)'></a>
 
@@ -1241,55 +1304,67 @@ The zero\-based index of the column to read from\.
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[USerializableObject](DiGi.PostgreSQL.md#DiGi.PostgreSQL.Query.SerializableObjectAsync_USerializableObject_(Npgsql.NpgsqlDataReader,DiGi.PostgreSQL.Enums.DataType,int).USerializableObject 'DiGi\.PostgreSQL\.Query\.SerializableObjectAsync\<USerializableObject\>\(Npgsql\.NpgsqlDataReader, DiGi\.PostgreSQL\.Enums\.DataType, int\)\.USerializableObject')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains the deserialized object if successful; otherwise, null\.
 
-<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisDiGi.PostgreSQL.Classes.ConnectionData,string)'></a>
+<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisDiGi.PostgreSQL.Classes.ConnectionData,string,System.Threading.CancellationToken)'></a>
 
-## Query\.TableExistsAsync\(this ConnectionData, string\) Method
+## Query\.TableExistsAsync\(this ConnectionData, string, CancellationToken\) Method
 
 Checks if a table exists in the PostgreSQL database using the provided connection data\.
 
 ```csharp
-public static System.Threading.Tasks.Task<bool> TableExistsAsync(this DiGi.PostgreSQL.Classes.ConnectionData? connectionData, string tableName);
+public static System.Threading.Tasks.Task<bool> TableExistsAsync(this DiGi.PostgreSQL.Classes.ConnectionData? connectionData, string tableName, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisDiGi.PostgreSQL.Classes.ConnectionData,string).connectionData'></a>
+<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisDiGi.PostgreSQL.Classes.ConnectionData,string,System.Threading.CancellationToken).connectionData'></a>
 
 `connectionData` [ConnectionData](DiGi.PostgreSQL.Classes.md#DiGi.PostgreSQL.Classes.ConnectionData 'DiGi\.PostgreSQL\.Classes\.ConnectionData')
 
 The connection data used to create the Npgsql connection\.
 
-<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisDiGi.PostgreSQL.Classes.ConnectionData,string).tableName'></a>
+<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisDiGi.PostgreSQL.Classes.ConnectionData,string,System.Threading.CancellationToken).tableName'></a>
 
 `tableName` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The name of the table to check for existence\.
+
+<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisDiGi.PostgreSQL.Classes.ConnectionData,string,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+A token to monitor for cancellation requests\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains true if the table exists; otherwise, false\.
 
-<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisNpgsql.NpgsqlConnection,string)'></a>
+<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisNpgsql.NpgsqlConnection,string,System.Threading.CancellationToken)'></a>
 
-## Query\.TableExistsAsync\(this NpgsqlConnection, string\) Method
+## Query\.TableExistsAsync\(this NpgsqlConnection, string, CancellationToken\) Method
 
 Checks if a table exists in the PostgreSQL database using the provided connection\.
 
 ```csharp
-public static System.Threading.Tasks.Task<bool> TableExistsAsync(this Npgsql.NpgsqlConnection? npgsqlConnection, string tableName);
+public static System.Threading.Tasks.Task<bool> TableExistsAsync(this Npgsql.NpgsqlConnection? npgsqlConnection, string tableName, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisNpgsql.NpgsqlConnection,string).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisNpgsql.NpgsqlConnection,string,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The Npgsql connection to use for the query\.
 
-<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisNpgsql.NpgsqlConnection,string).tableName'></a>
+<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisNpgsql.NpgsqlConnection,string,System.Threading.CancellationToken).tableName'></a>
 
 `tableName` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The name of the table to check for existence\.
+
+<a name='DiGi.PostgreSQL.Query.TableExistsAsync(thisNpgsql.NpgsqlConnection,string,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+A token to monitor for cancellation requests\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
