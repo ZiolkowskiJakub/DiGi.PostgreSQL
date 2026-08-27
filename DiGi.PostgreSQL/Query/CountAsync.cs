@@ -1,4 +1,4 @@
-﻿using DiGi.PostgreSQL.Classes;
+using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,26 +14,28 @@ namespace DiGi.PostgreSQL
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection to use for the query.</param>
         /// <param name="tableName">The name of the table to count rows from.</param>
+        /// <param name="commandTimeout">The timeout in seconds applied to the count command. A value of 0 disables the timeout.</param>
         /// <param name="cancellationToken">The cancellation token to observe.</param>
         /// <returns>A task that represents the asynchronous operation, containing the total row count or -1 if an error occurs or the table does not exist.</returns>
-        public static async Task<long> CountAsync(this NpgsqlConnection npgsqlConnection, string tableName, CancellationToken cancellationToken = default)
+        public static async Task<long> CountAsync(this NpgsqlConnection npgsqlConnection, string tableName, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
             {
                 return -1;
             }
 
-            if (!await TableExistsAsync(npgsqlConnection, tableName))
+            if (!await TableExistsAsync(npgsqlConnection, tableName, cancellationToken: cancellationToken))
             {
                 return -1;
             }
 
-            string commandText = $"SELECT COUNT(*) FROM {tableName}";
+            // The preceding existence check is what makes the name safe to place in the statement; it is quoted rather than pasted in raw.
+            string commandText = $"SELECT COUNT(*) FROM \"{tableName}\"";
 
-            using NpgsqlCommand command = new(commandText, npgsqlConnection);
+            await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
 
-            command.Parameters.AddWithValue("tableName", tableName);
-            object? @object = await command.ExecuteScalarAsync(cancellationToken);
+            object? @object = await npgsqlCommand.ExecuteScalarAsync(cancellationToken);
             if (@object is long @long)
             {
                 return @long;
@@ -55,9 +57,10 @@ namespace DiGi.PostgreSQL
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection to use for the query.</param>
         /// <param name="partitionIds">A collection of short integers representing the partition identifiers.</param>
+        /// <param name="commandTimeout">The timeout in seconds applied to every count command. A value of 0 disables the timeout.</param>
         /// <param name="cancellationToken">The cancellation token to observe.</param>
         /// <returns>A task that represents the asynchronous operation, containing the total row count across all matching partitions or -1 if an error occurs.</returns>
-        public static async Task<long> CountAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<short> partitionIds, CancellationToken cancellationToken = default)
+        public static async Task<long> CountAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<short> partitionIds, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || partitionIds is null)
             {
@@ -94,11 +97,12 @@ namespace DiGi.PostgreSQL
                 string commandText = $"SELECT COUNT(*) FROM objects_{(int)keyValuePair.Key} WHERE partition_id = ANY(@partition_ids)";
 
                 await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                npgsqlCommand.CommandTimeout = commandTimeout;
                 npgsqlCommand.Parameters.AddWithValue("partition_ids", partitionIds);
 
                 // If no rows match, PostgreSQL returns 0; ExecuteScalar returns long for COUNT
-                var @var = await npgsqlCommand.ExecuteScalarAsync(cancellationToken);
-                if (@var is long count)
+                object? @object = await npgsqlCommand.ExecuteScalarAsync(cancellationToken);
+                if (@object is long count)
                 {
                     result += count;
                 }

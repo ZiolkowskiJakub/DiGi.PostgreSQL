@@ -1453,7 +1453,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
-            TColumn? partitionColumn = default;
+            UColumn? partitionColumn = default;
 
             if (TableConversionOptions is not null)
             {
@@ -1463,8 +1463,11 @@ namespace DiGi.PostgreSQL.Table.Classes
                     {
                         if (dictionary.TryGetValue(uniqueId, out UColumn? column) && column is not null)
                         {
-                            identityColumn.Index = column.Index;
-                            dictionary[uniqueId] = identityColumn;
+                            if (Core.Query.Clone(identityColumn) is UColumn identityColumn_Clone)
+                            {
+                                identityColumn_Clone.Index = column.Index;
+                                dictionary[uniqueId] = identityColumn_Clone;
+                            }
                         }
                     }
                 }
@@ -1477,8 +1480,11 @@ namespace DiGi.PostgreSQL.Table.Classes
                         {
                             if (dictionary.TryGetValue(uniqueId, out UColumn? column) && column is not null)
                             {
-                                uniqueColumn.Index = column.Index;
-                                dictionary[uniqueId] = uniqueColumn;
+                                if (Core.Query.Clone(uniqueColumn) is UColumn uniqueColumn_Clone)
+                                {
+                                    uniqueColumn_Clone.Index = column.Index;
+                                    dictionary[uniqueId] = uniqueColumn_Clone;
+                                }
                             }
                         }
                     }
@@ -1488,11 +1494,14 @@ namespace DiGi.PostgreSQL.Table.Classes
                 {
                     if (partitioningOptions.Column?.UniqueId() is string uniqueId && !string.IsNullOrWhiteSpace(uniqueId))
                     {
-                        if (dictionary.TryGetValue(uniqueId, out UColumn? column) && column is not null && partitioningOptions.Column is TColumn partitionColumn_Temp)
+                        if (dictionary.TryGetValue(uniqueId, out UColumn? column) && column is not null && partitioningOptions.Column is UColumn partitionColumn_Option)
                         {
-                            partitionColumn = partitionColumn_Temp;
-                            partitionColumn_Temp.Index = column.Index;
-                            dictionary[uniqueId] = partitionColumn_Temp;
+                            if (Core.Query.Clone(partitionColumn_Option) is UColumn partitionColumn_Clone)
+                            {
+                                partitionColumn_Clone.Index = column.Index;
+                                partitionColumn = partitionColumn_Clone;
+                                dictionary[uniqueId] = partitionColumn_Clone;
+                            }
                         }
                     }
                 }
@@ -1505,8 +1514,11 @@ namespace DiGi.PostgreSQL.Table.Classes
                         {
                             if (dictionary.TryGetValue(uniqueId, out UColumn? column) && column is not null)
                             {
-                                primaryKeyColumn.Index = column.Index;
-                                dictionary[uniqueId] = primaryKeyColumn;
+                                if (Core.Query.Clone(primaryKeyColumn) is UColumn primaryKeyColumn_Clone)
+                                {
+                                    primaryKeyColumn_Clone.Index = column.Index;
+                                    dictionary[uniqueId] = primaryKeyColumn_Clone;
+                                }
                             }
                         }
                     }
@@ -1525,16 +1537,16 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             if (TableConversionOptions?.PrimaryKeyColumns is List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
             {
-                columns_PrimaryKey.RemoveAll(x => x?.UniqueId() is not string uniqueId || !dictionary.ContainsKey(uniqueId));
+                List<UColumn> columns_PrimaryKey_Filtered = columns_PrimaryKey.Where(x => x?.UniqueId() is string uniqueId && dictionary.ContainsKey(uniqueId)).ToList();
 
-                if (columns_PrimaryKey.Count > 0)
+                if (columns_PrimaryKey_Filtered.Count > 0)
                 {
                     Dictionary<string, UColumn> dictionary_PrimaryKey = [];
                     Dictionary<string, UColumn> dictionary_Other = [];
 
                     foreach (KeyValuePair<string, UColumn> keyValuePair in dictionary)
                     {
-                        if (columns_PrimaryKey.FindIndex(x => x.UniqueId() == keyValuePair.Key) != -1)
+                        if (columns_PrimaryKey_Filtered.FindIndex(x => x.UniqueId() == keyValuePair.Key) != -1)
                         {
                             dictionary_PrimaryKey[keyValuePair.Key] = keyValuePair.Value;
                         }
@@ -1573,7 +1585,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
                 if (partitionColumn is not null)
                 {
-                    object?[]? values = table.GetColumnValues(partitionColumn);
+                    object?[]? values = table.GetColumnValues(partitionColumn.Index);
                     if (values is not null)
                     {
                         HashSet<object?> values_Temp = [.. values];

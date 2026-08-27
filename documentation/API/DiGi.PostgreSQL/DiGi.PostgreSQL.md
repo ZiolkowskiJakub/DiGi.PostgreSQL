@@ -852,30 +852,36 @@ The collection of unique identifiers to verify\.
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.HashSet&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.hashset-1 'System\.Collections\.Generic\.HashSet\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.hashset-1 'System\.Collections\.Generic\.HashSet\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a set of existing unique identifiers, or null if any input is null\.
 
-<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,string,System.Threading.CancellationToken)'></a>
+<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,string,int,System.Threading.CancellationToken)'></a>
 
-## Query\.CountAsync\(this NpgsqlConnection, string, CancellationToken\) Method
+## Query\.CountAsync\(this NpgsqlConnection, string, int, CancellationToken\) Method
 
 Asynchronously counts the number of rows in a specified table\.
 
 ```csharp
-public static System.Threading.Tasks.Task<long> CountAsync(this Npgsql.NpgsqlConnection npgsqlConnection, string tableName, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+public static System.Threading.Tasks.Task<long> CountAsync(this Npgsql.NpgsqlConnection npgsqlConnection, string tableName, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,string,System.Threading.CancellationToken).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,string,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The Npgsql connection to use for the query\.
 
-<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,string,System.Threading.CancellationToken).tableName'></a>
+<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,string,int,System.Threading.CancellationToken).tableName'></a>
 
 `tableName` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The name of the table to count rows from\.
 
-<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,string,System.Threading.CancellationToken).cancellationToken'></a>
+<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,string,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds applied to the count command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,string,int,System.Threading.CancellationToken).cancellationToken'></a>
 
 `cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
 
@@ -885,30 +891,36 @@ The cancellation token to observe\.
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation, containing the total row count or \-1 if an error occurs or the table does not exist\.
 
-<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_short_,System.Threading.CancellationToken)'></a>
+<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_short_,int,System.Threading.CancellationToken)'></a>
 
-## Query\.CountAsync\(this NpgsqlConnection, IEnumerable\<short\>, CancellationToken\) Method
+## Query\.CountAsync\(this NpgsqlConnection, IEnumerable\<short\>, int, CancellationToken\) Method
 
 Asynchronously counts the number of rows across multiple partitions based on provided partition IDs\.
 
 ```csharp
-public static System.Threading.Tasks.Task<long> CountAsync(this Npgsql.NpgsqlConnection npgsqlConnection, System.Collections.Generic.IEnumerable<short> partitionIds, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+public static System.Threading.Tasks.Task<long> CountAsync(this Npgsql.NpgsqlConnection npgsqlConnection, System.Collections.Generic.IEnumerable<short> partitionIds, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_short_,System.Threading.CancellationToken).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_short_,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The Npgsql connection to use for the query\.
 
-<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_short_,System.Threading.CancellationToken).partitionIds'></a>
+<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_short_,int,System.Threading.CancellationToken).partitionIds'></a>
 
 `partitionIds` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.Int16](https://learn.microsoft.com/en-us/dotnet/api/system.int16 'System\.Int16')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 A collection of short integers representing the partition identifiers\.
 
-<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_short_,System.Threading.CancellationToken).cancellationToken'></a>
+<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_short_,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds applied to every count command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Query.CountAsync(thisNpgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_short_,int,System.Threading.CancellationToken).cancellationToken'></a>
 
 `cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
 
