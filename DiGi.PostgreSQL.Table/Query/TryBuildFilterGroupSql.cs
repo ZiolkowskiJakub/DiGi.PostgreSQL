@@ -22,12 +22,7 @@ namespace DiGi.PostgreSQL.Table
         /// <param name="npgsqlParameterCollection">The parameter collection to bind Npgsql parameters to.</param>
         /// <param name="parameterIndex">A reference counter for unique query parameter names.</param>
         /// <returns>True if the SQL condition was successfully built; otherwise, false.</returns>
-        public static bool TryBuildFilterGroupSql<UColumn>(
-            this FilterGroup? filterGroup,
-            List<UColumn> existingColumns,
-            StringBuilder stringBuilder_Sql,
-            NpgsqlParameterCollection npgsqlParameterCollection,
-            ref int parameterIndex)
+        public static bool TryBuildFilterGroupSql<UColumn>(this FilterGroup? filterGroup, List<UColumn> existingColumns, StringBuilder stringBuilder_Sql, NpgsqlParameterCollection npgsqlParameterCollection, ref int parameterIndex)
             where UColumn : IColumn
         {
             if (filterGroup is null)
