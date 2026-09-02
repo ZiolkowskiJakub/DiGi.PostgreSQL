@@ -1,4 +1,4 @@
-﻿using DiGi.Core.IO.Table.Interfaces;
+using DiGi.Core.IO.Table.Interfaces;
 
 namespace DiGi.PostgreSQL.Table
 {
@@ -11,12 +11,7 @@ namespace DiGi.PostgreSQL.Table
         /// <returns>A normalized string representing the unique identifier, or null if the column or its name is null.</returns>
         public static string? UniqueId(this IColumn? column)
         {
-            if (column?.Name is not string name)
-            {
-                return null;
-            }
-
-            return name.ToLower().Trim().Replace(" ", "_").Replace("[", "").Replace("]", "").Replace(".", "_").Replace(",", "_");
+            return Core.IO.Query.UniqueId(column);
         }
     }
 }
