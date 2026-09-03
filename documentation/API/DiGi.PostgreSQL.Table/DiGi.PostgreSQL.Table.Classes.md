@@ -2367,6 +2367,8 @@ A task that represents the asynchronous operation\. The task result contains a [
 
 Asynchronously pushes the contents of the specified table to the database using batch processing\.
 
+When the converter is configured with primary key columns that are present on the table, the statement is an upsert - `ON CONFLICT (primary keys) DO UPDATE SET col = EXCLUDED.col` - and the update covers every non-primary-key column on the table, not only the cells that were set: a cell left unset on a row is written as NULL and overwrites the stored value of an existing row, while a column that is not on the table is never touched. Without such configuration the statement is a plain insert.
+
 ```csharp
 public System.Threading.Tasks.Task<bool> PushAsync<TColumn,TRow>(DiGi.Core.IO.Table.Classes.Table<TColumn,TRow>? table, int batchSize=1000, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken))
     where TColumn : UColumn
@@ -2420,6 +2422,8 @@ A task that represents the asynchronous operation\. The task result contains `tr
 ## TablePostgreSQLConverter\<UColumn\>\.PushAsync\<TColumn,TRow\>\(NpgsqlConnection, Table\<TColumn,TRow\>, int, int, CancellationToken\) Method
 
 Asynchronously pushes data from the specified table to the database using the provided Npgsql connection\.
+
+When the converter is configured with primary key columns that are present on the table, the statement is an upsert - `ON CONFLICT (primary keys) DO UPDATE SET col = EXCLUDED.col` - and the update covers every non-primary-key column on the table, not only the cells that were set: a cell left unset on a row is written as NULL and overwrites the stored value of an existing row, while a column that is not on the table is never touched. Without such configuration the statement is a plain insert.
 
 ```csharp
 public System.Threading.Tasks.Task<bool> PushAsync<TColumn,TRow>(Npgsql.NpgsqlConnection? npgsqlConnection, DiGi.Core.IO.Table.Classes.Table<TColumn,TRow>? table, int batchSize=1000, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken))

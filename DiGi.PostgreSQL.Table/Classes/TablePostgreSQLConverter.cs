@@ -1389,6 +1389,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
         /// <summary>
         /// Asynchronously pushes the contents of the specified table to the database using batch processing.
+        /// <para>When the converter is configured with primary key columns that are present on the table, the statement is an upsert - <c>ON CONFLICT (primary keys) DO UPDATE SET col = EXCLUDED.col</c> - and the update covers every non-primary-key column on the table, not only the cells that were set: a cell left unset on a row is written as NULL and overwrites the stored value of an existing row, while a column that is not on the table is never touched. Without such configuration the statement is a plain insert.</para>
         /// </summary>
         /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
         /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
@@ -1414,6 +1415,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
         /// <summary>
         /// Asynchronously pushes data from the specified table to the database using the provided Npgsql connection.
+        /// <para>When the converter is configured with primary key columns that are present on the table, the statement is an upsert - <c>ON CONFLICT (primary keys) DO UPDATE SET col = EXCLUDED.col</c> - and the update covers every non-primary-key column on the table, not only the cells that were set: a cell left unset on a row is written as NULL and overwrites the stored value of an existing row, while a column that is not on the table is never touched. Without such configuration the statement is a plain insert.</para>
         /// </summary>
         /// <typeparam name="TColumn">The type of the column, which must derive from <typeparamref name="UColumn"/>.</typeparam>
         /// <typeparam name="TRow">The type of the row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
