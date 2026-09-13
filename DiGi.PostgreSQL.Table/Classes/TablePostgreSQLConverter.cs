@@ -28,7 +28,8 @@ namespace DiGi.PostgreSQL.Table.Classes
         {
         }
 
-        /// <summary> Gets the name of the database table associated with this entity. </summary>
+        /// <summary> Gets the name of the database table associated with this entity. </summary>
+
         public abstract string TableName { get; }
 
         /// <summary>
@@ -44,8 +45,10 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="npgsqlConnection">The active database connection instance.</param>
         /// <param name="columnUniqueId">The unique identifier of the column to sample.</param>
         /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task representing the async operation, returning the detected separator character string (e.g. ",", ";", or "|").</returns>
-        public async Task<string> DetectSeparatorAsync(NpgsqlConnection npgsqlConnection, string columnUniqueId, object? partitionValue = null)
+        public async Task<string> DetectSeparatorAsync(NpgsqlConnection npgsqlConnection, string columnUniqueId, object? partitionValue = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
             bool hasPartition = !string.IsNullOrEmpty(partitionColumnUniqueId) && partitionValue != null;
@@ -64,13 +67,14 @@ namespace DiGi.PostgreSQL.Table.Classes
                 ) s;";
 
             await using NpgsqlCommand npgsqlCommand_Detect = new(commandText, npgsqlConnection);
+            npgsqlCommand_Detect.CommandTimeout = commandTimeout;
             if (hasPartition)
             {
                 npgsqlCommand_Detect.Parameters.AddWithValue("partitionValue", partitionValue!);
             }
 
-            await using NpgsqlDataReader npgsqlDataReader_Detect = await npgsqlCommand_Detect.ExecuteReaderAsync();
-            if (await npgsqlDataReader_Detect.ReadAsync())
+            await using NpgsqlDataReader npgsqlDataReader_Detect = await npgsqlCommand_Detect.ExecuteReaderAsync(cancellationToken);
+            if (await npgsqlDataReader_Detect.ReadAsync(cancellationToken))
             {
                 long countComma = npgsqlDataReader_Detect.GetInt64(0);
                 long countSemi = npgsqlDataReader_Detect.GetInt64(1);
@@ -109,7 +113,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
-            List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
+            List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
             if (existingColumns is null || existingColumns.Count == 0)
             {
                 return null;
@@ -193,7 +197,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
-            List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
+            List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
             if (existingColumns is null || existingColumns.Count == 0)
             {
                 return null;
@@ -271,7 +275,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 string actualSeparator = separator ?? string.Empty;
                 if (string.IsNullOrEmpty(actualSeparator))
                 {
-                    actualSeparator = await DetectSeparatorAsync(npgsqlConnection, columnUniqueId, partitionValue);
+                    actualSeparator = await DetectSeparatorAsync(npgsqlConnection, columnUniqueId, partitionValue, commandTimeout, cancellationToken);
                 }
                 npgsqlCommand_Aggregate.Parameters.AddWithValue("separator", actualSeparator);
             }
@@ -443,7 +447,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects matching the categories, or null if no results are found.</returns>
         public async Task<List<UColumn>?> GetColumnsByCategoriesAsync(IEnumerable<string>? categories = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnsAsync("category", categories);
+            return await GetColumnsAsync("category", categories, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -456,17 +460,19 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if successful; otherwise, null.</returns>
         public async Task<List<UColumn>?> GetColumnsByCategoriesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? categories = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnsAsync(npgsqlConnection, "category", categories);
+            return await GetColumnsAsync(npgsqlConnection, "category", categories, commandTimeout, cancellationToken);
         }
 
         /// <summary>
         /// Asynchronously retrieves a list of columns filtered by the specified names.
         /// </summary>
         /// <param name="names">An optional collection of column names to retrieve. If null, the behavior depends on the underlying data source implementation.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if matches are found; otherwise, null.</returns>
-        public async Task<List<UColumn>?> GetColumnsByNamesAsync(IEnumerable<string>? names = null)
+        public async Task<List<UColumn>?> GetColumnsByNamesAsync(IEnumerable<string>? names = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnsAsync("name", names);
+            return await GetColumnsAsync("name", names, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -474,10 +480,12 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the database query.</param>
         /// <param name="names">An optional collection of column names to retrieve. If null, the filter may be ignored or return no results depending on the underlying implementation.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if successful; otherwise, null.</returns>
-        public async Task<List<UColumn>?> GetColumnsByNamesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names = null)
+        public async Task<List<UColumn>?> GetColumnsByNamesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnsAsync(npgsqlConnection, "name", names);
+            return await GetColumnsAsync(npgsqlConnection, "name", names, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -489,7 +497,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects matching the specified identifiers, or null if no matches are found.</returns>
         public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(IEnumerable<string>? columnUniqueIds = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnsAsync("unique_id", columnUniqueIds);
+            return await GetColumnsAsync("unique_id", columnUniqueIds, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -502,7 +510,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if found; otherwise, null.</returns>
         public async Task<List<UColumn>?> GetColumnsByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? columnUniqueIds = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnsAsync(npgsqlConnection, "unique_id", columnUniqueIds);
+            return await GetColumnsAsync(npgsqlConnection, "unique_id", columnUniqueIds, commandTimeout, cancellationToken);
         }
 
         /// <summary>
@@ -526,7 +534,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
-            List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
+            List<UColumn>? existingColumns = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
             if (existingColumns is null || existingColumns.Count == 0)
             {
                 return null;
@@ -646,7 +654,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             filterGroup?.CollectColumnUniqueIds(uniqueIds);
 
-            List<UColumn>? columns_Existing = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
+            List<UColumn>? columns_Existing = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
             if (columns_Existing is null || columns_Existing.Count == 0)
             {
                 return null;
@@ -744,7 +752,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return false;
             }
 
-            List<UColumn>? columns_Existing = await GetColumnsByUniqueIdsAsync([columnUniqueId]);
+            List<UColumn>? columns_Existing = await GetColumnsByUniqueIdsAsync(npgsqlConnection, [columnUniqueId], commandTimeout, cancellationToken);
             if (columns_Existing is null || columns_Existing.Count == 0)
             {
                 return false;
@@ -848,7 +856,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
 
-            if (!await ReadAsync(npgsqlDataReader, table, dictionary, dictionary_PrimaryKey, existingRowsMap))
+            if (!await ReadAsync(npgsqlDataReader, table, dictionary, dictionary_PrimaryKey, existingRowsMap, cancellationToken))
             {
                 return false;
             }
@@ -996,7 +1004,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 await using NpgsqlCommand npgsqlCommand = new(baseQuery, npgsqlConnection);
                 npgsqlCommand.CommandTimeout = commandTimeout;
                 await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
-                return await ReadAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap);
+                return await ReadAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap, cancellationToken);
             }
 
             // Case 2: Non-empty table with PKs -> Pull only matching data in batches
@@ -1036,7 +1044,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 npgsqlCommand.CommandTimeout = commandTimeout;
                 npgsqlCommand.Parameters.AddRange(parameters.ToArray());
                 await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
-                if (!await ReadAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap))
+                if (!await ReadAsync(reader, table, dictionary, dictionary_PrimaryKey, existingRowsMap, cancellationToken))
                 {
                     return false;
                 }
@@ -1105,7 +1113,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
             filterGroup.CollectColumnUniqueIds(uniqueIds);
 
-            List<UColumn>? uColumns_Metadata = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds);
+            List<UColumn>? uColumns_Metadata = await GetColumnsByUniqueIdsAsync(npgsqlConnection, uniqueIds, commandTimeout, cancellationToken);
             if (uColumns_Metadata is null || uColumns_Metadata.Count == 0)
             {
                 return false;
@@ -1179,7 +1187,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 npgsqlCommand_Select.CommandText = string_FinalQuery;
 
                 await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync(cancellationToken);
-                return await ReadAsync(npgsqlDataReader_Select, table, tColumns_Dictionary, tColumns_PrimaryKey, tRows_ExistingMap);
+                return await ReadAsync(npgsqlDataReader_Select, table, tColumns_Dictionary, tColumns_PrimaryKey, tRows_ExistingMap, cancellationToken);
             }
 
             List<TRow> tRows_All = [.. table.Rows];
@@ -1246,7 +1254,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
                 npgsqlCommand_SelectBatch.CommandText = string_BaseQuery + stringBuilder_Where.ToString();
                 await using NpgsqlDataReader npgsqlDataReader_SelectBatch = await npgsqlCommand_SelectBatch.ExecuteReaderAsync(cancellationToken);
-                if (!await ReadAsync(npgsqlDataReader_SelectBatch, table, tColumns_Dictionary, tColumns_PrimaryKey, tRows_ExistingMap))
+                if (!await ReadAsync(npgsqlDataReader_SelectBatch, table, tColumns_Dictionary, tColumns_PrimaryKey, tRows_ExistingMap, cancellationToken))
                 {
                     return false;
                 }
@@ -1384,7 +1392,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             Dictionary<string, TRow> existingRows = [];
             await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync(cancellationToken);
 
-            return await ReadAsync(npgsqlDataReader_Select, table, dictionary_Columns, dictionary_PrimaryKey, existingRows);
+            return await ReadAsync(npgsqlDataReader_Select, table, dictionary_Columns, dictionary_PrimaryKey, existingRows, cancellationToken);
         }
 
         /// <summary>
@@ -1664,9 +1672,9 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
         }
 
-        private static async Task<bool> ReadAsync<TColumn, TRow>(NpgsqlDataReader npgsqlDataReader, Table<TColumn, TRow> table, Dictionary<string, TColumn> dictionary, Dictionary<string, TColumn> dictionary_PrimaryKey, Dictionary<string, TRow> existingRowsMap) where TColumn : IColumn where TRow : IRow<TRow>
+        private static async Task<bool> ReadAsync<TColumn, TRow>(NpgsqlDataReader npgsqlDataReader, Table<TColumn, TRow> table, Dictionary<string, TColumn> dictionary, Dictionary<string, TColumn> dictionary_PrimaryKey, Dictionary<string, TRow> existingRowsMap, CancellationToken cancellationToken) where TColumn : IColumn where TRow : IRow<TRow>
         {
-            while (await npgsqlDataReader.ReadAsync())
+            while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
                 Dictionary<string, object?> values = [];
                 foreach (KeyValuePair<string, TColumn> keyValuePair in dictionary)
@@ -1794,7 +1802,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             return await GetColumnReferencesAsync(npgsqlConnection, columnName, values, commandTimeout, cancellationToken);
         }
 
-        private async Task<List<UColumn>?> GetColumnsAsync(string columnName, IEnumerable<string>? values = null)
+        private async Task<List<UColumn>?> GetColumnsAsync(string columnName, IEnumerable<string>? values = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             await using NpgsqlConnection? npgsqlConnection = PostgreSQL.Create.NpgsqlConnection(ConnectionData);
 
@@ -1803,12 +1811,12 @@ namespace DiGi.PostgreSQL.Table.Classes
                 return null;
             }
 
-            await npgsqlConnection.OpenAsync();
+            await npgsqlConnection.OpenAsync(cancellationToken);
 
-            return await GetColumnsAsync(npgsqlConnection, columnName, values);
+            return await GetColumnsAsync(npgsqlConnection, columnName, values, commandTimeout, cancellationToken);
         }
 
-        private async Task<List<UColumn>?> GetColumnsAsync(NpgsqlConnection? npgsqlConnection, string columnName, IEnumerable<string>? values = null)
+        private async Task<List<UColumn>?> GetColumnsAsync(NpgsqlConnection? npgsqlConnection, string columnName, IEnumerable<string>? values = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null)
             {
@@ -1827,6 +1835,7 @@ namespace DiGi.PostgreSQL.Table.Classes
             }
 
             await using NpgsqlCommand npgsqlCommand = new(query, npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
             npgsqlCommand.Parameters.Add(new NpgsqlParameter("tableName", NpgsqlDbType.Text) { Value = TableName });
 
             if (hasFilter)
@@ -1835,8 +1844,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                 npgsqlCommand.Parameters.Add(new NpgsqlParameter($"{columnName}", NpgsqlDbType.Array | NpgsqlDbType.Text) { Value = values!.ToArray() });
             }
 
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
-            while (await npgsqlDataReader.ReadAsync())
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
+            while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
                 object? @object = npgsqlDataReader["data"];
                 if (@object != null && @object != DBNull.Value)

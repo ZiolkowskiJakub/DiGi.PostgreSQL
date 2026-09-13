@@ -919,36 +919,48 @@ public abstract string TableName { get; }
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 ### Methods
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object)'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object,int,System.Threading.CancellationToken)'></a>
 
-## TablePostgreSQLConverter\<UColumn\>\.DetectSeparatorAsync\(NpgsqlConnection, string, object\) Method
+## TablePostgreSQLConverter\<UColumn\>\.DetectSeparatorAsync\(NpgsqlConnection, string, object, int, CancellationToken\) Method
 
 Samples partition data to dynamically detect the most common separator \(comma, semicolon, or pipe\)\.
 
 Resolves partitioning settings dynamically from [TableConversionOptions](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.TableConversionOptions 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.TableConversionOptions').
 
 ```csharp
-public System.Threading.Tasks.Task<string> DetectSeparatorAsync(Npgsql.NpgsqlConnection npgsqlConnection, string columnUniqueId, object? partitionValue=null);
+public System.Threading.Tasks.Task<string> DetectSeparatorAsync(Npgsql.NpgsqlConnection npgsqlConnection, string columnUniqueId, object? partitionValue=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The active database connection instance\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object).columnUniqueId'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object,int,System.Threading.CancellationToken).columnUniqueId'></a>
 
 `columnUniqueId` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The unique identifier of the column to sample\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object).partitionValue'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object,int,System.Threading.CancellationToken).partitionValue'></a>
 
 `partitionValue` [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object')
 
 The partition key value; ignored if partitioning is disabled\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.DetectSeparatorAsync(Npgsql.NpgsqlConnection,string,object,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
@@ -1492,49 +1504,73 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a list of [UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn') objects matching the categories, or null if no results are found\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_)'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken)'></a>
 
-## TablePostgreSQLConverter\<UColumn\>\.GetColumnsByNamesAsync\(NpgsqlConnection, IEnumerable\<string\>\) Method
+## TablePostgreSQLConverter\<UColumn\>\.GetColumnsByNamesAsync\(NpgsqlConnection, IEnumerable\<string\>, int, CancellationToken\) Method
 
 Asynchronously retrieves a list of columns filtered by the specified names\.
 
 ```csharp
-public System.Threading.Tasks.Task<System.Collections.Generic.List<UColumn>?> GetColumnsByNamesAsync(Npgsql.NpgsqlConnection? npgsqlConnection, System.Collections.Generic.IEnumerable<string>? names=null);
+public System.Threading.Tasks.Task<System.Collections.Generic.List<UColumn>?> GetColumnsByNamesAsync(Npgsql.NpgsqlConnection? npgsqlConnection, System.Collections.Generic.IEnumerable<string>? names=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The Npgsql connection instance used to execute the database query\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_).names'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).names'></a>
 
 `names` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 An optional collection of column names to retrieve\. If null, the filter may be ignored or return no results depending on the underlying implementation\.
 
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
+
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a list of [UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn') objects if successful; otherwise, null\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(System.Collections.Generic.IEnumerable_string_)'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken)'></a>
 
-## TablePostgreSQLConverter\<UColumn\>\.GetColumnsByNamesAsync\(IEnumerable\<string\>\) Method
+## TablePostgreSQLConverter\<UColumn\>\.GetColumnsByNamesAsync\(IEnumerable\<string\>, int, CancellationToken\) Method
 
 Asynchronously retrieves a list of columns filtered by the specified names\.
 
 ```csharp
-public System.Threading.Tasks.Task<System.Collections.Generic.List<UColumn>?> GetColumnsByNamesAsync(System.Collections.Generic.IEnumerable<string>? names=null);
+public System.Threading.Tasks.Task<System.Collections.Generic.List<UColumn>?> GetColumnsByNamesAsync(System.Collections.Generic.IEnumerable<string>? names=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(System.Collections.Generic.IEnumerable_string_).names'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).names'></a>
 
 `names` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 An optional collection of column names to retrieve\. If null, the behavior depends on the underlying data source implementation\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsByNamesAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
