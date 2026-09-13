@@ -81,6 +81,23 @@ The name of the database to connect to\.
 `port` [System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
 
 The port number of the PostgreSQL server\.
+
+<a name='DiGi.PostgreSQL.Classes.ConnectionData.ConnectionData(System.Text.Json.Nodes.JsonObject)'></a>
+
+## ConnectionData\(JsonObject\) Constructor
+
+Initializes a new instance of the [ConnectionData](DiGi.PostgreSQL.Classes.md#DiGi.PostgreSQL.Classes.ConnectionData 'DiGi\.PostgreSQL\.Classes\.ConnectionData') class from a JSON object\.
+
+```csharp
+public ConnectionData(System.Text.Json.Nodes.JsonObject? jsonObject);
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Classes.ConnectionData.ConnectionData(System.Text.Json.Nodes.JsonObject).jsonObject'></a>
+
+`jsonObject` [System\.Text\.Json\.Nodes\.JsonObject](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.nodes.jsonobject 'System\.Text\.Json\.Nodes\.JsonObject')
+
+The JSON object containing the connection details\.
 ### Properties
 
 <a name='DiGi.PostgreSQL.Classes.ConnectionData.Database'></a>
@@ -109,6 +126,22 @@ public string? Host { get; set; }
 #### Property Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
+<a name='DiGi.PostgreSQL.Classes.ConnectionData.MaximumPoolSize'></a>
+
+## ConnectionData\.MaximumPoolSize Property
+
+Gets or sets the maximum number of connections in the Npgsql connection pool, emitted as the `Maximum Pool Size` key\.
+
+```csharp
+public System.Nullable<int> MaximumPoolSize { get; set; }
+```
+
+#### Property Value
+[System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
+
+### Remarks
+`null` \(the default\) omits the key, keeping the connection string byte\-identical to a pool\-less configuration\.
+
 <a name='DiGi.PostgreSQL.Classes.ConnectionData.Password'></a>
 
 ## ConnectionData\.Password Property
@@ -121,6 +154,23 @@ public string? Password { get; set; }
 
 #### Property Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+<a name='DiGi.PostgreSQL.Classes.ConnectionData.PoolTimeout'></a>
+
+## ConnectionData\.PoolTimeout Property
+
+Gets or sets the pool acquisition timeout in seconds, emitted as the `Timeout` key\.
+
+```csharp
+public System.Nullable<int> PoolTimeout { get; set; }
+```
+
+#### Property Value
+[System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
+
+### Remarks
+Distinct from the per\-command `commandTimeout` parameters that run through the DiGi query APIs\.
+`null` \(the default\) omits the key\.
 
 <a name='DiGi.PostgreSQL.Classes.ConnectionData.Port'></a>
 
@@ -394,6 +444,19 @@ public string? Host { get; set; }
 #### Property Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
+<a name='DiGi.PostgreSQL.Classes.PostgreSQLConfigurationFile.MaximumPoolSize'></a>
+
+## PostgreSQLConfigurationFile\.MaximumPoolSize Property
+
+Gets or sets the maximum number of connections in the Npgsql connection pool\. Optional\.
+
+```csharp
+public System.Nullable<int> MaximumPoolSize { get; set; }
+```
+
+#### Property Value
+[System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
+
 <a name='DiGi.PostgreSQL.Classes.PostgreSQLConfigurationFile.Password'></a>
 
 ## PostgreSQLConfigurationFile\.Password Property
@@ -406,6 +469,19 @@ public string? Password { get; set; }
 
 #### Property Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+<a name='DiGi.PostgreSQL.Classes.PostgreSQLConfigurationFile.PoolTimeout'></a>
+
+## PostgreSQLConfigurationFile\.PoolTimeout Property
+
+Gets or sets the pool acquisition timeout in seconds\. Optional\.
+
+```csharp
+public System.Nullable<int> PoolTimeout { get; set; }
+```
+
+#### Property Value
+[System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
 
 <a name='DiGi.PostgreSQL.Classes.PostgreSQLConfigurationFile.Port'></a>
 

@@ -44,6 +44,16 @@
             /// PostgresSQL database directory.
             /// </summary>
             public const string Directory = "DIRECTORY";
+
+            /// <summary>
+            /// PostgresSQL connection pool maximum size. Optional.
+            /// </summary>
+            public const string MaximumPoolSize = "MAXIMUMPOOLSIZE";
+
+            /// <summary>
+            /// PostgresSQL connection pool timeout in seconds. Optional.
+            /// </summary>
+            public const string PoolTimeout = "POOLTIMEOUT";
         }
     }
 }

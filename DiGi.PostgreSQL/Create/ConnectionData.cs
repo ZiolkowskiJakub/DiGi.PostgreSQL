@@ -29,7 +29,14 @@ namespace DiGi.PostgreSQL
                 return null;
             }
 
-            return new ConnectionData(postgreSQLConfigurationFile.Host, postgreSQLConfigurationFile.Username, postgreSQLConfigurationFile.Password, postgreSQLConfigurationFile.Database, postgreSQLConfigurationFile.Port.Value);
+            // The pool settings are optional: a configuration file without the keys answers nulls, keeping the connection string unchanged.
+            ConnectionData connectionData = new(postgreSQLConfigurationFile.Host, postgreSQLConfigurationFile.Username, postgreSQLConfigurationFile.Password, postgreSQLConfigurationFile.Database, postgreSQLConfigurationFile.Port.Value)
+            {
+                MaximumPoolSize = postgreSQLConfigurationFile.MaximumPoolSize,
+                PoolTimeout = postgreSQLConfigurationFile.PoolTimeout
+            };
+
+            return connectionData;
         }
     }
 }

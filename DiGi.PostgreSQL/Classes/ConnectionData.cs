@@ -1,6 +1,7 @@
 ﻿using DiGi.Core.Classes;
 using DiGi.PostgreSQL.Interfaces;
 using System.Collections.Generic;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace DiGi.PostgreSQL.Classes
@@ -28,6 +29,15 @@ namespace DiGi.PostgreSQL.Classes
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ConnectionData"/> class from a JSON object.
+        /// </summary>
+        /// <param name="jsonObject">The JSON object containing the connection details.</param>
+        public ConnectionData(JsonObject? jsonObject)
+            : base(jsonObject)
+        {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionData"/> class based on an existing connection configuration but with a different database.
         /// </summary>
         /// <param name="connectionData">The source connection data containing host, username, password, and port.</param>
@@ -38,6 +48,8 @@ namespace DiGi.PostgreSQL.Classes
             Username = connectionData.Username;
             Password = connectionData.Password;
             Port = connectionData.Port;
+            MaximumPoolSize = connectionData.MaximumPoolSize;
+            PoolTimeout = connectionData.PoolTimeout;
 
             Database = database;
         }
@@ -59,6 +71,25 @@ namespace DiGi.PostgreSQL.Classes
         /// </summary>
         [JsonInclude, JsonPropertyName("Password")]
         public string? Password { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of connections in the Npgsql connection pool, emitted as the <c>Maximum Pool Size</c> key.
+        /// </summary>
+        /// <remarks>
+        /// <c>null</c> (the default) omits the key, keeping the connection string byte-identical to a pool-less configuration.
+        /// </remarks>
+        [JsonInclude, JsonPropertyName("MaximumPoolSize")]
+        public int? MaximumPoolSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the pool acquisition timeout in seconds, emitted as the <c>Timeout</c> key.
+        /// </summary>
+        /// <remarks>
+        /// Distinct from the per-command <c>commandTimeout</c> parameters that run through the DiGi query APIs.
+        /// <c>null</c> (the default) omits the key.
+        /// </remarks>
+        [JsonInclude, JsonPropertyName("PoolTimeout")]
+        public int? PoolTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets the port number of the PostgreSQL server. Defaults to 5432.
@@ -102,6 +133,16 @@ namespace DiGi.PostgreSQL.Classes
             if (Database != null)
             {
                 values.Add($"Database={Database}");
+            }
+
+            if (MaximumPoolSize != null)
+            {
+                values.Add($"Maximum Pool Size={MaximumPoolSize}");
+            }
+
+            if (PoolTimeout != null)
+            {
+                values.Add($"Timeout={PoolTimeout}");
             }
 
             return string.Join(";", values);

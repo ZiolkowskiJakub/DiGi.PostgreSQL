@@ -67,6 +67,19 @@ public const string Host = "HOST";
 #### Field Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
+<a name='DiGi.PostgreSQL.Constants.Names.PostgreSQLConfigurationFile.MaximumPoolSize'></a>
+
+## Names\.PostgreSQLConfigurationFile\.MaximumPoolSize Field
+
+PostgresSQL connection pool maximum size\. Optional\.
+
+```csharp
+public const string MaximumPoolSize = "MAXIMUMPOOLSIZE";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
 <a name='DiGi.PostgreSQL.Constants.Names.PostgreSQLConfigurationFile.Password'></a>
 
 ## Names\.PostgreSQLConfigurationFile\.Password Field
@@ -75,6 +88,19 @@ PostgresSQL password\.
 
 ```csharp
 public const string Password = "PASSWORD";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+<a name='DiGi.PostgreSQL.Constants.Names.PostgreSQLConfigurationFile.PoolTimeout'></a>
+
+## Names\.PostgreSQLConfigurationFile\.PoolTimeout Field
+
+PostgresSQL connection pool timeout in seconds\. Optional\.
+
+```csharp
+public const string PoolTimeout = "POOLTIMEOUT";
 ```
 
 #### Field Value

@@ -88,6 +88,23 @@ namespace DiGi.PostgreSQL.Classes
         }
 
         /// <summary>
+        /// Gets or sets the maximum number of connections in the Npgsql connection pool. Optional.
+        /// </summary>
+        [JsonIgnore]
+        public int? MaximumPoolSize
+        {
+            get
+            {
+                return GetValue<int?>(Constants.Names.PostgreSQLConfigurationFile.MaximumPoolSize);
+            }
+
+            set
+            {
+                Add(Constants.Names.PostgreSQLConfigurationFile.MaximumPoolSize, value);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the password for the PostgreSQL user.
         /// </summary>
         [JsonIgnore]
@@ -118,6 +135,23 @@ namespace DiGi.PostgreSQL.Classes
             set
             {
                 Add(Constants.Names.PostgreSQLConfigurationFile.Port, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the pool acquisition timeout in seconds. Optional.
+        /// </summary>
+        [JsonIgnore]
+        public int? PoolTimeout
+        {
+            get
+            {
+                return GetValue<int?>(Constants.Names.PostgreSQLConfigurationFile.PoolTimeout);
+            }
+
+            set
+            {
+                Add(Constants.Names.PostgreSQLConfigurationFile.PoolTimeout, value);
             }
         }
 
