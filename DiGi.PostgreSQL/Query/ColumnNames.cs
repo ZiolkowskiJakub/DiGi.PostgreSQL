@@ -34,7 +34,7 @@ namespace DiGi.PostgreSQL
 
                 using NpgsqlDataReader npgsqlDataReader = await command.ExecuteReaderAsync(cancellationToken);
 
-                while (await npgsqlDataReader.ReadAsync())
+                while (await npgsqlDataReader.ReadAsync(cancellationToken))
                 {
                     result.Add(npgsqlDataReader.GetString(0).ToLower());
                 }

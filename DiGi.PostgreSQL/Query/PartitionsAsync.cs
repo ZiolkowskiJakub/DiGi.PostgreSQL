@@ -70,7 +70,7 @@ namespace DiGi.PostgreSQL
 
             List<Partition> result = [];
 
-            while (await npgsqlDataReader.ReadAsync())
+            while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
                 short id = npgsqlDataReader.GetInt16(0);
                 string name = npgsqlDataReader.GetString(1);
@@ -111,7 +111,7 @@ namespace DiGi.PostgreSQL
 
             List<Partition> result = [];
 
-            while (await npgsqlDataReader.ReadAsync())
+            while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
                 short id = npgsqlDataReader.GetInt16(0);
                 string name = npgsqlDataReader.GetString(1);
