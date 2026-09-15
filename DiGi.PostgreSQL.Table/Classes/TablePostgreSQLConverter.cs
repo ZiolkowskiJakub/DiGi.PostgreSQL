@@ -525,7 +525,7 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to aggregation.</param>
         /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
-        /// <returns>A task representing the async operation, returning the histogram data as a <see cref="System.Text.Json.Nodes.JsonArray"/>.</returns>
+        /// <returns>A task representing the async operation, returning the histogram data as a <see cref="System.Text.Json.Nodes.JsonArray"/>, or null when the scope carries no non-NULL values for the column.</returns>
         public async Task<System.Text.Json.Nodes.JsonArray?> GetHistogramSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, int bucketCount, object? partitionValue = null, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
             where TColumn : UColumn
         {
@@ -585,7 +585,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                     FROM ""{TableName}""
                     WHERE {stringBuilder_Where}
                 ) stats
-                WHERE {stringBuilder_Where}
+                WHERE {stringBuilder_Where} AND ""{columnUniqueId}"" IS NOT NULL
                 GROUP BY bucket
                 ORDER BY bucket;";
 
@@ -595,6 +595,14 @@ namespace DiGi.PostgreSQL.Table.Classes
             System.Text.Json.Nodes.JsonArray jsonArray_Result = [];
             while (await npgsqlDataReader_Histogram.ReadAsync(cancellationToken))
             {
+                // A NULL bucket is not a bucket: width_bucket answers NULL for a NULL column value (or a
+                // bucketCount below 1), so the row is skipped rather than read - the neighbouring value
+                // reads below are IsDBNull-guarded for the same reason.
+                if (npgsqlDataReader_Histogram.IsDBNull(0))
+                {
+                    continue;
+                }
+
                 System.Text.Json.Nodes.JsonObject jsonObject_Bucket = new()
                 {
                     ["bucket"] = npgsqlDataReader_Histogram.GetInt32(0),
@@ -605,7 +613,10 @@ namespace DiGi.PostgreSQL.Table.Classes
                 jsonObject_Bucket["count"] = npgsqlDataReader_Histogram.GetInt64(3);
                 jsonArray_Result.Add(jsonObject_Bucket);
             }
-            return jsonArray_Result;
+
+            // An empty scope (every value NULL, or no rows at all) is the empty-result contract, not a
+            // server error: the controller maps a null result to 404 NotFound, the same as uniquevalues.
+            return jsonArray_Result.Count == 0 ? null : jsonArray_Result;
         }
 
         /// <summary>
