@@ -103,6 +103,29 @@ Checks if the column value is null\. Applicable to all column types\.
 
 Checks if the column value is not null\. Applicable to all column types\.
 
+<a name='DiGi.PostgreSQL.Table.Enums.HistogramBucketing'></a>
+
+## HistogramBucketing Enum
+
+Specifies how a value distribution histogram divides a column's values into buckets\.
+
+```csharp
+public enum HistogramBucketing
+```
+### Fields
+
+<a name='DiGi.PostgreSQL.Table.Enums.HistogramBucketing.EqualWidth'></a>
+
+`EqualWidth` 0
+
+Buckets of equal value width over the scope's \[min, max\] \(width\_bucket\); the maximum lands in the overflow bucket bucketCount \+ 1\.
+
+<a name='DiGi.PostgreSQL.Table.Enums.HistogramBucketing.EqualCount'></a>
+
+`EqualCount` 1
+
+Buckets of equal row count in value order \(ntile\); every bucket holds floor or ceiling of rows / bucketCount rows, ties may span buckets, and there is no overflow bucket\.
+
 <a name='DiGi.PostgreSQL.Table.Enums.MultivalueAggregateFunction'></a>
 
 ## MultivalueAggregateFunction Enum

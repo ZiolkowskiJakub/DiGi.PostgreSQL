@@ -1648,64 +1648,72 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a list of [UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn') objects matching the specified identifiers, or null if no matches are found\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken)'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken)'></a>
 
-## TablePostgreSQLConverter\<UColumn\>\.GetHistogramSummaryAsync\<TColumn\>\(NpgsqlConnection, string, int, object, FilterGroup, int, CancellationToken\) Method
+## TablePostgreSQLConverter\<UColumn\>\.GetHistogramSummaryAsync\<TColumn\>\(NpgsqlConnection, string, int, object, FilterGroup, HistogramBucketing, int, CancellationToken\) Method
 
 Generates a value distribution histogram for a specific column in a partition with optional dynamic filtering\.
 
 Resolves partitioning settings dynamically from [TableConversionOptions](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.TableConversionOptions 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.TableConversionOptions').
 
+Every row of the answer is one bucket: its ordinal, the actual minimum and maximum of the values it holds, and their count. [EqualWidth](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.HistogramBucketing.EqualWidth 'DiGi\.PostgreSQL\.Table\.Enums\.HistogramBucketing\.EqualWidth') divides the scope's [min, max] into [bucketCount](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).bucketCount 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.GetHistogramSummaryAsync\<TColumn\>\(Npgsql\.NpgsqlConnection, string, int, object, DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup, DiGi\.PostgreSQL\.Table\.Enums\.HistogramBucketing, int, System\.Threading\.CancellationToken\)\.bucketCount') equal-width buckets (`width_bucket`, the maximum filed into the overflow bucket [bucketCount](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).bucketCount 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.GetHistogramSummaryAsync\<TColumn\>\(Npgsql\.NpgsqlConnection, string, int, object, DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup, DiGi\.PostgreSQL\.Table\.Enums\.HistogramBucketing, int, System\.Threading\.CancellationToken\)\.bucketCount') + 1); [EqualCount](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.HistogramBucketing.EqualCount 'DiGi\.PostgreSQL\.Table\.Enums\.HistogramBucketing\.EqualCount') divides the value-ordered rows into [bucketCount](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).bucketCount 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.GetHistogramSummaryAsync\<TColumn\>\(Npgsql\.NpgsqlConnection, string, int, object, DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup, DiGi\.PostgreSQL\.Table\.Enums\.HistogramBucketing, int, System\.Threading\.CancellationToken\)\.bucketCount') buckets of equal row count (`ntile`), so a skewed column keeps its resolution where its rows are - a consumer inverting the cumulative counts to place quantiles reads them to within one bucket's share of the rows whatever the distribution.
+
 ```csharp
-public System.Threading.Tasks.Task<System.Text.Json.Nodes.JsonArray?> GetHistogramSummaryAsync<TColumn>(Npgsql.NpgsqlConnection npgsqlConnection, string columnUniqueId, int bucketCount, object? partitionValue=null, DiGi.PostgreSQL.Table.Classes.FilterGroup? filterGroup=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken))
+public System.Threading.Tasks.Task<System.Text.Json.Nodes.JsonArray?> GetHistogramSummaryAsync<TColumn>(Npgsql.NpgsqlConnection npgsqlConnection, string columnUniqueId, int bucketCount, object? partitionValue=null, DiGi.PostgreSQL.Table.Classes.FilterGroup? filterGroup=null, DiGi.PostgreSQL.Table.Enums.HistogramBucketing histogramBucketing=DiGi.PostgreSQL.Table.Enums.HistogramBucketing.EqualWidth, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken))
     where TColumn : UColumn;
 ```
 #### Type parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).TColumn'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).TColumn'></a>
 
 `TColumn`
 
 The type of column, which must implement [UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn')\.
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The active database connection instance\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).columnUniqueId'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).columnUniqueId'></a>
 
 `columnUniqueId` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The unique identifier of the column to aggregate\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).bucketCount'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).bucketCount'></a>
 
 `bucketCount` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
-The total number of buckets to segment the value range into\.
+The total number of buckets to segment the value range \(or the value\-ordered rows\) into\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).partitionValue'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).partitionValue'></a>
 
 `partitionValue` [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object')
 
 The partition key value; ignored if partitioning is disabled\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).filterGroup'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).filterGroup'></a>
 
 `filterGroup` [FilterGroup](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.FilterGroup 'DiGi\.PostgreSQL\.Table\.Classes\.FilterGroup')
 
 The dynamic hierarchical filters to apply prior to aggregation\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).commandTimeout'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).histogramBucketing'></a>
+
+`histogramBucketing` [HistogramBucketing](DiGi.PostgreSQL.Table.Enums.md#DiGi.PostgreSQL.Table.Enums.HistogramBucketing 'DiGi\.PostgreSQL\.Table\.Enums\.HistogramBucketing')
+
+The bucketing rule: equal value width \(the default\) or equal row count\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).commandTimeout'></a>
 
 `commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
 The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,int,System.Threading.CancellationToken).cancellationToken'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetHistogramSummaryAsync_TColumn_(Npgsql.NpgsqlConnection,string,int,object,DiGi.PostgreSQL.Table.Classes.FilterGroup,DiGi.PostgreSQL.Table.Enums.HistogramBucketing,int,System.Threading.CancellationToken).cancellationToken'></a>
 
 `cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
 

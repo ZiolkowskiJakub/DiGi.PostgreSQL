@@ -516,17 +516,19 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// <summary>
         /// Generates a value distribution histogram for a specific column in a partition with optional dynamic filtering.
         /// <para>Resolves partitioning settings dynamically from <see cref="TableConversionOptions"/>.</para>
+        /// <para>Every row of the answer is one bucket: its ordinal, the actual minimum and maximum of the values it holds, and their count. <see cref="Enums.HistogramBucketing.EqualWidth"/> divides the scope's [min, max] into <paramref name="bucketCount"/> equal-width buckets (<c>width_bucket</c>, the maximum filed into the overflow bucket <paramref name="bucketCount"/> + 1); <see cref="Enums.HistogramBucketing.EqualCount"/> divides the value-ordered rows into <paramref name="bucketCount"/> buckets of equal row count (<c>ntile</c>), so a skewed column keeps its resolution where its rows are - a consumer inverting the cumulative counts to place quantiles reads them to within one bucket's share of the rows whatever the distribution.</para>
         /// </summary>
         /// <typeparam name="TColumn">The type of column, which must implement <typeparamref name="UColumn"/>.</typeparam>
         /// <param name="npgsqlConnection">The active database connection instance.</param>
         /// <param name="columnUniqueId">The unique identifier of the column to aggregate.</param>
-        /// <param name="bucketCount">The total number of buckets to segment the value range into.</param>
+        /// <param name="bucketCount">The total number of buckets to segment the value range (or the value-ordered rows) into.</param>
         /// <param name="partitionValue">The partition key value; ignored if partitioning is disabled.</param>
         /// <param name="filterGroup">The dynamic hierarchical filters to apply prior to aggregation.</param>
+        /// <param name="histogramBucketing">The bucketing rule: equal value width (the default) or equal row count.</param>
         /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task representing the async operation, returning the histogram data as a <see cref="System.Text.Json.Nodes.JsonArray"/>, or null when the scope carries no non-NULL values for the column.</returns>
-        public async Task<System.Text.Json.Nodes.JsonArray?> GetHistogramSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, int bucketCount, object? partitionValue = null, FilterGroup? filterGroup = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
+        public async Task<System.Text.Json.Nodes.JsonArray?> GetHistogramSummaryAsync<TColumn>(NpgsqlConnection npgsqlConnection, string columnUniqueId, int bucketCount, object? partitionValue = null, FilterGroup? filterGroup = null, Enums.HistogramBucketing histogramBucketing = Enums.HistogramBucketing.EqualWidth, int commandTimeout = 30, CancellationToken cancellationToken = default)
             where TColumn : UColumn
         {
             // 1. Column Whitelist Validation to prevent SQL injection (all filter columns + target column)
@@ -574,7 +576,24 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
             }
 
-            string commandText = $@"
+            // Equal count ranks the scope's non-NULL values once (ntile numbers the value-ordered rows 1 .. bucketCount,
+            // each bucket floor or ceiling of rows / bucketCount of them) and groups by that rank; equal width needs the
+            // scope's min and max first, which the cross-joined subquery supplies. Both answer the same four columns, so
+            // the reader below does not care which ran.
+            string commandText = histogramBucketing == Enums.HistogramBucketing.EqualCount
+                ? $@"
+                SELECT bucket,
+                       min(""{columnUniqueId}"") as range_start,
+                       max(""{columnUniqueId}"") as range_end,
+                       count(*) as count
+                FROM (
+                    SELECT ""{columnUniqueId}"", ntile(@bucketCount) OVER (ORDER BY ""{columnUniqueId}"") as bucket
+                    FROM ""{TableName}""
+                    WHERE {stringBuilder_Where} AND ""{columnUniqueId}"" IS NOT NULL
+                ) ranked
+                GROUP BY bucket
+                ORDER BY bucket;"
+                : $@"
                 SELECT width_bucket(""{columnUniqueId}"", min_val, max_val, @bucketCount) as bucket,
                        min(""{columnUniqueId}"") as range_start,
                        max(""{columnUniqueId}"") as range_end,
