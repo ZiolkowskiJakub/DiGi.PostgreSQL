@@ -4,6 +4,7 @@ using DiGi.Core.IO.Table.Interfaces;
 using Npgsql;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.Table
@@ -17,8 +18,10 @@ namespace DiGi.PostgreSQL.Table
         /// <param name="npgsqlConnection">The <see cref="NpgsqlConnection"/> instance used to communicate with the PostgreSQL database.</param>
         /// <param name="tableName">The name of the table whose columns are being updated.</param>
         /// <param name="columns">A collection of column objects implementing <see cref="IColumn"/> to be updated or inserted.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is <c>true</c> if one or more rows were affected; otherwise, <c>false</c>.</returns>
-        public static async Task<bool> UpdateAsync<UColumn>(this NpgsqlConnection? npgsqlConnection, string tableName, IEnumerable<UColumn> columns) where UColumn : IColumn
+        public static async Task<bool> UpdateAsync<UColumn>(this NpgsqlConnection? npgsqlConnection, string tableName, IEnumerable<UColumn> columns, int commandTimeout = 30, CancellationToken cancellationToken = default) where UColumn : IColumn
         {
             if (npgsqlConnection is null || columns is null || string.IsNullOrWhiteSpace(tableName))
             {
@@ -29,7 +32,7 @@ namespace DiGi.PostgreSQL.Table
             // though usually, it's better to expect an open connection in an extension method.
             if (npgsqlConnection.State != System.Data.ConnectionState.Open)
             {
-                await npgsqlConnection.OpenAsync();
+                await npgsqlConnection.OpenAsync(cancellationToken);
             }
 
             const string commandText = $@"
@@ -43,6 +46,7 @@ namespace DiGi.PostgreSQL.Table
                     data = EXCLUDED.data;";
 
             await using NpgsqlBatch npgsqlBatch = new(npgsqlConnection);
+            npgsqlBatch.Timeout = commandTimeout;
 
             foreach (UColumn column in columns)
             {
@@ -78,7 +82,7 @@ namespace DiGi.PostgreSQL.Table
 
             try
             {
-                rowsAffected = await npgsqlBatch.ExecuteNonQueryAsync();
+                rowsAffected = await npgsqlBatch.ExecuteNonQueryAsync(cancellationToken);
             }
             catch (Exception)
             {

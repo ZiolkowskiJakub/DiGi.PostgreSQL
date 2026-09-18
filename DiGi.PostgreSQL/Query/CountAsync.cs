@@ -72,7 +72,7 @@ namespace DiGi.PostgreSQL
                 return -1;
             }
 
-            List<Partition>? partitions = await PartitionsAsync(npgsqlConnection, partitionIds, cancellationToken);
+            List<Partition>? partitions = await PartitionsAsync(npgsqlConnection, partitionIds, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (partitions is null || partitions.Count == 0)
             {
                 return -1;

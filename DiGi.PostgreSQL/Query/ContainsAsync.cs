@@ -1,6 +1,7 @@
 ﻿using Npgsql;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
@@ -13,8 +14,10 @@ namespace DiGi.PostgreSQL
         /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
         /// <param name="partitionId">The identifier of the partition to check.</param>
         /// <param name="uniqueIds">The collection of unique identifiers to verify.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a set of existing unique identifiers, or null if any input is null.</returns>
-        public static async Task<HashSet<string>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, short? partitionId, IEnumerable<string>? uniqueIds)
+        public static async Task<HashSet<string>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, short? partitionId, IEnumerable<string>? uniqueIds, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || partitionId is null || uniqueIds is null)
             {
@@ -26,13 +29,13 @@ namespace DiGi.PostgreSQL
                 return [];
             }
 
-            Classes.Partition? partition = await PartitionAsync(npgsqlConnection, partitionId.Value);
+            Classes.Partition? partition = await PartitionAsync(npgsqlConnection, partitionId.Value, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (partition is null)
             {
                 return null;
             }
 
-            return await ContainsAsync(npgsqlConnection, partition, uniqueIds);
+            return await ContainsAsync(npgsqlConnection, partition, uniqueIds, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -41,8 +44,10 @@ namespace DiGi.PostgreSQL
         /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
         /// <param name="partition">The partition object to check.</param>
         /// <param name="uniqueIds">The collection of unique identifiers to verify.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a set of existing unique identifiers, or null if any input is null.</returns>
-        public static async Task<HashSet<string>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Partition? partition, IEnumerable<string>? uniqueIds)
+        public static async Task<HashSet<string>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Partition? partition, IEnumerable<string>? uniqueIds, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || partition is null || uniqueIds is null)
             {
@@ -59,11 +64,12 @@ namespace DiGi.PostgreSQL
             HashSet<string> result = [];
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
             npgsqlCommand.Parameters.AddWithValue("partition_id", partition.Id);
             npgsqlCommand.Parameters.AddWithValue("unique_ids", uniqueIds);
 
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
-            while (await npgsqlDataReader.ReadAsync())
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
+            while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
                 result.Add(npgsqlDataReader.GetString(0));
             }
@@ -76,21 +82,23 @@ namespace DiGi.PostgreSQL
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
         /// <param name="partitionId">The identifier of the partition to check.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if records exist, otherwise false.</returns>
-        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, short? partitionId)
+        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, short? partitionId, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || partitionId is null)
             {
                 return false;
             }
 
-            Classes.Partition? partition = await PartitionAsync(npgsqlConnection, partitionId.Value);
+            Classes.Partition? partition = await PartitionAsync(npgsqlConnection, partitionId.Value, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (partition is null)
             {
                 return false;
             }
 
-            return await npgsqlConnection.ContainsAsync(partition);
+            return await npgsqlConnection.ContainsAsync(partition, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -98,21 +106,23 @@ namespace DiGi.PostgreSQL
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
         /// <param name="name">The name of the partition to check.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if records exist, otherwise false.</returns>
-        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, string? name)
+        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, string? name, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
             {
                 return false;
             }
 
-            Classes.Partition? partition = await PartitionAsync(npgsqlConnection, name);
+            Classes.Partition? partition = await PartitionAsync(npgsqlConnection, name, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (partition is null)
             {
                 return false;
             }
 
-            return await npgsqlConnection.ContainsAsync(partition);
+            return await npgsqlConnection.ContainsAsync(partition, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -120,8 +130,10 @@ namespace DiGi.PostgreSQL
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
         /// <param name="partition">The partition object to check.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if records exist, otherwise false.</returns>
-        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Partition partition)
+        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Partition partition, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || partition is null)
             {
@@ -129,9 +141,10 @@ namespace DiGi.PostgreSQL
             }
 
             await using NpgsqlCommand npgsqlCommand = new($"SELECT EXISTS(SELECT 1 FROM objects_{(int)partition.DataType} WHERE partition_id = @partition_id LIMIT 1)", npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
             npgsqlCommand.Parameters.AddWithValue("partition_id", partition.Id);
 
-            var result = await npgsqlCommand.ExecuteScalarAsync();
+            object? result = await npgsqlCommand.ExecuteScalarAsync(cancellationToken);
 
             return result is bool exists && exists;
         }

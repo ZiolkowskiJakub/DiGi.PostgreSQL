@@ -1,5 +1,6 @@
 ﻿using Npgsql;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.PartitionReference
@@ -11,8 +12,10 @@ namespace DiGi.PostgreSQL.PartitionReference
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection to be used for the operation.</param>
         /// <param name="partitionReferences">The collection of partition references to check for existence.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a HashSet of the partition references that exist in the database, or null if the connection or the input collection is null.</returns>
-        public static async Task<HashSet<Classes.PartitionReference>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<Classes.PartitionReference>? partitionReferences)
+        public static async Task<HashSet<Classes.PartitionReference>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<Classes.PartitionReference>? partitionReferences, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || partitionReferences is null)
             {
@@ -47,13 +50,13 @@ namespace DiGi.PostgreSQL.PartitionReference
 
             foreach (KeyValuePair<string, Dictionary<string, Classes.PartitionReference>> keyValuePair in dictionary)
             {
-                short? typeId = await PostgreSQL.Query.PartitionIdAsync(npgsqlConnection, keyValuePair.Key);
+                short? typeId = await PostgreSQL.Query.PartitionIdAsync(npgsqlConnection, keyValuePair.Key, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (typeId is null)
                 {
                     continue;
                 }
 
-                HashSet<string>? uniqueIds = await npgsqlConnection.ContainsAsync(typeId, keyValuePair.Value.Keys);
+                HashSet<string>? uniqueIds = await npgsqlConnection.ContainsAsync(typeId, keyValuePair.Value.Keys, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (uniqueIds is null || uniqueIds.Count == 0)
                 {
                     continue;

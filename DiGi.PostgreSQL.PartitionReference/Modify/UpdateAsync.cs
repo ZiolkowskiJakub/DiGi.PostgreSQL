@@ -8,6 +8,7 @@ using Npgsql;
 using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.PartitionReference
@@ -23,8 +24,10 @@ namespace DiGi.PostgreSQL.PartitionReference
         /// <param name="dataTypeFunc">A function that determines the <see cref="DataType"/> based on the partition name.</param>
         /// <param name="sender">The object that sends the event, passed to the <paramref name="partitionReferenceGeneratingEventHandler"/>.</param>
         /// <param name="partitionReferenceGeneratingEventHandler">An optional event handler for generating partition references.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a HashSet of PartitionReference of updated partition references, or null if the connection or objects are null or if the table creation fails.</returns>
-        public static async Task<HashSet<Classes.PartitionReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, Func<string?, DataType> dataTypeFunc, object? sender = null, PartitionReferenceGeneratingEventHandler? partitionReferenceGeneratingEventHandler = null) where USerializableObject : ISerializableObject
+        public static async Task<HashSet<Classes.PartitionReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, Func<string?, DataType> dataTypeFunc, object? sender = null, PartitionReferenceGeneratingEventHandler? partitionReferenceGeneratingEventHandler = null, int commandTimeout = 30, CancellationToken cancellationToken = default) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null || serializableObjects is null)
             {
@@ -71,7 +74,7 @@ namespace DiGi.PostgreSQL.PartitionReference
 
             bool succeded;
 
-            succeded = await PostgreSQL.Create.TableAsync_Partitions(npgsqlConnection);
+            succeded = await PostgreSQL.Create.TableAsync_Partitions(npgsqlConnection, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (!succeded)
             {
                 return null;
@@ -85,18 +88,19 @@ namespace DiGi.PostgreSQL.PartitionReference
             }
 
             await using NpgsqlBatch npgsqlBatch = new(npgsqlConnection);
+            npgsqlBatch.Timeout = commandTimeout;
 
             foreach (var keyValuePair in dictionary)
             {
                 DataType dataType = dataTypeFunc.Invoke(keyValuePair.Key);
 
-                succeded = await PostgreSQL.Create.TableAsync_Objects(npgsqlConnection, dataType);
+                succeded = await PostgreSQL.Create.TableAsync_Objects(npgsqlConnection, dataType, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (!succeded)
                 {
                     continue;
                 }
 
-                Partition? partition = await PostgreSQL.Modify.UpdatePartitionIdAsync(npgsqlConnection, keyValuePair.Key, dataType);
+                Partition? partition = await PostgreSQL.Modify.UpdatePartitionIdAsync(npgsqlConnection, keyValuePair.Key, dataType, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (partition is null)
                 {
                     continue;
@@ -142,7 +146,7 @@ namespace DiGi.PostgreSQL.PartitionReference
 
             if (npgsqlBatch.BatchCommands.Count > 0)
             {
-                await npgsqlBatch.ExecuteNonQueryAsync();
+                await npgsqlBatch.ExecuteNonQueryAsync(cancellationToken);
             }
 
             return result;

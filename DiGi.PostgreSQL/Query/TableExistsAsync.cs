@@ -13,9 +13,10 @@ namespace DiGi.PostgreSQL
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection to use for the query.</param>
         /// <param name="tableName">The name of the table to check for existence.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains true if the table exists; otherwise, false.</returns>
-        public static async Task<bool> TableExistsAsync(this NpgsqlConnection? npgsqlConnection, string tableName, CancellationToken cancellationToken = default)
+        public static async Task<bool> TableExistsAsync(this NpgsqlConnection? npgsqlConnection, string tableName, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
             {
@@ -24,6 +25,7 @@ namespace DiGi.PostgreSQL
 
             // Explicitly cast to text so Npgsql can handle the return value
             using NpgsqlCommand npgsqlCommand = new("SELECT to_regclass(@tableName)::text;", npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
 
             // It's safer to use the parameter name without @ in AddWithValue,
             // though Npgsql handles both.
@@ -40,9 +42,10 @@ namespace DiGi.PostgreSQL
         /// </summary>
         /// <param name="connectionData">The connection data used to create the Npgsql connection.</param>
         /// <param name="tableName">The name of the table to check for existence.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains true if the table exists; otherwise, false.</returns>
-        public static async Task<bool> TableExistsAsync(this ConnectionData? connectionData, string tableName, CancellationToken cancellationToken = default)
+        public static async Task<bool> TableExistsAsync(this ConnectionData? connectionData, string tableName, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(tableName))
             {
@@ -56,7 +59,7 @@ namespace DiGi.PostgreSQL
 
             await npgsqlConnection.OpenAsync(cancellationToken);
 
-            return await TableExistsAsync(npgsqlConnection, tableName, cancellationToken: cancellationToken);
+            return await TableExistsAsync(npgsqlConnection, tableName, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
     }
 }

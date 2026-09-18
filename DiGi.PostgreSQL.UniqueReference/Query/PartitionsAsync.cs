@@ -1,6 +1,7 @@
 ﻿using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.UniqueReference
@@ -12,8 +13,10 @@ namespace DiGi.PostgreSQL.UniqueReference
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection to use for the query.</param>
         /// <param name="type">The system type used to filter the partitions.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="Partition"/> objects, or null if the connection or type is null.</returns>
-        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, System.Type? type)
+        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, System.Type? type, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || type is null)
             {
@@ -23,11 +26,12 @@ namespace DiGi.PostgreSQL.UniqueReference
             string commandText = "SELECT id, name, data_type FROM partitions;";
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
-            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+            npgsqlCommand.CommandTimeout = commandTimeout;
+            await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
 
             List<Partition> result = [];
 
-            while (await npgsqlDataReader.ReadAsync())
+            while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
                 string name = npgsqlDataReader.GetString(1);
                 if (Core.Query.Type(name, false) is not System.Type type_Temp)
@@ -54,8 +58,10 @@ namespace DiGi.PostgreSQL.UniqueReference
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection to use for the query.</param>
         /// <param name="name">The name of the type used to filter the partitions.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="Partition"/> objects, or null if the connection is null or the name is invalid.</returns>
-        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, string? name)
+        public static async Task<List<Partition>?> PartitionsAsync(this NpgsqlConnection? npgsqlConnection, string? name, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(name))
             {
@@ -67,7 +73,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return null;
             }
 
-            return await PartitionsAsync(npgsqlConnection, type);
+            return await PartitionsAsync(npgsqlConnection, type, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
     }
 }

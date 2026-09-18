@@ -128,70 +128,94 @@ public static class Create
 Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → Create
 ### Methods
 
-<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_)'></a>
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken)'></a>
 
-## Create\.TableAsync\<UColumn\>\(this NpgsqlConnection, string, TableConversionOptions\<UColumn\>, IEnumerable\<UColumn\>\) Method
+## Create\.TableAsync\<UColumn\>\(this NpgsqlConnection, string, TableConversionOptions\<UColumn\>, IEnumerable\<UColumn\>, int, CancellationToken\) Method
 
 Asynchronously creates a table or adds missing columns to an existing table in the PostgreSQL database based on the provided column definitions and options\.
 
 ```csharp
-public static System.Threading.Tasks.Task<bool> TableAsync<UColumn>(this Npgsql.NpgsqlConnection? npgsqlConnection, string tableName, DiGi.PostgreSQL.Table.Classes.TableConversionOptions<UColumn>? tableConversionOptions, System.Collections.Generic.IEnumerable<UColumn> columns)
+public static System.Threading.Tasks.Task<bool> TableAsync<UColumn>(this Npgsql.NpgsqlConnection? npgsqlConnection, string tableName, DiGi.PostgreSQL.Table.Classes.TableConversionOptions<UColumn>? tableConversionOptions, System.Collections.Generic.IEnumerable<UColumn> columns, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken))
     where UColumn : DiGi.Core.IO.Table.Interfaces.IColumn;
 ```
 #### Type parameters
 
-<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_).UColumn'></a>
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).UColumn'></a>
 
 `UColumn`
 
 The type of column implementation, which must implement [DiGi\.Core\.IO\.Table\.Interfaces\.IColumn](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.interfaces.icolumn 'DiGi\.Core\.IO\.Table\.Interfaces\.IColumn')\.
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The Npgsql connection instance used to execute the database commands\.
 
-<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_).tableName'></a>
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).tableName'></a>
 
 `tableName` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The name of the table to be created or modified\.
 
-<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_).tableConversionOptions'></a>
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).tableConversionOptions'></a>
 
-`tableConversionOptions` [DiGi\.PostgreSQL\.Table\.Classes\.TableConversionOptions&lt;](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_ 'DiGi\.PostgreSQL\.Table\.Classes\.TableConversionOptions\<UColumn\>')[UColumn](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_).UColumn 'DiGi\.PostgreSQL\.Table\.Create\.TableAsync\<UColumn\>\(this Npgsql\.NpgsqlConnection, string, DiGi\.PostgreSQL\.Table\.Classes\.TableConversionOptions\<UColumn\>, System\.Collections\.Generic\.IEnumerable\<UColumn\>\)\.UColumn')[&gt;](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_ 'DiGi\.PostgreSQL\.Table\.Classes\.TableConversionOptions\<UColumn\>')
+`tableConversionOptions` [DiGi\.PostgreSQL\.Table\.Classes\.TableConversionOptions&lt;](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_ 'DiGi\.PostgreSQL\.Table\.Classes\.TableConversionOptions\<UColumn\>')[UColumn](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).UColumn 'DiGi\.PostgreSQL\.Table\.Create\.TableAsync\<UColumn\>\(this Npgsql\.NpgsqlConnection, string, DiGi\.PostgreSQL\.Table\.Classes\.TableConversionOptions\<UColumn\>, System\.Collections\.Generic\.IEnumerable\<UColumn\>, int, System\.Threading\.CancellationToken\)\.UColumn')[&gt;](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_ 'DiGi\.PostgreSQL\.Table\.Classes\.TableConversionOptions\<UColumn\>')
 
 Optional configuration settings for table conversion, such as primary keys and partitioning rules\.
 
-<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_).columns'></a>
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).columns'></a>
 
-`columns` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[UColumn](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_).UColumn 'DiGi\.PostgreSQL\.Table\.Create\.TableAsync\<UColumn\>\(this Npgsql\.NpgsqlConnection, string, DiGi\.PostgreSQL\.Table\.Classes\.TableConversionOptions\<UColumn\>, System\.Collections\.Generic\.IEnumerable\<UColumn\>\)\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+`columns` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[UColumn](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).UColumn 'DiGi\.PostgreSQL\.Table\.Create\.TableAsync\<UColumn\>\(this Npgsql\.NpgsqlConnection, string, DiGi\.PostgreSQL\.Table\.Classes\.TableConversionOptions\<UColumn\>, System\.Collections\.Generic\.IEnumerable\<UColumn\>, int, System\.Threading\.CancellationToken\)\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 A collection of column definitions to be applied to the table\.
+
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,DiGi.PostgreSQL.Table.Classes.TableConversionOptions_UColumn_,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+A token to monitor for cancellation requests\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result is true if the table was successfully created or updated; otherwise, false\.
 
-<a name='DiGi.PostgreSQL.Table.Create.TableAsync_Columns(thisNpgsql.NpgsqlConnection)'></a>
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_Columns(thisNpgsql.NpgsqlConnection,int,System.Threading.CancellationToken)'></a>
 
-## Create\.TableAsync\_Columns\(this NpgsqlConnection\) Method
+## Create\.TableAsync\_Columns\(this NpgsqlConnection, int, CancellationToken\) Method
 
 Initializes the metadata repository for dynamic column management\.
 This table tracks all custom engineering parameters added to the partitioned main tables\.
 
 ```csharp
-public static System.Threading.Tasks.Task<bool> TableAsync_Columns(this Npgsql.NpgsqlConnection? npgsqlConnection);
+public static System.Threading.Tasks.Task<bool> TableAsync_Columns(this Npgsql.NpgsqlConnection? npgsqlConnection, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Create.TableAsync_Columns(thisNpgsql.NpgsqlConnection).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_Columns(thisNpgsql.NpgsqlConnection,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The Npgsql connection instance used to create the columns metadata table\.
+
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_Columns(thisNpgsql.NpgsqlConnection,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Create.TableAsync_Columns(thisNpgsql.NpgsqlConnection,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+A token to monitor for cancellation requests\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
@@ -231,42 +255,54 @@ The filter group instance to traverse\.
 
 The set to accumulate unique column identifiers in\.
 
-<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_)'></a>
+<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken)'></a>
 
-## Modify\.UpdateAsync\<UColumn\>\(this NpgsqlConnection, string, IEnumerable\<UColumn\>\) Method
+## Modify\.UpdateAsync\<UColumn\>\(this NpgsqlConnection, string, IEnumerable\<UColumn\>, int, CancellationToken\) Method
 
 Updates or inserts column definitions into the PostgreSQL database for a specified table using an upsert operation\.
 
 ```csharp
-public static System.Threading.Tasks.Task<bool> UpdateAsync<UColumn>(this Npgsql.NpgsqlConnection? npgsqlConnection, string tableName, System.Collections.Generic.IEnumerable<UColumn> columns)
+public static System.Threading.Tasks.Task<bool> UpdateAsync<UColumn>(this Npgsql.NpgsqlConnection? npgsqlConnection, string tableName, System.Collections.Generic.IEnumerable<UColumn> columns, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken))
     where UColumn : DiGi.Core.IO.Table.Interfaces.IColumn;
 ```
 #### Type parameters
 
-<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_).UColumn'></a>
+<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).UColumn'></a>
 
 `UColumn`
 
 The type of the column being updated, which must implement [DiGi\.Core\.IO\.Table\.Interfaces\.IColumn](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.interfaces.icolumn 'DiGi\.Core\.IO\.Table\.Interfaces\.IColumn')\.
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection') instance used to communicate with the PostgreSQL database\.
 
-<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_).tableName'></a>
+<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).tableName'></a>
 
 `tableName` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The name of the table whose columns are being updated\.
 
-<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_).columns'></a>
+<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).columns'></a>
 
-`columns` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[UColumn](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_).UColumn 'DiGi\.PostgreSQL\.Table\.Modify\.UpdateAsync\<UColumn\>\(this Npgsql\.NpgsqlConnection, string, System\.Collections\.Generic\.IEnumerable\<UColumn\>\)\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+`columns` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[UColumn](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).UColumn 'DiGi\.PostgreSQL\.Table\.Modify\.UpdateAsync\<UColumn\>\(this Npgsql\.NpgsqlConnection, string, System\.Collections\.Generic\.IEnumerable\<UColumn\>, int, System\.Threading\.CancellationToken\)\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 A collection of column objects implementing [DiGi\.Core\.IO\.Table\.Interfaces\.IColumn](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.interfaces.icolumn 'DiGi\.Core\.IO\.Table\.Interfaces\.IColumn') to be updated or inserted\.
+
+<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Modify.UpdateAsync_UColumn_(thisNpgsql.NpgsqlConnection,string,System.Collections.Generic.IEnumerable_UColumn_,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+A token to monitor for cancellation requests\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  

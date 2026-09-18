@@ -3,6 +3,7 @@ using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
@@ -16,8 +17,10 @@ namespace DiGi.PostgreSQL
         /// <param name="dataType">The data type that determines the table name and storage format.</param>
         /// <param name="useGIN">A value indicating whether a GIN index should be created for JSON data types.</param>
         /// <param name="includeType">A value indicating whether to include a reference column to the types lookup table.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if the table was created successfully; otherwise, false.</returns>
-        public static async Task<bool> TableAsync_Objects(this NpgsqlConnection? npgsqlConnection, DataType dataType, bool useGIN = false, bool includeType = false)
+        public static async Task<bool> TableAsync_Objects(this NpgsqlConnection? npgsqlConnection, DataType dataType, bool useGIN = false, bool includeType = false, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || dataType == DataType.Undefined)
             {
@@ -75,7 +78,8 @@ namespace DiGi.PostgreSQL
             try
             {
                 await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
-                await npgsqlCommand.ExecuteNonQueryAsync();
+                npgsqlCommand.CommandTimeout = commandTimeout;
+                await npgsqlCommand.ExecuteNonQueryAsync(cancellationToken);
                 return true;
             }
             catch (NpgsqlException ex)
@@ -91,8 +95,10 @@ namespace DiGi.PostgreSQL
         /// <param name="npgsqlConnection">The PostgreSQL connection instance used to execute the command.</param>
         /// <param name="dataType">The data type associated with the parent objects table.</param>
         /// <param name="partitionId">The unique identifier for the partition being created.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if the partition was created successfully; otherwise, false.</returns>
-        public static async Task<bool> TableAsync_Objects_Partition(this NpgsqlConnection? npgsqlConnection, DataType dataType, short partitionId)
+        public static async Task<bool> TableAsync_Objects_Partition(this NpgsqlConnection? npgsqlConnection, DataType dataType, short partitionId, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || dataType == DataType.Undefined)
             {
@@ -105,8 +111,9 @@ namespace DiGi.PostgreSQL
                 ";
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
 
-            await npgsqlCommand.ExecuteNonQueryAsync();
+            await npgsqlCommand.ExecuteNonQueryAsync(cancellationToken);
 
             return true;
         }
@@ -120,8 +127,10 @@ namespace DiGi.PostgreSQL
         /// <param name="partitionNameSufix">The suffix to be appended to the parent table name to create the partition table name.</param>
         /// <param name="values">A collection of values for which this partition will be responsible.</param>
         /// <param name="conversionFunc">An optional function to convert each value of type T into a string representation for the SQL command.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if the partition was created successfully; otherwise, false.</returns>
-        public static async Task<bool> TableAsync_Partition<T>(this NpgsqlConnection? npgsqlConnection, string tableName, string partitionNameSufix, IEnumerable<T> values, Func<T, string>? conversionFunc = null)
+        public static async Task<bool> TableAsync_Partition<T>(this NpgsqlConnection? npgsqlConnection, string tableName, string partitionNameSufix, IEnumerable<T> values, Func<T, string>? conversionFunc = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName) || string.IsNullOrWhiteSpace(partitionNameSufix) || values is null || !values.Any())
             {
@@ -158,7 +167,8 @@ namespace DiGi.PostgreSQL
                 FOR VALUES IN ({valuesList});";
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
-            await npgsqlCommand.ExecuteNonQueryAsync();
+            npgsqlCommand.CommandTimeout = commandTimeout;
+            await npgsqlCommand.ExecuteNonQueryAsync(cancellationToken);
 
             return true;
         }
@@ -168,8 +178,10 @@ namespace DiGi.PostgreSQL
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection instance used to execute the command.</param>
         /// <param name="tableName">The name of the parent table for which the default partition is created.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if the default partition was created successfully; otherwise, false.</returns>
-        public static async Task<bool> TableAsync_Partition_Default(this NpgsqlConnection? npgsqlConnection, string tableName)
+        public static async Task<bool> TableAsync_Partition_Default(this NpgsqlConnection? npgsqlConnection, string tableName, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
             {
@@ -189,10 +201,11 @@ namespace DiGi.PostgreSQL
             DEFAULT;";
 
             await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+            npgsqlCommand.CommandTimeout = commandTimeout;
 
             try
             {
-                await npgsqlCommand.ExecuteNonQueryAsync();
+                await npgsqlCommand.ExecuteNonQueryAsync(cancellationToken);
                 return true;
             }
             catch (PostgresException)
@@ -206,8 +219,10 @@ namespace DiGi.PostgreSQL
         /// Asynchronously creates the partitions lookup table used to manage and track data partitioning.
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection instance used to execute the command.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if the partitions table was created successfully; otherwise, false.</returns>
-        public static async Task<bool> TableAsync_Partitions(this NpgsqlConnection? npgsqlConnection)
+        public static async Task<bool> TableAsync_Partitions(this NpgsqlConnection? npgsqlConnection, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null)
             {
@@ -226,8 +241,9 @@ namespace DiGi.PostgreSQL
             try
             {
                 await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                npgsqlCommand.CommandTimeout = commandTimeout;
 
-                await npgsqlCommand.ExecuteNonQueryAsync();
+                await npgsqlCommand.ExecuteNonQueryAsync(cancellationToken);
                 return true;
             }
             catch (NpgsqlException ex)
@@ -242,8 +258,10 @@ namespace DiGi.PostgreSQL
         /// Asynchronously creates the 'types' lookup table in the PostgreSQL database to optimize storage and filtering, including a timestamp for auditing when the type was first introduced.
         /// </summary>
         /// <param name="npgsqlConnection">The <see cref="Npgsql.NpgsqlConnection"/> instance used to execute the create table command.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if the table was created successfully or already exists; otherwise, false.</returns>
-        public static async Task<bool> TableAsync_Types(this NpgsqlConnection? npgsqlConnection)
+        public static async Task<bool> TableAsync_Types(this NpgsqlConnection? npgsqlConnection, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null)
             {
@@ -262,8 +280,9 @@ namespace DiGi.PostgreSQL
             {
                 // Explicitly using NpgsqlCommand type instead of implicit typing
                 await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                npgsqlCommand.CommandTimeout = commandTimeout;
 
-                await npgsqlCommand.ExecuteNonQueryAsync();
+                await npgsqlCommand.ExecuteNonQueryAsync(cancellationToken);
                 return true;
             }
             catch (NpgsqlException ex)

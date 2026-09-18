@@ -7,6 +7,7 @@ using Npgsql;
 using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.PartitionUniqueReference
@@ -22,8 +23,10 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
         /// <param name="dataTypeFunc">A function used to determine the <see cref="DataType"/> based on a provided string key.</param>
         /// <param name="sender">The object that initiated the request; defaults to null.</param>
         /// <param name="partitionUniqueReferenceGeneratingEventHandler">An optional event handler for generating partition unique references; defaults to null.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task representing the asynchronous operation. The task result contains a <see cref="HashSet{T}"/> of updated <see cref="Classes.PartitionUniqueReference"/> objects, or null if the connection is null, serializable objects are null, or critical table creation fails.</returns>
-        public static async Task<HashSet<Classes.PartitionUniqueReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, Func<string?, DataType> dataTypeFunc, object? sender = null, PartitionUniqueReferenceGeneratingEventHandler? partitionUniqueReferenceGeneratingEventHandler = null) where USerializableObject : ISerializableObject
+        public static async Task<HashSet<Classes.PartitionUniqueReference>?> UpdateAsync<USerializableObject>(this NpgsqlConnection? npgsqlConnection, IEnumerable<USerializableObject> serializableObjects, Func<string?, DataType> dataTypeFunc, object? sender = null, PartitionUniqueReferenceGeneratingEventHandler? partitionUniqueReferenceGeneratingEventHandler = null, int commandTimeout = 30, CancellationToken cancellationToken = default) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null || serializableObjects is null)
             {
@@ -70,13 +73,13 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 
             bool succeded;
 
-            succeded = await PostgreSQL.Create.TableAsync_Partitions(npgsqlConnection);
+            succeded = await PostgreSQL.Create.TableAsync_Partitions(npgsqlConnection, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (!succeded)
             {
                 return null;
             }
 
-            succeded = await PostgreSQL.Create.TableAsync_Types(npgsqlConnection);
+            succeded = await PostgreSQL.Create.TableAsync_Types(npgsqlConnection, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (!succeded)
             {
                 return null;
@@ -90,18 +93,19 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
             }
 
             await using NpgsqlBatch npgsqlBatch = new(npgsqlConnection);
+            npgsqlBatch.Timeout = commandTimeout;
 
             foreach (KeyValuePair<string, List<Tuple<Classes.PartitionUniqueReference, USerializableObject>>> keyValuePair in dictionary)
             {
                 DataType dataType = dataTypeFunc.Invoke(keyValuePair.Key);
 
-                succeded = await PostgreSQL.Create.TableAsync_Objects(npgsqlConnection, dataType, false, true);
+                succeded = await PostgreSQL.Create.TableAsync_Objects(npgsqlConnection, dataType, false, true, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (!succeded)
                 {
                     continue;
                 }
 
-                Partition? partition = await PostgreSQL.Modify.UpdatePartitionIdAsync(npgsqlConnection, keyValuePair.Key, dataType);
+                Partition? partition = await PostgreSQL.Modify.UpdatePartitionIdAsync(npgsqlConnection, keyValuePair.Key, dataType, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (partition is null)
                 {
                     continue;
@@ -121,7 +125,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 
                     tuples = tuples_Out;
 
-                    Classes.Type? type = await UpdateTypeIdAsync(npgsqlConnection, Core.Query.FullTypeName(type_Temp));
+                    Classes.Type? type = await UpdateTypeIdAsync(npgsqlConnection, Core.Query.FullTypeName(type_Temp), commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                     if (type is null)
                     {
                         continue;
@@ -175,7 +179,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 
             if (npgsqlBatch.BatchCommands.Count > 0)
             {
-                await npgsqlBatch.ExecuteNonQueryAsync();
+                await npgsqlBatch.ExecuteNonQueryAsync(cancellationToken);
             }
 
             return result;

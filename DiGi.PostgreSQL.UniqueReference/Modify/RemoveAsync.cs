@@ -5,6 +5,7 @@ using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.UniqueReference
@@ -18,8 +19,10 @@ namespace DiGi.PostgreSQL.UniqueReference
         /// <param name="npgsqlConnection">The Npgsql connection to be used for the operation.</param>
         /// <param name="uniqueReferences">The collection of unique references to remove.</param>
         /// <param name="clean">A value indicating whether to clean partitions after the removal process.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A list of successfully removed unique references, or null if the connection is null or no valid references were found.</returns>
-        public static async Task<List<TUniqueReference>?> RemoveAsync<TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences, bool clean = true) where TUniqueReference : IUniqueReference
+        public static async Task<List<TUniqueReference>?> RemoveAsync<TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences, bool clean = true, int commandTimeout = 30, CancellationToken cancellationToken = default) where TUniqueReference : IUniqueReference
         {
             if (npgsqlConnection is null)
             {
@@ -32,7 +35,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return null;
             }
 
-            List<Partition>? partitions = await PostgreSQL.Query.PartitionsAsync(npgsqlConnection, dictionary.Keys);
+            List<Partition>? partitions = await PostgreSQL.Query.PartitionsAsync(npgsqlConnection, dictionary.Keys, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (partitions is null || partitions.Count == 0)
             {
                 return null;
@@ -57,6 +60,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                 RETURNING o.partition_id;";
 
                 await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                npgsqlCommand.CommandTimeout = commandTimeout;
                 npgsqlCommand.Parameters.Add("name", NpgsqlDbType.Text);
                 npgsqlCommand.Parameters.Add("unique_id", NpgsqlDbType.Text);
 
@@ -70,7 +74,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                     npgsqlCommand.Parameters["name"].Value = fullTypeName;
                     npgsqlCommand.Parameters["unique_id"].Value = uniqueReference.UniqueId;
 
-                    if (await npgsqlCommand.ExecuteScalarAsync() is short partitionId)
+                    if (await npgsqlCommand.ExecuteScalarAsync(cancellationToken) is short partitionId)
                     {
                         result.Add(uniqueReference);
                     }
@@ -79,7 +83,7 @@ namespace DiGi.PostgreSQL.UniqueReference
 
             if (clean)
             {
-                await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection);
+                await PostgreSQL.Modify.CleanPartitionsAsync(npgsqlConnection, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             }
 
             return result;
@@ -91,8 +95,10 @@ namespace DiGi.PostgreSQL.UniqueReference
         /// <param name="npgsqlConnection">The Npgsql connection to be used for the operation.</param>
         /// <param name="type">The type whose references should be removed.</param>
         /// <param name="inheritance">A value indicating whether to include inherited types in the removal process.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>True if the removal was successful; otherwise, false.</returns>
-        public static async Task<bool> RemoveAsync(NpgsqlConnection? npgsqlConnection, Type type, bool inheritance = true)
+        public static async Task<bool> RemoveAsync(NpgsqlConnection? npgsqlConnection, Type type, bool inheritance = true, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || type is null)
             {
@@ -102,7 +108,7 @@ namespace DiGi.PostgreSQL.UniqueReference
             IEnumerable<short>? partitionIds = null;
             if (!inheritance)
             {
-                short? partitionId = await Query.PartitionIdAsync(npgsqlConnection, type);
+                short? partitionId = await Query.PartitionIdAsync(npgsqlConnection, type, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (partitionId is not null)
                 {
                     partitionIds = [partitionId.Value];
@@ -110,7 +116,7 @@ namespace DiGi.PostgreSQL.UniqueReference
             }
             else
             {
-                List<Partition>? partitions = await Query.PartitionsAsync(npgsqlConnection, type);
+                List<Partition>? partitions = await Query.PartitionsAsync(npgsqlConnection, type, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (partitions is null || partitions.Count == 0)
                 {
                     return false;
@@ -123,7 +129,7 @@ namespace DiGi.PostgreSQL.UniqueReference
                 return false;
             }
 
-            return await PostgreSQL.Modify.RemoveAsync(npgsqlConnection, partitionIds);
+            return await PostgreSQL.Modify.RemoveAsync(npgsqlConnection, partitionIds, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
     }
 }

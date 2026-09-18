@@ -3,6 +3,7 @@ using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using NpgsqlTypes;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.UniqueReference
@@ -15,8 +16,10 @@ namespace DiGi.PostgreSQL.UniqueReference
         /// <typeparam name="USerializableObject">The type of serializable object to retrieve, which must implement <see cref="ISerializableObject"/>.</typeparam>
         /// <param name="npgsqlConnection">The Npgsql connection used to execute the database query.</param>
         /// <param name="inheritance">A value indicating whether to include inherited types in the retrieval process.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of retrieved serializable objects, or null if the connection is null.</returns>
-        public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, bool inheritance = true) where USerializableObject : ISerializableObject
+        public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject>(NpgsqlConnection? npgsqlConnection, bool inheritance = true, int commandTimeout = 30, CancellationToken cancellationToken = default) where USerializableObject : ISerializableObject
         {
             if (npgsqlConnection is null)
             {
@@ -26,11 +29,11 @@ namespace DiGi.PostgreSQL.UniqueReference
             List<Partition>? partitions = null;
             if (inheritance)
             {
-                partitions = await PartitionsAsync(npgsqlConnection, typeof(USerializableObject));
+                partitions = await PartitionsAsync(npgsqlConnection, typeof(USerializableObject), commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             }
             else
             {
-                Partition? partition = await PostgreSQL.Query.PartitionAsync(npgsqlConnection, Core.Query.FullTypeName(typeof(USerializableObject)));
+                Partition? partition = await PostgreSQL.Query.PartitionAsync(npgsqlConnection, Core.Query.FullTypeName(typeof(USerializableObject)), commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (partition is not null)
                 {
                     partitions = [partition];
@@ -61,13 +64,14 @@ namespace DiGi.PostgreSQL.UniqueReference
                 FROM objects_{(int)keyValuePair.Key}
                 WHERE partition_id = ANY(@partition_ids);";
 
-                await using var npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+                await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+                npgsqlCommand.CommandTimeout = commandTimeout;
 
                 npgsqlCommand.Parameters.AddWithValue("partition_ids", keyValuePair.Value.ConvertAll(x => x.Id).ToArray());
 
-                await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+                await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
 
-                while (await npgsqlDataReader.ReadAsync())
+                while (await npgsqlDataReader.ReadAsync(cancellationToken))
                 {
                     USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObjectAsync<USerializableObject>(npgsqlDataReader, keyValuePair.Key, 0);
                     if (serializableObject is null)
@@ -89,8 +93,10 @@ namespace DiGi.PostgreSQL.UniqueReference
         /// <typeparam name="TUniqueReference">The type of the unique reference used for lookup, which must implement <see cref="IUniqueReference"/>.</typeparam>
         /// <param name="npgsqlConnection">The Npgsql connection used to execute the database query.</param>
         /// <param name="uniqueReferences">A collection of unique references to be resolved into serializable objects.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of retrieved serializable objects, or null if the connection or unique references are null.</returns>
-        public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject, TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences) where USerializableObject : ISerializableObject where TUniqueReference : IUniqueReference
+        public static async Task<List<USerializableObject>?> SerializableObjectsAsync<USerializableObject, TUniqueReference>(NpgsqlConnection? npgsqlConnection, IEnumerable<TUniqueReference> uniqueReferences, int commandTimeout = 30, CancellationToken cancellationToken = default) where USerializableObject : ISerializableObject where TUniqueReference : IUniqueReference
         {
             if (npgsqlConnection is null || uniqueReferences is null)
             {
@@ -117,7 +123,7 @@ namespace DiGi.PostgreSQL.UniqueReference
             List<USerializableObject> result = [];
             foreach (KeyValuePair<string, List<string>> keyValuePair in dictionary)
             {
-                List<Partition>? partitions = await PartitionsAsync(npgsqlConnection, keyValuePair.Key);
+                List<Partition>? partitions = await PartitionsAsync(npgsqlConnection, keyValuePair.Key, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (partitions is null || partitions.Count == 0)
                 {
                     continue;
@@ -138,16 +144,17 @@ namespace DiGi.PostgreSQL.UniqueReference
                             SELECT UNNEST(@partition_ids) as t_id, UNNEST(@unique_ids) as u_id
                         ) as search_set ON o.partition_id = search_set.t_id AND o.unique_id = search_set.u_id;";
 
-                    await using var npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+                    await using NpgsqlCommand npgsqlCommand = new NpgsqlCommand(commandText, npgsqlConnection);
+                    npgsqlCommand.CommandTimeout = commandTimeout;
 
                     npgsqlCommand.Parameters.Add("partition_ids", NpgsqlDbType.Array | NpgsqlDbType.Smallint);
                     npgsqlCommand.Parameters.Add("unique_ids", NpgsqlDbType.Array | NpgsqlDbType.Text);
                     npgsqlCommand.Parameters["partition_ids"].Value = keyValuePair_DataType.Value.ConvertAll(x => x.Id).ToArray();
                     npgsqlCommand.Parameters["unique_ids"].Value = keyValuePair.Value.ToArray();
 
-                    await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync();
+                    await using NpgsqlDataReader npgsqlDataReader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
 
-                    while (await npgsqlDataReader.ReadAsync())
+                    while (await npgsqlDataReader.ReadAsync(cancellationToken))
                     {
                         USerializableObject? serializableObject = await PostgreSQL.Query.SerializableObjectAsync<USerializableObject>(npgsqlDataReader, keyValuePair_DataType.Key, 0);
                         if (serializableObject is null)

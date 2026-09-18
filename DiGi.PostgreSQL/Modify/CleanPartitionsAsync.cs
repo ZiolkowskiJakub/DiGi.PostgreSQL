@@ -2,6 +2,7 @@
 using Npgsql;
 using NpgsqlTypes;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
@@ -12,15 +13,17 @@ namespace DiGi.PostgreSQL
         /// Asynchronously cleans up partitions by removing empty ones from the metadata and dropping physical tables if they contain no rows.
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection to be used for the cleanup process.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A list of partitions that were removed, or <see langword="null"/> if the provided connection is null or partition data could not be retrieved.</returns>
-        public static async Task<List<Partition>?> CleanPartitionsAsync(NpgsqlConnection? npgsqlConnection)
+        public static async Task<List<Partition>?> CleanPartitionsAsync(NpgsqlConnection? npgsqlConnection, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null)
             {
                 return null;
             }
 
-            List<Partition>? partitions = await Query.PartitionsAsync(npgsqlConnection);
+            List<Partition>? partitions = await Query.PartitionsAsync(npgsqlConnection, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (partitions is null)
             {
                 return null;
@@ -48,7 +51,7 @@ namespace DiGi.PostgreSQL
             {
                 string tableName = $"objects_{(int)keyValuePair.Key}";
 
-                if (!await Query.TableExistsAsync(npgsqlConnection, tableName))
+                if (!await Query.TableExistsAsync(npgsqlConnection, tableName, commandTimeout: commandTimeout, cancellationToken: cancellationToken))
                 {
                     result.AddRange(keyValuePair.Value);
                     continue;
@@ -58,15 +61,17 @@ namespace DiGi.PostgreSQL
                 {
                     // Check if the partition is now empty
                     await using NpgsqlCommand npgsqlCommand_Check = new($"SELECT NOT EXISTS(SELECT 1 FROM {tableName} WHERE partition_id = @partition_id);", npgsqlConnection);
+                    npgsqlCommand_Check.CommandTimeout = commandTimeout;
                     npgsqlCommand_Check.Parameters.Add("partition_id", NpgsqlDbType.Smallint).Value = partition.Id;
 
-                    bool notContains = (bool)(await npgsqlCommand_Check.ExecuteScalarAsync() ?? false);
+                    bool notContains = (bool)(await npgsqlCommand_Check.ExecuteScalarAsync(cancellationToken) ?? false);
                     if (notContains)
                     {
                         // 1. Remove from types first (Metadata)
                         await using NpgsqlCommand npgsqlCommand_DeleteType = new("DELETE FROM partitions WHERE id = @partition_id;", npgsqlConnection);
+                        npgsqlCommand_DeleteType.CommandTimeout = commandTimeout;
                         npgsqlCommand_DeleteType.Parameters.Add("partition_id", NpgsqlDbType.Smallint).Value = partition.Id;
-                        await npgsqlCommand_DeleteType.ExecuteNonQueryAsync();
+                        await npgsqlCommand_DeleteType.ExecuteNonQueryAsync(cancellationToken);
 
                         result.Add(partition);
                     }
@@ -76,7 +81,8 @@ namespace DiGi.PostgreSQL
                 {
                     // 2. Drop the physical partition table
                     await using NpgsqlCommand npgsqlCommand_DropTable = new($"DROP TABLE IF EXISTS {tableName};", npgsqlConnection);
-                    await npgsqlCommand_DropTable.ExecuteNonQueryAsync();
+                    npgsqlCommand_DropTable.CommandTimeout = commandTimeout;
+                    await npgsqlCommand_DropTable.ExecuteNonQueryAsync(cancellationToken);
                 }
             }
 

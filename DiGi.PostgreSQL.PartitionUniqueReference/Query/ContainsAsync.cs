@@ -5,6 +5,7 @@ using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL.PartitionUniqueReference
@@ -16,21 +17,23 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
         /// <param name="type">The system type to check for existence.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation, containing true if the type is found; otherwise, false.</returns>
-        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Type? type)
+        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Type? type, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || type is null)
             {
                 return false;
             }
 
-            Classes.Type? type_Temp = await TypeAsync(npgsqlConnection, Core.Query.FullTypeName(type));
+            Classes.Type? type_Temp = await TypeAsync(npgsqlConnection, Core.Query.FullTypeName(type), commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (type_Temp is null)
             {
                 return false;
             }
 
-            return await ContainsAsync(npgsqlConnection, type_Temp);
+            return await ContainsAsync(npgsqlConnection, type_Temp, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -38,8 +41,10 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
         /// <param name="type">The database type to check for existence.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation, containing true if the type is found; otherwise, false.</returns>
-        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Type? type)
+        public static async Task<bool> ContainsAsync(this NpgsqlConnection npgsqlConnection, Classes.Type? type, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || type is null)
             {
@@ -57,16 +62,17 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 
                 string name = $@"objects_{(int)dataType}";
 
-                bool tableExists = await PostgreSQL.Query.TableExistsAsync(npgsqlConnection, name);
+                bool tableExists = await PostgreSQL.Query.TableExistsAsync(npgsqlConnection, name, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (!tableExists)
                 {
                     continue;
                 }
 
                 await using NpgsqlCommand npgsqlCommand = new($"SELECT EXISTS(SELECT 1 FROM {name} WHERE type_id = @type_id LIMIT 1)", npgsqlConnection);
+                npgsqlCommand.CommandTimeout = commandTimeout;
                 npgsqlCommand.Parameters.AddWithValue("type_id", type.Id);
 
-                var @var = await npgsqlCommand.ExecuteScalarAsync();
+                object? @var = await npgsqlCommand.ExecuteScalarAsync(cancellationToken);
 
                 result = @var is bool exists && exists;
                 if (result)
@@ -83,8 +89,10 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
         /// </summary>
         /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
         /// <param name="partitionUniqueReferences">A collection of partition unique references to verify.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation, containing a set of existing partition unique references, or null if the input is invalid.</returns>
-        public static async Task<HashSet<Classes.PartitionUniqueReference>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<Classes.PartitionUniqueReference> partitionUniqueReferences)
+        public static async Task<HashSet<Classes.PartitionUniqueReference>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, IEnumerable<Classes.PartitionUniqueReference> partitionUniqueReferences, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || partitionUniqueReferences is null)
             {
@@ -118,13 +126,13 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
 
             foreach (KeyValuePair<string, HashSet<Classes.PartitionUniqueReference>> keyValuePair in dictionary)
             {
-                Partition? partition = await PostgreSQL.Query.PartitionAsync(npgsqlConnection, keyValuePair.Key);
+                Partition? partition = await PostgreSQL.Query.PartitionAsync(npgsqlConnection, keyValuePair.Key, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (partition is null)
                 {
                     continue;
                 }
 
-                HashSet<IUniqueReference>? uniqueReferences = await ContainsAsync(npgsqlConnection, partition, keyValuePair.Value?.ToList().ConvertAll(x => x.UniqueReference!));
+                HashSet<IUniqueReference>? uniqueReferences = await ContainsAsync(npgsqlConnection, partition, keyValuePair.Value?.ToList().ConvertAll(x => x.UniqueReference!), commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (uniqueReferences is null)
                 {
                     continue;
@@ -148,8 +156,10 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
         /// <param name="npgsqlConnection">The PostgreSQL connection instance.</param>
         /// <param name="partition">The partition to search within.</param>
         /// <param name="uniqueReferences">A collection of unique references to verify.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation, containing a set of existing unique references, or null if any input is null.</returns>
-        public static async Task<HashSet<IUniqueReference>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, Partition? partition, IEnumerable<IUniqueReference>? uniqueReferences)
+        public static async Task<HashSet<IUniqueReference>?> ContainsAsync(this NpgsqlConnection npgsqlConnection, Partition? partition, IEnumerable<IUniqueReference>? uniqueReferences, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || partition is null || uniqueReferences is null)
             {
@@ -178,7 +188,7 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
             foreach (KeyValuePair<string, List<IUniqueReference>> keyValuePair in dictionary)
             {
                 // In a real API, replace this with a cached lookup to avoid DB roundtrips for types
-                Classes.Type? type = await TypeAsync(npgsqlConnection, keyValuePair.Key);
+                Classes.Type? type = await TypeAsync(npgsqlConnection, keyValuePair.Key, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 if (type == null)
                 {
                     continue;
@@ -217,12 +227,13 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference
             try
             {
                 await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
+                npgsqlCommand.CommandTimeout = commandTimeout;
                 npgsqlCommand.Parameters.AddWithValue("partition_id", partition.Id);
                 npgsqlCommand.Parameters.AddWithValue("type_ids", typeIds.ToArray());
                 npgsqlCommand.Parameters.AddWithValue("unique_ids", uniqueIds.ToArray());
 
-                await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
+                await using NpgsqlDataReader reader = await npgsqlCommand.ExecuteReaderAsync(cancellationToken);
+                while (await reader.ReadAsync(cancellationToken))
                 {
                     short typeId = reader.GetInt16(0);
                     string uniqueId = reader.GetString(1);

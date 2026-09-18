@@ -3,6 +3,7 @@ using DiGi.PostgreSQL.Enums;
 using Npgsql;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
@@ -14,15 +15,17 @@ namespace DiGi.PostgreSQL
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection to be used for the database operation.</param>
         /// <param name="partitionIds">The collection of partition identifiers to remove.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if records were removed; otherwise, false.</returns>
-        public static async Task<bool> RemoveAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<short>? partitionIds)
+        public static async Task<bool> RemoveAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<short>? partitionIds, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || partitionIds == null || !partitionIds.Any())
             {
                 return false;
             }
 
-            List<Partition>? partitions = await Query.PartitionsAsync(npgsqlConnection);
+            List<Partition>? partitions = await Query.PartitionsAsync(npgsqlConnection, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
             if (partitions is null || partitions.Count == 0)
             {
                 return false;
@@ -54,19 +57,20 @@ namespace DiGi.PostgreSQL
             {
                 string tableName = $"objects_{(int)keyValuePair.Key}";
 
-                if (!await Query.TableExistsAsync(npgsqlConnection, tableName))
+                if (!await Query.TableExistsAsync(npgsqlConnection, tableName, commandTimeout: commandTimeout, cancellationToken: cancellationToken))
                 {
                     continue;
                 }
 
                 await using NpgsqlCommand npgsqlCommand = new($"DELETE FROM {tableName} WHERE partition_id = ANY(@partition_ids);", npgsqlConnection);
+                npgsqlCommand.CommandTimeout = commandTimeout;
 
                 npgsqlCommand.Parameters.AddWithValue("partition_ids", keyValuePair.Value.ToArray());
 
-                int count = await npgsqlCommand.ExecuteNonQueryAsync();
+                int count = await npgsqlCommand.ExecuteNonQueryAsync(cancellationToken);
                 if (count > 0)
                 {
-                    await CleanPartitionsAsync(npgsqlConnection);
+                    await CleanPartitionsAsync(npgsqlConnection, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                 }
 
                 return true;

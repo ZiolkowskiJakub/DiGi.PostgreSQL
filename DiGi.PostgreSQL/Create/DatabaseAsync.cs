@@ -1,6 +1,7 @@
 ﻿using DiGi.PostgreSQL.Classes;
 using Npgsql;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
@@ -11,8 +12,10 @@ namespace DiGi.PostgreSQL
         /// Asynchronously creates a PostgreSQL database based on the provided connection data.
         /// </summary>
         /// <param name="connectionData">The connection data containing the database name and server details.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains true if the database was created or already exists; otherwise, false.</returns>
-        public static async Task<bool> DatabaseAsync(ConnectionData? connectionData)
+        public static async Task<bool> DatabaseAsync(ConnectionData? connectionData, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (connectionData is null || string.IsNullOrWhiteSpace(connectionData.Database))
             {
@@ -28,14 +31,15 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            await npgsqlConnection.OpenAsync();
+            await npgsqlConnection.OpenAsync(cancellationToken);
 
             // Check if database exists using parameters to prevent SQL Injection
             string commandText_Select = "SELECT 1 FROM pg_database WHERE datname = @databaseName";
             await using (NpgsqlCommand npgsqlCommand_Select = new(commandText_Select, npgsqlConnection))
             {
+                npgsqlCommand_Select.CommandTimeout = commandTimeout;
                 npgsqlCommand_Select.Parameters.AddWithValue("databaseName", connectionData.Database);
-                object? result = await npgsqlCommand_Select.ExecuteScalarAsync();
+                object? result = await npgsqlCommand_Select.ExecuteScalarAsync(cancellationToken);
                 if (result != null)
                 {
                     return true; // Database already exists
@@ -47,8 +51,9 @@ namespace DiGi.PostgreSQL
             string commandText_Create = $"CREATE DATABASE \"{connectionData.Database.Replace("\"", "\"\"")}\"";
 
             await using NpgsqlCommand npgsqlCommand_Create = new(commandText_Create, npgsqlConnection);
+            npgsqlCommand_Create.CommandTimeout = commandTimeout;
 
-            await npgsqlCommand_Create.ExecuteNonQueryAsync();
+            await npgsqlCommand_Create.ExecuteNonQueryAsync(cancellationToken);
 
             return true;
         }
@@ -59,8 +64,10 @@ namespace DiGi.PostgreSQL
         /// <param name="connectionData">The connection data containing the database name and server details.</param>
         /// <param name="tablespaceName">The optional name of the tablespace to be used for the database.</param>
         /// <param name="directory">The optional physical directory path on the server where the tablespace should be located.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains true if the database was created or already exists; otherwise, false.</returns>
-        public static async Task<bool> DatabaseAsync(this ConnectionData? connectionData, string? tablespaceName = null, string? directory = null)
+        public static async Task<bool> DatabaseAsync(this ConnectionData? connectionData, string? tablespaceName = null, string? directory = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (connectionData is null || string.IsNullOrWhiteSpace(connectionData.Database))
             {
@@ -78,15 +85,16 @@ namespace DiGi.PostgreSQL
                 return false;
             }
 
-            await npgsqlConnection.OpenAsync();
+            await npgsqlConnection.OpenAsync(cancellationToken);
 
             string checkDbSql = "SELECT 1 FROM pg_database WHERE datname = @dbName";
             bool databaseExists = false;
 
             await using (NpgsqlCommand npgsqlCommand_Check = new NpgsqlCommand(checkDbSql, npgsqlConnection))
             {
+                npgsqlCommand_Check.CommandTimeout = commandTimeout;
                 npgsqlCommand_Check.Parameters.AddWithValue("dbName", targetDatabaseName);
-                object? result = await npgsqlCommand_Check.ExecuteScalarAsync();
+                object? result = await npgsqlCommand_Check.ExecuteScalarAsync(cancellationToken);
                 databaseExists = result != null;
             }
 
@@ -113,8 +121,9 @@ namespace DiGi.PostgreSQL
 
                 await using (NpgsqlCommand npgsqlCommand_TsCheck = new NpgsqlCommand(checkTsSql, npgsqlConnection))
                 {
+                    npgsqlCommand_TsCheck.CommandTimeout = commandTimeout;
                     npgsqlCommand_TsCheck.Parameters.AddWithValue("tsName", tablespaceName!);
-                    object? tsResult = await npgsqlCommand_TsCheck.ExecuteScalarAsync();
+                    object? tsResult = await npgsqlCommand_TsCheck.ExecuteScalarAsync(cancellationToken);
                     tablespaceExists = tsResult != null;
                 }
 
@@ -125,7 +134,8 @@ namespace DiGi.PostgreSQL
                     string createTsSql = $"CREATE TABLESPACE \"{escapedTsName}\" LOCATION '{escapedDir}'";
 
                     await using NpgsqlCommand npgsqlCommand_CreateTs = new NpgsqlCommand(createTsSql, npgsqlConnection);
-                    await npgsqlCommand_CreateTs.ExecuteNonQueryAsync();
+                    npgsqlCommand_CreateTs.CommandTimeout = commandTimeout;
+                    await npgsqlCommand_CreateTs.ExecuteNonQueryAsync(cancellationToken);
                 }
             }
 
@@ -142,7 +152,8 @@ namespace DiGi.PostgreSQL
             try
             {
                 await using NpgsqlCommand npgsqlCommand_Create = new NpgsqlCommand(createDbSql, npgsqlConnection);
-                await npgsqlCommand_Create.ExecuteNonQueryAsync();
+                npgsqlCommand_Create.CommandTimeout = commandTimeout;
+                await npgsqlCommand_Create.ExecuteNonQueryAsync(cancellationToken);
                 return true;
             }
             catch (NpgsqlException)
@@ -156,15 +167,17 @@ namespace DiGi.PostgreSQL
         /// Asynchronously creates a PostgreSQL database using settings from a configuration file.
         /// </summary>
         /// <param name="postgreSQLConfigurationFile">The configuration file containing the necessary connection and tablespace details.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains true if the database was created or already exists; otherwise, false.</returns>
-        public static async Task<bool> DatabaseAsync(PostgreSQLConfigurationFile? postgreSQLConfigurationFile)
+        public static async Task<bool> DatabaseAsync(PostgreSQLConfigurationFile? postgreSQLConfigurationFile, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (postgreSQLConfigurationFile is null)
             {
                 return false;
             }
 
-            return await DatabaseAsync(ConnectionData(postgreSQLConfigurationFile), postgreSQLConfigurationFile.Tablespace, postgreSQLConfigurationFile.Directory);
+            return await DatabaseAsync(ConnectionData(postgreSQLConfigurationFile), postgreSQLConfigurationFile.Tablespace, postgreSQLConfigurationFile.Directory, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Npgsql;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DiGi.PostgreSQL
@@ -11,8 +12,9 @@ namespace DiGi.PostgreSQL
         /// <param name="npgsqlConnection">The Npgsql connection used to execute the command.</param>
         /// <param name="tableName">The name of the table to be analyzed.</param>
         /// <param name="commandTimeout">The timeout in seconds for the execution of the command.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous operation. The task result is true if the analysis was successful; otherwise, false.</returns>
-        public static async Task<bool> Analyze(NpgsqlConnection? npgsqlConnection, string? tableName, int commandTimeout = 30)
+        public static async Task<bool> Analyze(NpgsqlConnection? npgsqlConnection, string? tableName, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
             if (npgsqlConnection is null || string.IsNullOrWhiteSpace(tableName))
             {
@@ -28,7 +30,7 @@ namespace DiGi.PostgreSQL
                 await using NpgsqlCommand npgsqlCommand = new(commandText, npgsqlConnection);
                 npgsqlCommand.CommandTimeout = commandTimeout;
 
-                await npgsqlCommand.ExecuteNonQueryAsync();
+                await npgsqlCommand.ExecuteNonQueryAsync(cancellationToken);
             }
             catch (NpgsqlException)
             {

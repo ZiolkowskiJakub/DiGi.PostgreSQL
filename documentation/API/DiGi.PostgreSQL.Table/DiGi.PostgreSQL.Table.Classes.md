@@ -1322,111 +1322,172 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[ColumnReference](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.ColumnReference 'DiGi\.PostgreSQL\.Table\.Classes\.ColumnReference')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a list of [ColumnReference](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.ColumnReference 'DiGi\.PostgreSQL\.Table\.Classes\.ColumnReference') objects if matches are found; otherwise, null\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_)'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken)'></a>
 
-## TablePostgreSQLConverter\<UColumn\>\.GetColumnReferencesByNamesAsync\(NpgsqlConnection, IEnumerable\<string\>\) Method
+## TablePostgreSQLConverter\<UColumn\>\.GetColumnReferencesByNamesAsync\(NpgsqlConnection, IEnumerable\<string\>, int, CancellationToken\) Method
 
 Asynchronously retrieves a list of column references based on the specified names\.
 
 ```csharp
-public System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.PostgreSQL.Table.Classes.ColumnReference>?> GetColumnReferencesByNamesAsync(Npgsql.NpgsqlConnection? npgsqlConnection, System.Collections.Generic.IEnumerable<string>? names=null);
+public System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.PostgreSQL.Table.Classes.ColumnReference>?> GetColumnReferencesByNamesAsync(Npgsql.NpgsqlConnection? npgsqlConnection, System.Collections.Generic.IEnumerable<string>? names=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The Npgsql connection instance used to execute the database query\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_).names'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).names'></a>
 
 `names` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 An optional collection of column names to filter the search results\.
 
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
+
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[ColumnReference](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.ColumnReference 'DiGi\.PostgreSQL\.Table\.Classes\.ColumnReference')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a list of [ColumnReference](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.ColumnReference 'DiGi\.PostgreSQL\.Table\.Classes\.ColumnReference') objects if matches are found; otherwise, null\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(System.Collections.Generic.IEnumerable_string_)'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken)'></a>
 
-## TablePostgreSQLConverter\<UColumn\>\.GetColumnReferencesByNamesAsync\(IEnumerable\<string\>\) Method
+## TablePostgreSQLConverter\<UColumn\>\.GetColumnReferencesByNamesAsync\(IEnumerable\<string\>, int, CancellationToken\) Method
 
 Asynchronously retrieves a list of column references that match the specified names\.
 
 ```csharp
-public System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.PostgreSQL.Table.Classes.ColumnReference>?> GetColumnReferencesByNamesAsync(System.Collections.Generic.IEnumerable<string>? names=null);
+public System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.PostgreSQL.Table.Classes.ColumnReference>?> GetColumnReferencesByNamesAsync(System.Collections.Generic.IEnumerable<string>? names=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(System.Collections.Generic.IEnumerable_string_).names'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).names'></a>
 
 `names` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 An optional collection of column names to filter by\. If null, the retrieval criteria may vary based on the underlying implementation\.
 
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByNamesAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
+
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[ColumnReference](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.ColumnReference 'DiGi\.PostgreSQL\.Table\.Classes\.ColumnReference')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a list of [ColumnReference](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.ColumnReference 'DiGi\.PostgreSQL\.Table\.Classes\.ColumnReference') objects if matches are found; otherwise, null\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_)'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken)'></a>
 
-## TablePostgreSQLConverter\<UColumn\>\.GetColumnReferencesByUniqueIdsAsync\(NpgsqlConnection, IEnumerable\<string\>\) Method
+## TablePostgreSQLConverter\<UColumn\>\.GetColumnReferencesByUniqueIdsAsync\(NpgsqlConnection, IEnumerable\<string\>, int, CancellationToken\) Method
 
 Asynchronously retrieves a list of column references associated with the specified unique identifiers\.
 
 ```csharp
-public System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.PostgreSQL.Table.Classes.ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(Npgsql.NpgsqlConnection? npgsqlConnection, System.Collections.Generic.IEnumerable<string>? columnUniqueIds=null);
+public System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.PostgreSQL.Table.Classes.ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(Npgsql.NpgsqlConnection? npgsqlConnection, System.Collections.Generic.IEnumerable<string>? columnUniqueIds=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_).npgsqlConnection'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).npgsqlConnection'></a>
 
 `npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
 
 The Npgsql connection instance used to communicate with the database\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_).columnUniqueIds'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).columnUniqueIds'></a>
 
 `columnUniqueIds` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 An optional collection of unique identifier strings used to filter the column references\.
 
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(Npgsql.NpgsqlConnection,System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
+
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[ColumnReference](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.ColumnReference 'DiGi\.PostgreSQL\.Table\.Classes\.ColumnReference')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a list of [ColumnReference](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.ColumnReference 'DiGi\.PostgreSQL\.Table\.Classes\.ColumnReference') objects if matches are found; otherwise, null\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(System.Collections.Generic.IEnumerable_string_)'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken)'></a>
 
-## TablePostgreSQLConverter\<UColumn\>\.GetColumnReferencesByUniqueIdsAsync\(IEnumerable\<string\>\) Method
+## TablePostgreSQLConverter\<UColumn\>\.GetColumnReferencesByUniqueIdsAsync\(IEnumerable\<string\>, int, CancellationToken\) Method
 
 Asynchronously retrieves a list of column references associated with the specified unique identifiers\.
 
 ```csharp
-public System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.PostgreSQL.Table.Classes.ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(System.Collections.Generic.IEnumerable<string>? columnUniqueIds=null);
+public System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.PostgreSQL.Table.Classes.ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(System.Collections.Generic.IEnumerable<string>? columnUniqueIds=null, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(System.Collections.Generic.IEnumerable_string_).columnUniqueIds'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).columnUniqueIds'></a>
 
 `columnUniqueIds` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 An optional collection of unique identifiers used to filter the column references\. If null, the retrieval behavior is determined by the underlying data source\.
 
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnReferencesByUniqueIdsAsync(System.Collections.Generic.IEnumerable_string_,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
+
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[ColumnReference](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.ColumnReference 'DiGi\.PostgreSQL\.Table\.Classes\.ColumnReference')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a list of [ColumnReference](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.ColumnReference 'DiGi\.PostgreSQL\.Table\.Classes\.ColumnReference') objects if matches are found; otherwise, [null](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/keywords/null')\.
 
-<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsAsync()'></a>
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsAsync(int,System.Threading.CancellationToken)'></a>
 
-## TablePostgreSQLConverter\<UColumn\>\.GetColumnsAsync\(\) Method
+## TablePostgreSQLConverter\<UColumn\>\.GetColumnsAsync\(int, CancellationToken\) Method
 
 Asynchronously retrieves a list of all available column definitions\.
 
 ```csharp
-public System.Threading.Tasks.Task<System.Collections.Generic.List<UColumn>?> GetColumnsAsync();
+public System.Threading.Tasks.Task<System.Collections.Generic.List<UColumn>?> GetColumnsAsync(int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsAsync(int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for the execution of the command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.GetColumnsAsync(int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  

@@ -391,10 +391,12 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// Asynchronously retrieves a list of column references that match the specified names.
         /// </summary>
         /// <param name="names">An optional collection of column names to filter by. If null, the retrieval criteria may vary based on the underlying implementation.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, null.</returns>
-        public async Task<List<ColumnReference>?> GetColumnReferencesByNamesAsync(IEnumerable<string>? names = null)
+        public async Task<List<ColumnReference>?> GetColumnReferencesByNamesAsync(IEnumerable<string>? names = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnReferencesAsync("name", names);
+            return await GetColumnReferencesAsync("name", names, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -402,20 +404,24 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection instance used to execute the database query.</param>
         /// <param name="names">An optional collection of column names to filter the search results.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, null.</returns>
-        public async Task<List<ColumnReference>?> GetColumnReferencesByNamesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names = null)
+        public async Task<List<ColumnReference>?> GetColumnReferencesByNamesAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? names = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnReferencesAsync(npgsqlConnection, "name", names);
+            return await GetColumnReferencesAsync(npgsqlConnection, "name", names, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>
         /// Asynchronously retrieves a list of column references associated with the specified unique identifiers.
         /// </summary>
         /// <param name="columnUniqueIds">An optional collection of unique identifiers used to filter the column references. If null, the retrieval behavior is determined by the underlying data source.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, <see langword="null"/>.</returns>
-        public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(IEnumerable<string>? columnUniqueIds = null)
+        public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(IEnumerable<string>? columnUniqueIds = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnReferencesAsync("unique_id", columnUniqueIds);
+            return await GetColumnReferencesAsync("unique_id", columnUniqueIds, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -423,19 +429,23 @@ namespace DiGi.PostgreSQL.Table.Classes
         /// </summary>
         /// <param name="npgsqlConnection">The Npgsql connection instance used to communicate with the database.</param>
         /// <param name="columnUniqueIds">An optional collection of unique identifier strings used to filter the column references.</param>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <see cref="ColumnReference"/> objects if matches are found; otherwise, null.</returns>
-        public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? columnUniqueIds = null)
+        public async Task<List<ColumnReference>?> GetColumnReferencesByUniqueIdsAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<string>? columnUniqueIds = null, int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnReferencesAsync(npgsqlConnection, "unique_id", columnUniqueIds);
+            return await GetColumnReferencesAsync(npgsqlConnection, "unique_id", columnUniqueIds, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>
         /// Asynchronously retrieves a list of all available column definitions.
         /// </summary>
+        /// <param name="commandTimeout">The timeout in seconds for the execution of the command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a list of <typeparamref name="UColumn"/> objects if columns are found; otherwise, <c>null</c>.</returns>
-        public async Task<List<UColumn>?> GetColumnsAsync()
+        public async Task<List<UColumn>?> GetColumnsAsync(int commandTimeout = 30, CancellationToken cancellationToken = default)
         {
-            return await GetColumnsByUniqueIdsAsync();
+            return await GetColumnsByUniqueIdsAsync(commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -1565,7 +1575,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 }
             }
 
-            await CreateTableAsync(npgsqlConnection, dictionary.Values);
+            await CreateTableAsync(npgsqlConnection, dictionary.Values, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
 
             StringBuilder stringBuilder = new();
 
@@ -1635,11 +1645,11 @@ namespace DiGi.PostgreSQL.Table.Classes
                             string? partitionSufix = Query.PartitionNameSuffix(value);
                             if (string.IsNullOrWhiteSpace(partitionSufix))
                             {
-                                await PostgreSQL.Create.TableAsync_Partition_Default(npgsqlConnection, TableName);
+                                await PostgreSQL.Create.TableAsync_Partition_Default(npgsqlConnection, TableName, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                             }
                             else
                             {
-                                await PostgreSQL.Create.TableAsync_Partition(npgsqlConnection, TableName, partitionSufix, [value]);
+                                await PostgreSQL.Create.TableAsync_Partition(npgsqlConnection, TableName, partitionSufix, [value], commandTimeout: commandTimeout, cancellationToken: cancellationToken);
                             }
                         }
                     }
@@ -1686,7 +1696,7 @@ namespace DiGi.PostgreSQL.Table.Classes
 
                 await npgsqlTransaction.CommitAsync(cancellationToken);
 
-                await Modify.UpdateAsync(npgsqlConnection, TableName, dictionary.Values);
+                await Modify.UpdateAsync(npgsqlConnection, TableName, dictionary.Values, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
 
                 return true;
             }
@@ -1749,9 +1759,9 @@ namespace DiGi.PostgreSQL.Table.Classes
             return true;
         }
 
-        private async Task<bool> CreateTableAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<UColumn> columns)
+        private async Task<bool> CreateTableAsync(NpgsqlConnection? npgsqlConnection, IEnumerable<UColumn> columns, int commandTimeout, CancellationToken cancellationToken)
         {
-            return await Create.TableAsync(npgsqlConnection, TableName, TableConversionOptions, columns);
+            return await Create.TableAsync(npgsqlConnection, TableName, TableConversionOptions, columns, commandTimeout: commandTimeout, cancellationToken: cancellationToken);
         }
 
         /// <summary>
