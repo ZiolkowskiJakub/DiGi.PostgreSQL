@@ -2466,6 +2466,90 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task that represents the asynchronous operation\. The task result contains a [System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean') value indicating whether the pull operation was successful\.
 
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken)'></a>
+
+## TablePostgreSQLConverter\<UColumn\>\.PullByPhysicalOrderAsync\<TColumn,TRow\>\(NpgsqlConnection, Table\<TColumn,TRow\>, string, int, object, int, CancellationToken\) Method
+
+Asynchronously pulls one page of a partition in physical \(heap\) order, continuing after the position the previous page ended at\.
+
+Use it to read a whole partition. The keyset [PullAsync&lt;TColumn,TRow&gt;\(NpgsqlConnection, Table&lt;TColumn,TRow&gt;, string, object, int, object, int, CancellationToken\)](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,object,int,object,int,System.Threading.CancellationToken) 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.PullAsync\<TColumn,TRow\>\(Npgsql\.NpgsqlConnection, DiGi\.Core\.IO\.Table\.Classes\.Table\<TColumn,TRow\>, string, object, int, object, int, System\.Threading\.CancellationToken\)') seeks the partition's primary key and fetches every row in key order. On a wide table that order has nothing to do with where rows sit on disk, so it costs one random heap read per row. Measured on production on 2026-09-22 (DiGi.GIS.WebAPI.UI#29) for a 155 307-row `building_data` partition: 368-654 s by key, against about 15 s for a sequential read of a 100 543-row one.
+
+Each page reads windows of heap blocks bounded on both sides ([PhysicalOrderPullCommandText\(string, IEnumerable&lt;string&gt;, string\)](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Query.PhysicalOrderPullCommandText(string,System.Collections.Generic.IEnumerable_string_,string) 'DiGi\.PostgreSQL\.Table\.Query\.PhysicalOrderPullCommandText\(string, System\.Collections\.Generic\.IEnumerable\<string\>, string\)')), which the planner serves with a TID Range Scan. A window is sized to hold about [pageSize](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).pageSize 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.PullByPhysicalOrderAsync\<TColumn,TRow\>\(Npgsql\.NpgsqlConnection, DiGi\.Core\.IO\.Table\.Classes\.Table\<TColumn,TRow\>, string, int, object, int, System\.Threading\.CancellationToken\)\.pageSize') rows. The size comes from the partition's statistics (`reltuples / relpages`), or from a row count when the partition was never analysed. That sizing is what bounds the cost: the scan carries no ordering, so the server reads and sorts the whole window before applying the page's LIMIT. The method moves on to the next window until the page is full or the partition's blocks run out, so sparse regions do not produce tiny pages. The block count is re-read on every call, so blocks appended during a walk are still reached.
+
+The server must be PostgreSQL 14 or later ([IsPhysicalOrderSupported\(this NpgsqlConnection\)](DiGi.PostgreSQL.Table.md#DiGi.PostgreSQL.Table.Query.IsPhysicalOrderSupported(thisNpgsql.NpgsqlConnection) 'DiGi\.PostgreSQL\.Table\.Query\.IsPhysicalOrderSupported\(this Npgsql\.NpgsqlConnection\)')). The check happens before any query and answers [null](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/keywords/null') when it fails, so callers can fall back to the keyset read. A `ctid` is unique only inside one physical table, so a partitioned converter and a [partitionValue](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).partitionValue 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.PullByPhysicalOrderAsync\<TColumn,TRow\>\(Npgsql\.NpgsqlConnection, DiGi\.Core\.IO\.Table\.Classes\.Table\<TColumn,TRow\>, string, int, object, int, System\.Threading\.CancellationToken\)\.partitionValue') are required.
+
+<b>Concurrent writes.</b> Every statement sees its own snapshot, and a position means nothing once the row moves. A row updated during a walk is written at a new position: it is read twice when the new position lies ahead of the walk, and <b>missed</b> when it lies behind it (a HOT update can reuse a slot earlier in the same block). A row deleted before its window is read is not returned. A table rewrite (`VACUUM FULL`, `CLUSTER`) invalidates every position handed out. The method does not dedup, so callers dedup on the primary key. A caller that walks the whole partition on one connection gets an exact, consistent result by running the walk inside one `REPEATABLE READ` transaction; the commands join the connection's transaction.
+
+```csharp
+public System.Threading.Tasks.Task<string?> PullByPhysicalOrderAsync<TColumn,TRow>(Npgsql.NpgsqlConnection npgsqlConnection, DiGi.Core.IO.Table.Classes.Table<TColumn,TRow>? table, string? lastPosition, int pageSize, object? partitionValue, int commandTimeout=30, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken))
+    where TColumn : UColumn
+    where TRow : DiGi.Core.IO.Table.Interfaces.IRow<TRow>;
+```
+#### Type parameters
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).TColumn'></a>
+
+`TColumn`
+
+The type of column, which must implement [UColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.UColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.UColumn')\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).TRow'></a>
+
+`TRow`
+
+The type of row, which must implement [DiGi\.Core\.IO\.Table\.Interfaces\.IRow&lt;&gt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.interfaces.irow-1 'DiGi\.Core\.IO\.Table\.Interfaces\.IRow\`1')\.
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).npgsqlConnection'></a>
+
+`npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
+
+The open database connection\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).table'></a>
+
+`table` [DiGi\.Core\.IO\.Table\.Classes\.Table&lt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.classes.table-2 'DiGi\.Core\.IO\.Table\.Classes\.Table\`2')[TColumn](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).TColumn 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.PullByPhysicalOrderAsync\<TColumn,TRow\>\(Npgsql\.NpgsqlConnection, DiGi\.Core\.IO\.Table\.Classes\.Table\<TColumn,TRow\>, string, int, object, int, System\.Threading\.CancellationToken\)\.TColumn')[,](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.classes.table-2 'DiGi\.Core\.IO\.Table\.Classes\.Table\`2')[TRow](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).TRow 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.PullByPhysicalOrderAsync\<TColumn,TRow\>\(Npgsql\.NpgsqlConnection, DiGi\.Core\.IO\.Table\.Classes\.Table\<TColumn,TRow\>, string, int, object, int, System\.Threading\.CancellationToken\)\.TRow')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.classes.table-2 'DiGi\.Core\.IO\.Table\.Classes\.Table\`2')
+
+The table to append the page's rows to; its columns are the ones read\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).lastPosition'></a>
+
+`lastPosition` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The position the previous call returned, or [null](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/keywords/null') to start at the beginning of the partition\. The text form of a tid, `(block,offset)`\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).pageSize'></a>
+
+`pageSize` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The maximum number of rows to read\. Must be positive\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).partitionValue'></a>
+
+`partitionValue` [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object')
+
+The partition key value of the partition to read\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).commandTimeout'></a>
+
+`commandTimeout` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The timeout in seconds for each command\. A value of 0 disables the timeout\.
+
+<a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe while waiting for the task to complete\.
+
+#### Returns
+[System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
+A task whose result is:
+            
+- the position of the page's last row, when the page came back full; pass it back as [lastPosition](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).lastPosition 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.PullByPhysicalOrderAsync\<TColumn,TRow\>\(Npgsql\.NpgsqlConnection, DiGi\.Core\.IO\.Table\.Classes\.Table\<TColumn,TRow\>, string, int, object, int, System\.Threading\.CancellationToken\)\.lastPosition') to continue;
+- [System\.String\.Empty](https://learn.microsoft.com/en-us/dotnet/api/system.string.empty 'System\.String\.Empty') when the partition is exhausted (also for an empty or missing partition);
+- [null](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/keywords/null') when the read cannot run: a null table or connection, no columns, a non-positive [pageSize](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).pageSize 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.PullByPhysicalOrderAsync\<TColumn,TRow\>\(Npgsql\.NpgsqlConnection, DiGi\.Core\.IO\.Table\.Classes\.Table\<TColumn,TRow\>, string, int, object, int, System\.Threading\.CancellationToken\)\.pageSize'), an unpartitioned converter, a null [partitionValue](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).partitionValue 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.PullByPhysicalOrderAsync\<TColumn,TRow\>\(Npgsql\.NpgsqlConnection, DiGi\.Core\.IO\.Table\.Classes\.Table\<TColumn,TRow\>, string, int, object, int, System\.Threading\.CancellationToken\)\.partitionValue'), a [lastPosition](DiGi.PostgreSQL.Table.Classes.md#DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PullByPhysicalOrderAsync_TColumn,TRow_(Npgsql.NpgsqlConnection,DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,string,int,object,int,System.Threading.CancellationToken).lastPosition 'DiGi\.PostgreSQL\.Table\.Classes\.TablePostgreSQLConverter\<UColumn\>\.PullByPhysicalOrderAsync\<TColumn,TRow\>\(Npgsql\.NpgsqlConnection, DiGi\.Core\.IO\.Table\.Classes\.Table\<TColumn,TRow\>, string, int, object, int, System\.Threading\.CancellationToken\)\.lastPosition') that is not a valid tid (block above 4 294 967 295 or offset above 65 535 included), or a server older than PostgreSQL 14.
+
 <a name='DiGi.PostgreSQL.Table.Classes.TablePostgreSQLConverter_UColumn_.PushAsync_TColumn,TRow_(DiGi.Core.IO.Table.Classes.Table_TColumn,TRow_,int,int,System.Threading.CancellationToken)'></a>
 
 ## TablePostgreSQLConverter\<UColumn\>\.PushAsync\<TColumn,TRow\>\(Table\<TColumn,TRow\>, int, int, CancellationToken\) Method

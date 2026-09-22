@@ -1436,6 +1436,204 @@ namespace DiGi.PostgreSQL.Table.Classes
         }
 
         /// <summary>
+        /// Asynchronously pulls one page of a partition in physical (heap) order, continuing after the position the previous page ended at.
+        /// <para>Use it to read a whole partition. The keyset <see cref="PullAsync{TColumn, TRow}(NpgsqlConnection, Table{TColumn, TRow}?, string, object?, int, object?, int, CancellationToken)"/> seeks the partition's primary key and fetches every row in key order. On a wide table that order has nothing to do with where rows sit on disk, so it costs one random heap read per row. Measured on production on 2026-09-22 (DiGi.GIS.WebAPI.UI#29) for a 155 307-row <c>building_data</c> partition: 368-654 s by key, against about 15 s for a sequential read of a 100 543-row one.</para>
+        /// <para>Each page reads windows of heap blocks bounded on both sides (<see cref="Query.PhysicalOrderPullCommandText"/>), which the planner serves with a TID Range Scan. A window is sized to hold about <paramref name="pageSize"/> rows. The size comes from the partition's statistics (<c>reltuples / relpages</c>), or from a row count when the partition was never analysed. That sizing is what bounds the cost: the scan carries no ordering, so the server reads and sorts the whole window before applying the page's LIMIT. The method moves on to the next window until the page is full or the partition's blocks run out, so sparse regions do not produce tiny pages. The block count is re-read on every call, so blocks appended during a walk are still reached.</para>
+        /// <para>The server must be PostgreSQL 14 or later (<see cref="Query.IsPhysicalOrderSupported(NpgsqlConnection?)"/>). The check happens before any query and answers <see langword="null"/> when it fails, so callers can fall back to the keyset read. A <c>ctid</c> is unique only inside one physical table, so a partitioned converter and a <paramref name="partitionValue"/> are required.</para>
+        /// <para><b>Concurrent writes.</b> Every statement sees its own snapshot, and a position means nothing once the row moves. A row updated during a walk is written at a new position: it is read twice when the new position lies ahead of the walk, and <b>missed</b> when it lies behind it (a HOT update can reuse a slot earlier in the same block). A row deleted before its window is read is not returned. A table rewrite (<c>VACUUM FULL</c>, <c>CLUSTER</c>) invalidates every position handed out. The method does not dedup, so callers dedup on the primary key. A caller that walks the whole partition on one connection gets an exact, consistent result by running the walk inside one <c>REPEATABLE READ</c> transaction; the commands join the connection's transaction.</para>
+        /// </summary>
+        /// <typeparam name="TColumn">The type of column, which must implement <typeparamref name="UColumn"/>.</typeparam>
+        /// <typeparam name="TRow">The type of row, which must implement <see cref="IRow{TRow}"/>.</typeparam>
+        /// <param name="npgsqlConnection">The open database connection.</param>
+        /// <param name="table">The table to append the page's rows to; its columns are the ones read.</param>
+        /// <param name="lastPosition">The position the previous call returned, or <see langword="null"/> to start at the beginning of the partition. The text form of a tid, <c>(block,offset)</c>.</param>
+        /// <param name="pageSize">The maximum number of rows to read. Must be positive.</param>
+        /// <param name="partitionValue">The partition key value of the partition to read.</param>
+        /// <param name="commandTimeout">The timeout in seconds for each command. A value of 0 disables the timeout.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to observe while waiting for the task to complete.</param>
+        /// <returns>A task whose result is:
+        /// <list type="bullet">
+        /// <item>the position of the page's last row, when the page came back full; pass it back as <paramref name="lastPosition"/> to continue;</item>
+        /// <item><see cref="string.Empty"/> when the partition is exhausted (also for an empty or missing partition);</item>
+        /// <item><see langword="null"/> when the read cannot run: a null table or connection, no columns, a non-positive <paramref name="pageSize"/>, an unpartitioned converter, a null <paramref name="partitionValue"/>, a <paramref name="lastPosition"/> that is not a valid tid (block above 4 294 967 295 or offset above 65 535 included), or a server older than PostgreSQL 14.</item>
+        /// </list></returns>
+        public async Task<string?> PullByPhysicalOrderAsync<TColumn, TRow>(NpgsqlConnection npgsqlConnection, Table<TColumn, TRow>? table, string? lastPosition, int pageSize, object? partitionValue, int commandTimeout = 30, CancellationToken cancellationToken = default)
+            where TColumn : UColumn
+            where TRow : IRow<TRow>
+        {
+            if (table is null || npgsqlConnection is null || pageSize < 1 || partitionValue is null)
+            {
+                return null;
+            }
+
+            string? partitionColumnUniqueId = TableConversionOptions?.PartitioningOptions?.Column?.UniqueId();
+            if (string.IsNullOrWhiteSpace(partitionColumnUniqueId))
+            {
+                return null;
+            }
+
+            if (!npgsqlConnection.IsPhysicalOrderSupported())
+            {
+                return null;
+            }
+
+            if (table.Columns is not IEnumerable<TColumn> columns || !columns.Any())
+            {
+                return null;
+            }
+
+            long block_Lower = 0;
+            string position_Lower = "(0,0)";
+            if (lastPosition is not null)
+            {
+                // A tid is a 32-bit block number and a 16-bit offset. Anything outside that would make the server reject
+                // the cast and throw, so it is declined here as the malformed text it is.
+                System.Text.RegularExpressions.Match match = System.Text.RegularExpressions.Regex.Match(lastPosition, @"^\((\d{1,10}),(\d{1,5})\)$");
+                if (!match.Success || !uint.TryParse(match.Groups[1].Value, out uint block) || !ushort.TryParse(match.Groups[2].Value, out _))
+                {
+                    return null;
+                }
+
+                block_Lower = block;
+                position_Lower = lastPosition;
+            }
+
+            Dictionary<string, TColumn> dictionary_Columns = [];
+            foreach (TColumn column in columns)
+            {
+                if (column.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
+                {
+                    continue;
+                }
+
+                dictionary_Columns[uniqueId] = column;
+            }
+
+            string? commandText = Query.PhysicalOrderPullCommandText(TableName, dictionary_Columns.Keys, partitionColumnUniqueId);
+            if (commandText is null)
+            {
+                return null;
+            }
+
+            // The partition's size in blocks and its row density, read from the physical table holding the partition value.
+            // No row means the partition is missing or empty.
+            long blockCount;
+            double? rowsPerBlock = null;
+            string commandText_Statistics = $@"
+                SELECT pg_relation_size(c.oid) / current_setting('block_size')::bigint, c.reltuples, c.relpages
+                FROM pg_class c
+                WHERE c.oid = (SELECT tableoid FROM ""{TableName}"" WHERE ""{partitionColumnUniqueId}"" = @partitionValue LIMIT 1)";
+
+            await using (NpgsqlCommand npgsqlCommand_Statistics = new(commandText_Statistics, npgsqlConnection))
+            {
+                npgsqlCommand_Statistics.CommandTimeout = commandTimeout;
+                npgsqlCommand_Statistics.Parameters.AddWithValue("partitionValue", partitionValue);
+
+                await using NpgsqlDataReader npgsqlDataReader_Statistics = await npgsqlCommand_Statistics.ExecuteReaderAsync(cancellationToken);
+                if (!await npgsqlDataReader_Statistics.ReadAsync(cancellationToken))
+                {
+                    return string.Empty;
+                }
+
+                blockCount = npgsqlDataReader_Statistics.GetInt64(0);
+                float reltuples = npgsqlDataReader_Statistics.GetFloat(1);
+                int relpages = npgsqlDataReader_Statistics.GetInt32(2);
+
+                if (reltuples > 0 && relpages > 0)
+                {
+                    rowsPerBlock = reltuples / relpages;
+                }
+            }
+
+            // The window size is what bounds the cost of a page. A TID Range Scan carries no ordering, so ORDER BY ctid LIMIT n
+            // reads every row of the window and sorts it before keeping n: a window ten times too large reads ten rows per
+            // row returned. A partition that was never analysed reports reltuples -1, and any guess of its density can be
+            // off by the table's row width - so count its rows instead (an index-only scan where the table has a primary key).
+            if (rowsPerBlock is null)
+            {
+                string commandText_Count = $@"SELECT count(*) FROM ""{TableName}"" WHERE ""{partitionColumnUniqueId}"" = @partitionValue";
+
+                await using NpgsqlCommand npgsqlCommand_Count = new(commandText_Count, npgsqlConnection);
+                npgsqlCommand_Count.CommandTimeout = commandTimeout;
+                npgsqlCommand_Count.Parameters.AddWithValue("partitionValue", partitionValue);
+
+                long count = System.Convert.ToInt64(await npgsqlCommand_Count.ExecuteScalarAsync(cancellationToken));
+                if (count == 0)
+                {
+                    return string.Empty;
+                }
+
+                rowsPerBlock = (double)count / Math.Max(1, blockCount);
+            }
+
+            long blockStep = Math.Max(1, (long)Math.Ceiling(pageSize / Math.Max(rowsPerBlock.Value, 0.001)));
+
+            Dictionary<string, TColumn> dictionary_PrimaryKey = [];
+            if (TableConversionOptions?.PrimaryKeyColumns is List<UColumn> columns_PrimaryKey && columns_PrimaryKey.Count != 0)
+            {
+                foreach (UColumn column_PrimaryKey in columns_PrimaryKey)
+                {
+                    if (column_PrimaryKey.UniqueId() is not string uniqueId || string.IsNullOrWhiteSpace(uniqueId))
+                    {
+                        continue;
+                    }
+
+                    if (dictionary_Columns.TryGetValue(uniqueId, out TColumn? column))
+                    {
+                        dictionary_PrimaryKey[uniqueId] = column;
+                    }
+                }
+            }
+
+            Dictionary<string, TRow> existingRows = [];
+            int rowCount = 0;
+            string? position_Last = null;
+
+            while (block_Lower < blockCount)
+            {
+                long block_Upper = Math.Min(block_Lower + blockStep, blockCount);
+
+                int rowCount_Remaining = pageSize - rowCount;
+                int rowCount_Window = 0;
+
+                await using (NpgsqlCommand npgsqlCommand_Select = new(commandText, npgsqlConnection))
+                {
+                    npgsqlCommand_Select.CommandTimeout = commandTimeout;
+                    npgsqlCommand_Select.Parameters.AddWithValue("partitionValue", partitionValue);
+                    npgsqlCommand_Select.Parameters.AddWithValue("lowerPosition", position_Lower);
+                    npgsqlCommand_Select.Parameters.AddWithValue("upperPosition", $"({block_Upper},0)");
+                    npgsqlCommand_Select.Parameters.AddWithValue("pageSize", rowCount_Remaining);
+
+                    await using NpgsqlDataReader npgsqlDataReader_Select = await npgsqlCommand_Select.ExecuteReaderAsync(cancellationToken);
+
+                    bool read = await ReadAsync(npgsqlDataReader_Select, table, dictionary_Columns, dictionary_PrimaryKey, existingRows, npgsqlDataReader =>
+                    {
+                        rowCount_Window++;
+                        position_Last = npgsqlDataReader.GetString(npgsqlDataReader.GetOrdinal(Constants.ColumnName.PhysicalPosition));
+                    }, cancellationToken);
+
+                    if (!read)
+                    {
+                        return null;
+                    }
+                }
+
+                rowCount += rowCount_Window;
+                if (rowCount >= pageSize)
+                {
+                    return position_Last;
+                }
+
+                // The window held fewer rows than the page still needed: continue from the start of the next window.
+                // Offsets start at 1, so "(n,0)" is below every row of block n.
+                block_Lower = block_Upper;
+                position_Lower = $"({block_Upper},0)";
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
         /// Asynchronously pushes the contents of the specified table to the database using batch processing.
         /// <para>When the converter is configured with primary key columns that are present on the table, the statement is an upsert - <c>ON CONFLICT (primary keys) DO UPDATE SET col = EXCLUDED.col</c> - and the update covers every non-primary-key column on the table, not only the cells that were set: a cell left unset on a row is written as NULL and overwrites the stored value of an existing row, while a column that is not on the table is never touched. Without such configuration the statement is a plain insert.</para>
         /// </summary>
@@ -1714,6 +1912,13 @@ namespace DiGi.PostgreSQL.Table.Classes
 
         private static async Task<bool> ReadAsync<TColumn, TRow>(NpgsqlDataReader npgsqlDataReader, Table<TColumn, TRow> table, Dictionary<string, TColumn> dictionary, Dictionary<string, TColumn> dictionary_PrimaryKey, Dictionary<string, TRow> existingRowsMap, CancellationToken cancellationToken) where TColumn : IColumn where TRow : IRow<TRow>
         {
+            return await ReadAsync(npgsqlDataReader, table, dictionary, dictionary_PrimaryKey, existingRowsMap, null, cancellationToken);
+        }
+
+        // rowRead runs after each row has been added, with the reader still on that row, so a caller can pick up
+        // columns that are not part of the table (the physical position of a physical-order read).
+        private static async Task<bool> ReadAsync<TColumn, TRow>(NpgsqlDataReader npgsqlDataReader, Table<TColumn, TRow> table, Dictionary<string, TColumn> dictionary, Dictionary<string, TColumn> dictionary_PrimaryKey, Dictionary<string, TRow> existingRowsMap, Action<NpgsqlDataReader>? rowRead, CancellationToken cancellationToken) where TColumn : IColumn where TRow : IRow<TRow>
+        {
             while (await npgsqlDataReader.ReadAsync(cancellationToken))
             {
                 Dictionary<string, object?> values = [];
@@ -1755,6 +1960,8 @@ namespace DiGi.PostgreSQL.Table.Classes
                 {
                     table.AddRow(values);
                 }
+
+                rowRead?.Invoke(npgsqlDataReader);
             }
             return true;
         }

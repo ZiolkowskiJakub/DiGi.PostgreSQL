@@ -363,6 +363,31 @@ The \.NET type for which to get the data type name\.
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
 The PostgreSQL data type name as a string, or null if not found\.
 
+<a name='DiGi.PostgreSQL.Table.Query.IsPhysicalOrderSupported(thisNpgsql.NpgsqlConnection)'></a>
+
+## Query\.IsPhysicalOrderSupported\(this NpgsqlConnection\) Method
+
+Determines whether the server behind the connection can read a partition in physical order, the read `TablePostgreSQLConverter.PullByPhysicalOrderAsync` performs\.
+
+The read bounds each page by a window of heap positions (`ctid`), which only a <b>TID Range Scan</b> serves block by block. PostgreSQL added that scan in version 14; on an older server the same condition is a filter over a sequential scan of the whole partition, run once per page - quadratic over a walk. Callers use this check to fall back to a keyset read instead of inferring the reason from a [null](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/keywords/null') result.
+
+The version is the one Npgsql recorded when the connection opened ([Npgsql\.NpgsqlConnection\.PostgreSqlVersion](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection.postgresqlversion 'Npgsql\.NpgsqlConnection\.PostgreSqlVersion')), so the check costs no round trip. It requires an open connection.
+
+```csharp
+public static bool IsPhysicalOrderSupported(this Npgsql.NpgsqlConnection? npgsqlConnection);
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Query.IsPhysicalOrderSupported(thisNpgsql.NpgsqlConnection).npgsqlConnection'></a>
+
+`npgsqlConnection` [Npgsql\.NpgsqlConnection](https://learn.microsoft.com/en-us/dotnet/api/npgsql.npgsqlconnection 'Npgsql\.NpgsqlConnection')
+
+The open connection to the server\. This value can be null\.
+
+#### Returns
+[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')  
+[true](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/builtin\-types/bool') when the connection is open and the server is PostgreSQL 14 or later; otherwise [false](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/builtin\-types/bool'), including for a null or closed connection\.
+
 <a name='DiGi.PostgreSQL.Table.Query.NpgsqlDbType(thisDiGi.Core.IO.Table.Interfaces.IColumn)'></a>
 
 ## Query\.NpgsqlDbType\(this IColumn\) Method
@@ -425,6 +450,45 @@ The object value to be processed\.
 #### Returns
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
 A formatted string representing the partition name suffix, or null if the input is not a valid string\.
+
+<a name='DiGi.PostgreSQL.Table.Query.PhysicalOrderPullCommandText(string,System.Collections.Generic.IEnumerable_string_,string)'></a>
+
+## Query\.PhysicalOrderPullCommandText\(string, IEnumerable\<string\>, string\) Method
+
+Builds the statement that reads one window of a partition in physical order, the page query of `TablePostgreSQLConverter.PullByPhysicalOrderAsync`\.
+
+The window is bounded on <b>both</b> sides - `ctid > @lowerPosition AND ctid < @upperPosition` - because that is what the planner serves with a TID Range Scan, reading only the window's blocks. A lower bound alone covers the rest of the partition, and the planner then answers `ORDER BY ctid LIMIT n` with a sequential scan and a top-N sort of everything after the bound, on every page (measured on PostgreSQL 18: 7 143 buffers per page against 150 for a bounded window).
+
+The rows come back ordered by `ctid` and capped at `@pageSize`, with the position of each row as text in the extra column named by [PhysicalPosition](DiGi.PostgreSQL.Table.Constants.md#DiGi.PostgreSQL.Table.Constants.ColumnName.PhysicalPosition 'DiGi\.PostgreSQL\.Table\.Constants\.ColumnName\.PhysicalPosition'). Parameters: `@partitionValue`, `@lowerPosition` and `@upperPosition` (tid text such as `(12,0)`) and `@pageSize`.
+
+Identifiers are quoted, never parameterised; callers pass the table and column unique ids the converter already holds, not caller-supplied text.
+
+```csharp
+public static string? PhysicalOrderPullCommandText(string? tableName, System.Collections.Generic.IEnumerable<string>? columnUniqueIds, string? partitionColumnUniqueId);
+```
+#### Parameters
+
+<a name='DiGi.PostgreSQL.Table.Query.PhysicalOrderPullCommandText(string,System.Collections.Generic.IEnumerable_string_,string).tableName'></a>
+
+`tableName` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The name of the partitioned table\. This value can be null\.
+
+<a name='DiGi.PostgreSQL.Table.Query.PhysicalOrderPullCommandText(string,System.Collections.Generic.IEnumerable_string_,string).columnUniqueIds'></a>
+
+`columnUniqueIds` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The unique ids of the columns to read\. This value can be null\.
+
+<a name='DiGi.PostgreSQL.Table.Query.PhysicalOrderPullCommandText(string,System.Collections.Generic.IEnumerable_string_,string).partitionColumnUniqueId'></a>
+
+`partitionColumnUniqueId` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The unique id of the partitioning column\. This value can be null\.
+
+#### Returns
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
+The statement, or [null](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/null 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/keywords/null') when the table name, the partitioning column or every column id is missing\.
 
 <a name='DiGi.PostgreSQL.Table.Query.TryBuildFilterGroupSql_UColumn_(thisDiGi.PostgreSQL.Table.Classes.FilterGroup,System.Collections.Generic.List_UColumn_,System.Text.StringBuilder,Npgsql.NpgsqlParameterCollection,int)'></a>
 
