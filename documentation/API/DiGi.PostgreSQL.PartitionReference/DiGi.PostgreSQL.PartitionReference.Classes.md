@@ -24,12 +24,10 @@ Partition::building2d::0f8fad5bd9cb469fa16570867728950e
 ```
 
 ### Remarks
-TODO \[ReferenceFormat\]: The rendered form changed\. It used to be `name->uniqueId`, where `->`
-came from a local Constants\.Reference that shadowed DiGi\.Core's; it is now the shared discriminated grammar,
-and it no longer returns null when a field is blank \(which made every blank instance compare equal\)\.
-This is database\-safe: a partition is named from the [Name](DiGi.PostgreSQL.PartitionReference.Classes.md#DiGi.PostgreSQL.PartitionReference.Classes.PartitionReference.Name 'DiGi\.PostgreSQL\.PartitionReference\.Classes\.PartitionReference\.Name') property \- see
-Modify/RemoveAsync\.cs, which groups by `x => x?.Name` \- not from this string, which only feeds
-equality\. No partition or table migration is required\.
+The rendered string is the shared discriminated grammar and never returns null, so a blank instance does not
+compare equal to every other blank instance\. This is database\-safe: a partition is named from the
+[Name](DiGi.PostgreSQL.PartitionReference.Classes.md#DiGi.PostgreSQL.PartitionReference.Classes.PartitionReference.Name 'DiGi\.PostgreSQL\.PartitionReference\.Classes\.PartitionReference\.Name') property \- see Modify/RemoveAsync\.cs, which groups by `x => x?.Name` \- not from
+this string, which only feeds equality\.
 ### Constructors
 
 <a name='DiGi.PostgreSQL.PartitionReference.Classes.PartitionReference.PartitionReference()'></a>

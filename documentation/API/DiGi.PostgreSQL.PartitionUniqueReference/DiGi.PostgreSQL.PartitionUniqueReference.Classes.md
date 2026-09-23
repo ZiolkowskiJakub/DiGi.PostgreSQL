@@ -24,11 +24,9 @@ PartitionUnique::building2d::(Guid::(Type::DiGi.GIS.Classes.Building2D,DiGi.GIS)
 ```
 
 ### Remarks
-TODO \[ReferenceFormat\]: The rendered form changed\. It used to be `name->nestedReference`, where
-`->` came from a local Constants\.Reference that shadowed DiGi\.Core's; it is now the shared
-discriminated grammar, and it no longer returns null when a field is missing \(which made every blank instance
-compare equal\)\. Database\-safe for the same reason as [DiGi\.PostgreSQL\.PartitionReference](https://learn.microsoft.com/en-us/dotnet/api/digi.postgresql.partitionreference 'DiGi\.PostgreSQL\.PartitionReference'): partitions are named
-from the Name property, not from this string\.
+The rendered string is the shared discriminated grammar and never returns null, so a blank instance does not
+compare equal to every other blank instance\. Database\-safe for the same reason as
+[DiGi\.PostgreSQL\.PartitionReference](https://learn.microsoft.com/en-us/dotnet/api/digi.postgresql.partitionreference 'DiGi\.PostgreSQL\.PartitionReference'): partitions are named from the Name property, not from this string\.
 ### Constructors
 
 <a name='DiGi.PostgreSQL.PartitionUniqueReference.Classes.PartitionUniqueReference.PartitionUniqueReference()'></a>

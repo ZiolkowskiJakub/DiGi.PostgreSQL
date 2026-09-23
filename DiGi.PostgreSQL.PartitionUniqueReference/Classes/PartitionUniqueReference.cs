@@ -1,4 +1,4 @@
-﻿using DiGi.Core.Classes;
+using DiGi.Core.Classes;
 using DiGi.Core.Interfaces;
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
@@ -15,11 +15,9 @@ namespace DiGi.PostgreSQL.PartitionUniqueReference.Classes
     /// <code>PartitionUnique::building2d::(Guid::(Type::DiGi.GIS.Classes.Building2D,DiGi.GIS)::0f8fad5bd9cb469fa16570867728950e)</code>
     /// </example>
     /// <remarks>
-    /// TODO [ReferenceFormat]: The rendered form changed. It used to be <c>name-&gt;nestedReference</c>, where
-    /// <c>-&gt;</c> came from a local Constants.Reference that shadowed DiGi.Core's; it is now the shared
-    /// discriminated grammar, and it no longer returns null when a field is missing (which made every blank instance
-    /// compare equal). Database-safe for the same reason as <see cref="PartitionReference"/>: partitions are named
-    /// from the Name property, not from this string.
+    /// The rendered string is the shared discriminated grammar and never returns null, so a blank instance does not
+    /// compare equal to every other blank instance. Database-safe for the same reason as
+    /// <see cref="PartitionReference"/>: partitions are named from the Name property, not from this string.
     /// </remarks>
     public class PartitionUniqueReference : SerializableReference
     {

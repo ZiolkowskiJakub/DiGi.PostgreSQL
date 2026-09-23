@@ -1,4 +1,4 @@
-﻿using DiGi.Core.Classes;
+using DiGi.Core.Classes;
 using DiGi.Core.Interfaces;
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
@@ -13,12 +13,10 @@ namespace DiGi.PostgreSQL.PartitionReference.Classes
     /// <code>Partition::building2d::0f8fad5bd9cb469fa16570867728950e</code>
     /// </example>
     /// <remarks>
-    /// TODO [ReferenceFormat]: The rendered form changed. It used to be <c>name-&gt;uniqueId</c>, where <c>-&gt;</c>
-    /// came from a local Constants.Reference that shadowed DiGi.Core's; it is now the shared discriminated grammar,
-    /// and it no longer returns null when a field is blank (which made every blank instance compare equal).
-    /// This is database-safe: a partition is named from the <see cref="Name"/> property - see
-    /// Modify/RemoveAsync.cs, which groups by <c>x =&gt; x?.Name</c> - not from this string, which only feeds
-    /// equality. No partition or table migration is required.
+    /// The rendered string is the shared discriminated grammar and never returns null, so a blank instance does not
+    /// compare equal to every other blank instance. This is database-safe: a partition is named from the
+    /// <see cref="Name"/> property - see Modify/RemoveAsync.cs, which groups by <c>x =&gt; x?.Name</c> - not from
+    /// this string, which only feeds equality.
     /// </remarks>
     public class PartitionReference : SerializableReference
     {
