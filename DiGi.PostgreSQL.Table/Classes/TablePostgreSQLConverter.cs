@@ -134,7 +134,7 @@ namespace DiGi.PostgreSQL.Table.Classes
                 Enums.SinglevalueAggregateFunction.Sum => $"SUM(\"{columnUniqueId}\")",
                 Enums.SinglevalueAggregateFunction.Min => $"MIN(\"{columnUniqueId}\")",
                 Enums.SinglevalueAggregateFunction.Max => $"MAX(\"{columnUniqueId}\")",
-                Enums.SinglevalueAggregateFunction.Count => "COUNT(*)",
+                Enums.SinglevalueAggregateFunction.Count => $"COUNT(\"{columnUniqueId}\")",
                 Enums.SinglevalueAggregateFunction.DistinctCount => $"COUNT(DISTINCT \"{columnUniqueId}\")",
                 _ => throw new System.ComponentModel.InvalidEnumArgumentException()
             };
